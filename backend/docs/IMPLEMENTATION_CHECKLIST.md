@@ -77,6 +77,21 @@ manifest bytes/descriptors are rejected by added tests. Hosted inspection
 label-only promotion, including full config/layer qualification and private
 credential removal; no publication or production call is part of that probe.
 
+Release `42370866668` passes 710 operations / 11 schema / 16 Kubernetes checks,
+the browser fixture and immutable publication. Runtime `077b06ed` and frontend
+`38b4b105` are published. Rollout then fails `UPDATE_IMMUTABLE_IMAGE_REQUIRED`:
+the new coordinator called the runtime-only Pod drain validator for frontend.
+Its first frontend rollback hit the same validator and interrupted later restores.
+Read-only inventory is being collected before recovery; no unchanged-state claim
+is made. The Pod validator now requires the correct frontend/runtime repository
+while retaining exact controller ownership. Rollback attempts every owned target
+and reports any unconfirmed restoration; added tests cover both regressions.
+Inventory `42371789449` confirms all ten workloads ready, four runtime targets on
+`077b06ed`, frontend restored to `32f26e92`, and unchanged `8f82c881` schema catalog.
+Its temporary client and credentials are removed. Recovery now pins exactly that
+observed image baseline, while retaining the original `ada21f57` schema ledger.
+Twelve Pod/ownership controls and six pagination-release controls pass locally.
+
 
 ## November 5 — latest integration checkpoint
 
