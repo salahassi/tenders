@@ -45,6 +45,33 @@ class RawConfig(unittest.TestCase):
    with patch.object(p.subprocess,'run',side_effect=self.export(raw,value,layout=layout)):
     self.assertEqual(p.raw_image_config(value),self.document['config'])
    self.assertEqual(list(Path(self.temp.name).iterdir()),[])
+ def test_containerd_manifest_id_resolves_exact_config_digest(self):
+  for media in ('application/vnd.oci.image.config.v1+json','application/vnd.docker.container.image.v1+json'):
+   p._RAW_CONFIG_CACHE.clear();raw,value=self.value();config_id=value['Id']
+   manifest={'schemaVersion':2,'config':{'digest':config_id,'size':len(raw),'mediaType':media},'layers':[]}
+   encoded=json.dumps(manifest).encode();value['Id']='sha256:'+hashlib.sha256(encoded).hexdigest()
+   def run(args,**kwargs):
+    with tarfile.open(args[4],'w') as archive:
+     for digest,payload in [(value['Id'],encoded),(config_id,raw)]:
+      member=tarfile.TarInfo('blobs/sha256/'+digest[7:]);member.size=len(payload);archive.addfile(member,io.BytesIO(payload))
+    return fixture.result()
+   with patch.object(p.subprocess,'run',side_effect=run) as export:
+    self.assertEqual(p.raw_image_config(value),self.document['config']);self.assertEqual(value['Id'],config_id)
+    self.assertEqual(p.raw_image_config(value),self.document['config']);self.assertEqual(export.call_count,1)
+ def test_manifest_descriptor_and_config_bytes_are_both_verified(self):
+  for change in ('digest','size','type','bytes'):
+   p._RAW_CONFIG_CACHE.clear();raw,value=self.value();config_id=value['Id']
+   descriptor={'digest':config_id,'size':len(raw),'mediaType':'application/vnd.oci.image.config.v1+json'}
+   if change=='digest':descriptor['digest']='sha256:'+'0'*64
+   if change=='size':descriptor['size']+=1
+   if change=='type':descriptor['mediaType']='untrusted'
+   encoded=json.dumps({'schemaVersion':2,'config':descriptor}).encode();value['Id']='sha256:'+hashlib.sha256(encoded).hexdigest()
+   def run(args,**kwargs):
+    with tarfile.open(args[4],'w') as archive:
+     for digest,payload in [(value['Id'],encoded),(config_id,raw+b' ' if change=='bytes' else raw)]:
+      member=tarfile.TarInfo('blobs/sha256/'+digest[7:]);member.size=len(payload);archive.addfile(member,io.BytesIO(payload))
+    return fixture.result()
+   with patch.object(p.subprocess,'run',side_effect=run),self.assertRaisesRegex(p.ImageError,'RAW_CONFIG_UNVERIFIED'):p.raw_image_config(value)
  def test_missing_duplicate_symlink_and_changed_config_bytes_fail_closed(self):
   for kwargs in ({'missing':True},{'duplicate':True},{'symlink':True},{'corrupt':True}):
    p._RAW_CONFIG_CACHE.clear();raw,value=self.value()

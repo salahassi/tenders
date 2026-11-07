@@ -42,7 +42,26 @@ reads complete job summaries through a genuine temporary Owner session. It
 logs out and removes its owned SQL client. It never runs migrations or retries
 processing. The new source manifest changes runtime qualification metadata only;
 the original applied manifest and original inventory baseline remain retained.
-Hosted deployment and authenticated production acceptance remain pending.
+Hosted run `42367604849` at `84b33ca` passes all 383 frontend / 3,493 backend,
+705 operations, 11 schema and 16 Kubernetes checks, both package typechecks/builds,
+and the 1,201-job Chromium fixture. Original-CA access succeeds. Image preparation
+then refuses `DELIVERY_IMAGE_RAW_IDENTITY_MISMATCH`, before any workload update;
+cleanup succeeds. Hosted deployment remains pending. A fixed-field raw-image
+metadata diagnostic is added to identify the engine presentation mismatch while
+keeping image bytes/platform/filesystem validation enforced. Read-only inspection
+`42369591871` confirms platform/rootfs differences; an additional hash-only
+diagnostic distinguishes an OCI manifest ID from its referenced configuration ID.
+Inspection `42369696495` proves Docker reports manifest `d34fb361` as its ID,
+whose SHA-bound config descriptor is exactly qualified config `aeb8e3c3`. The
+reader now verifies both blobs and descriptor size before canonicalizing the
+config identity; platform, full layer list, all config fields and labels remain
+strict. Local legacy/OCI/config-corruption and promotion controls pass. The
+release can reuse the successful package checks only after verifying that run's
+steps and exact unchanged application/dependency/runtime/schema source paths;
+all changed operations and browser checks still execute. Checkout supplies the
+source history without retaining credentials or requiring an unauthenticated
+private-repository fetch. No application rebuild
+qualification or native fixture is being inferred from a different image.
 
 
 ## November 5 — latest integration checkpoint
