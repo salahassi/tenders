@@ -27,6 +27,11 @@ layer and label checks remain strict. Inspection `42370741371` passed on the
 hosted engine. `reuse_verified_packages=true` requires the successful prior
 package gates and unchanged application/dependency/schema/runtime source paths;
 changed operations and the browser fixture are always re-tested.
+Frontend acceptance reads assets from a never-started container of the exact
+immutable, source-labelled frontend image and runs the workspace browser fixture
+against those bytes before rollout. Public HTML and all JS/CSS bytes are checked
+against that image artifact. The independent runner build remains a source check;
+its bundle names are not assumed to equal the container build's names.
 
 ## Latest verified application release
 

@@ -18,6 +18,7 @@ def load(name,file):
 base=load('summary_release_base','proposal-delivery-update.py')
 front=load('summary_release_frontend','digitalocean-update-frontend.py')
 auth=load('summary_release_auth','proposal-export-acceptance.py')
+assets=load('summary_frontend_image_assets','frontend-image-assets.py')
 d,u,runtime,images=base.d,base.u,base.runtime,base.images
 RUNTIME=('api','worker','source-browser','scheduler')
 TARGETS=RUNTIME+('frontend',)
@@ -119,7 +120,9 @@ def update():
     d.probe.validate_cluster();front.namespace_owned()
     original={name:u.deployment(name) for name in TARGETS}
     require(all(base.image_of(original[n])==PREVIOUS_RUNTIME for n in RUNTIME) and base.image_of(original['frontend'])==PREVIOUS_FRONTEND,'SUMMARY_DEPLOYED_IMAGE_BASELINE_CHANGED')
-    before=runtime.workload_snapshot();configuration=runtime.retained_configuration();expected=front.build_assets()
+    before=runtime.workload_snapshot();configuration=runtime.retained_configuration()
+    STATE['stage']='frontend_image_acceptance'
+    expected,frontend_proof=assets.verified_assets(selected['frontend'],revision,images,front)
     database=base.inventory.observer.Client(1800);database.labels['app.kubernetes.io/managed-by']=base.OWNER;base.save_client(database)
     touched=[]
     try:
@@ -137,7 +140,7 @@ def update():
         STATE['stage']='authenticated_acceptance'
         observed=acceptance(database)
         require(all(base.image_of(u.deployment(n))==selected['frontend' if n=='frontend' else 'runtime'] for n in TARGETS),'SUMMARY_FINAL_IMAGE_MISMATCH')
-        return {'release':'job-summary-pagination','status':'passed','source_revision':revision,'images':selected,'schema':schema,'acceptance':observed,'configuration_preserved':True,'auth_session_logged_out':True,'processing_retried':False}
+        return {'release':'job-summary-pagination','status':'passed','source_revision':revision,'images':selected,'schema':schema,'frontend_artifact':frontend_proof,'acceptance':observed,'configuration_preserved':True,'auth_session_logged_out':True,'processing_retried':False}
     except Exception:
         # Image-only, additive endpoint release: restore our exact changed images,
         # never overwrite an operator's concurrent specification or image edit.
