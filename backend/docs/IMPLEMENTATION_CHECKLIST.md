@@ -17,8 +17,31 @@ helper reproduces a 30,000 ms dispatch hold with zero model/network delay. This
 reproduction establishes the blocking path, not its exact historical duration.
 The composed parallel-request migration permits other jobs' known reservations
 during a poll wake; the original pre-migration single-reservation guard must not
-be mistaken for the currently deployed logic. Historical attempt timings are
-required to separate provider processing from delayed observation and dispatch.
+be mistaken for the currently deployed logic.
+
+[Exact-plan follow-up42495403060](https://github.com/salahassi/tenders/actions/runs/42495403060)
+at `0deb12149089b20698d2965531ea7992a4cebf8f` passed in **88 seconds including
+queue time**, with all five inspection controls and both cleanups. Its privately
+downloaded report matches the original failed plan and has no timing truncation.
+It contains 28 attempts: 15 unconfigured-model skips taking 0.193 seconds total,
+seven generation HTTP exchanges taking 12.177 seconds, and six poll exchanges
+taking 2.424 seconds. These exchange durations exclude asynchronous provider
+processing, so the remaining request duration is not an idle-time measurement.
+
+Four successful result-to-next-phase gaps measure approximately 52–54 seconds.
+Graph yield makes the job due immediately. A committed wake precedes the next
+selected generation by 46.958 seconds; the last accepted repair precedes its
+poll wake by 30.100 seconds. Combined with the actual scheduler/wake reproduction,
+these observations establish internal scheduling delay. They do not divide each
+gap among maintenance, other workspace work, claim and input preparation. The
+exact-plan attempt projection deliberately excludes other workspace attempts.
+
+Both packages pass typecheck and build. Full package suites run concurrently
+report backend 3,498/3,499 and frontend 388/389: one existing five-second backend
+test timeout and one frontend button lookup failure. The exact affected files
+pass unchanged in isolation (18/18 and 19/19). These are separately retained
+results, not a claim of a fully green combined run. No application fix or
+deployment is included in this diagnostic branch.
 
 [Inspection42468242137](https://github.com/salahassi/tenders/actions/runs/42468242137)
 at `6abffe096398af83bc5e4cdb468736427151733c` passed in **85 seconds including

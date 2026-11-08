@@ -11,6 +11,37 @@
   "runner_cleanup_confirmed": true,
   "private_report_sha256": "af6e92d3c1cdab6e7b26c64429eed965aa1d63089f08dbda8348529d8316c8ca",
   "private_download_hash_verified": true,
+  "exact_plan_timeline_followup": {
+    "run": "https://github.com/salahassi/tenders/actions/runs/42495403060",
+    "source": "0deb12149089b20698d2965531ea7992a4cebf8f",
+    "conclusion": "success",
+    "elapsed_seconds_including_queue": 88,
+    "inspection_controls_passed": 5,
+    "observer_cleanup_confirmed": true,
+    "runner_cleanup_confirmed": true,
+    "private_report_sha256": "03607cffe05d7d33c6ce2950c2865ce186e255b7c2491d488ede4fc17c539c79",
+    "private_download_hash_verified": true,
+    "same_original_failed_plan_verified": true,
+    "attempts_truncated": false,
+    "usage_truncated": false,
+    "attempt_count": 28,
+    "skipped_unconfigured_attempts": 15,
+    "skipped_attempt_duration_seconds": 0.192641,
+    "generation_http_attempts": 7,
+    "generation_http_duration_seconds": 12.177444,
+    "poll_http_attempts": 6,
+    "poll_http_duration_seconds": 2.423614,
+    "same_job_success_to_next_model_phase_gap_seconds": [54.371083, 52.073948, 52.651973, 52.896403],
+    "queued_wake_to_next_selected_generation_start_seconds": 46.958185,
+    "last_background_acceptance_to_wake_seconds": 30.099548,
+    "controlled_actual_scheduler_and_wake_helper_reproduction": {
+      "provider_network_delay_seconds": 0,
+      "virtual_worker_response_hold_seconds": 30,
+      "next_dispatch_during_hold": false,
+      "scope": "Synthetic composition of the actual scheduler and wake helper; not a production duration measurement."
+    },
+    "interpretation": "The synchronous dispatcher awaits future poll wake and maintenance. Graph phases yield with immediate due time, yet successful phases incur material scheduling gaps before the next model operation."
+  },
   "observed_at": "2026-11-08T09:42:03.557128+00:00",
   "issuance": {
     "accepted_at": "2026-11-08T08:45:28.039854+00:00",
@@ -40,7 +71,9 @@
   "deployed_changes": false,
   "limits": [
     "Current parallel-request setting is two; its historical value is not established by this read.",
-    "The projection retains only the latest attempt per job and cannot attribute every elapsed second to provider latency, polling or processing.",
+    "The initial projection retained only the latest attempt per job; the followup adds full selected-plan timing. Other workspace jobs are outside this exact-plan attempt history.",
+    "Direct HTTP duration excludes asynchronous model processing between polls; the remaining request time cannot be described as entirely idle.",
+    "The exact split between maintenance, scheduler turns, claim and preparation within the observed interphase gaps remains unmeasured.",
     "Large provider-reported input counts do not establish complete-document repetition per chunk.",
     "Successful inspection is not successful proposal issuance or export acceptance."
   ]
