@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""One authorized proposal command, then separate bounded read-only observations.
+"""One authorized proposal/settings command, or bounded read-only observations.
 
 The business request keeps its database deadline across runner invocations.
 Exact request intent is encrypted and read back before one authenticated send.
@@ -36,6 +36,7 @@ history = module('trial_private_intent', 'proposal-current-request.py')
 request = module('trial_one_request', 'proposal-trial-request.py')
 observe = module('trial_one_observation', 'proposal-trial-observe.py')
 download = module('trial_existing_download', 'proposal-trial-download.py')
+settings_repair = module('trial_settings_repair', 'proposal-settings-repair.py')
 d = release.d
 transfer = auth.transfer
 BUCKET = auth.BUCKET
@@ -181,7 +182,8 @@ def run(args):
     report = {'version': 1, 'kind': 'proposal_trial_report', 'mode': args.mode,
               'source_revision': os.environ['GITHUB_SHA'], 'request_sent': False, 'send_attempted': False,
               'intent_persisted': False, 'cleanup_verified': False, 'expected_operation': expected_operation}
-    require(args.mode != 'start' or (args.activate and os.environ.get('RUN_PROPOSAL_TRIAL') == 'true'),
+    require(args.mode not in {'start', 'settings-apply'}
+            or (args.activate and os.environ.get('RUN_PROPOSAL_TRIAL') == 'true'),
             'ACTIVATION_REQUIRED')
     require(os.environ.get('GITHUB_RUN_ATTEMPT') == '1', 'WORKFLOW_REPLAY_REFUSED')
     signal.alarm(work_budget())
@@ -196,6 +198,59 @@ def run(args):
         release.base.save_client(database)
         database.prepare()
         verify_runtime(database)
+        if args.mode == 'settings-plan':
+            STAGE = 'read_only_settings_plan'
+            prepared = settings_repair.plan(database, incoming)
+            settings_repair.validate_prepared(prepared)
+            report.update(selection=prepared['proof']['selection'], prepared=prepared)
+            raise InspectionComplete()
+        if args.mode in {'settings-apply', 'settings-observe'}:
+            expected_mode = 'settings-plan' if args.mode == 'settings-apply' else 'settings-apply'
+            require(incoming.get('version') == 1 and incoming.get('kind') == 'proposal_trial_report'
+                    and incoming.get('mode') == expected_mode, 'SETTINGS_REPORT_INPUT')
+            prepared = incoming.get('prepared')
+            settings_repair.validate_prepared(prepared)
+            require(incoming.get('selection') == prepared['proof']['selection'], 'SETTINGS_SELECTION_CHANGED')
+            report.update(selection=prepared['proof']['selection'], prepared=prepared)
+            if args.mode == 'settings-observe':
+                require(incoming.get('intent_persisted') is True, 'SETTINGS_INTENT_MISSING')
+            else:
+                STAGE = 'settings_recheck_before_auth'
+                settings_repair.recheck(database, prepared)
+                STAGE = 'genuine_settings_owner_session'
+                client, config, session = open_session(prepared['proof']['actor_id'],
+                                                       prepared['proof']['selection']['workspace_id'])
+
+                def persist_settings(value):
+                    global STAGE
+                    STAGE = 'persist_exact_settings_request'
+                    settings_repair.recheck(database, value)
+                    verify_runtime(database)
+                    digest = history.upload_once(os.environ['DIGITALOCEAN_ACCESS_TOKEN'],
+                        value['prepared_object'], encoded(value))
+                    report['intent_persisted'] = True
+                    return digest
+
+                def before_settings_send():
+                    global STAGE
+                    fresh = settings_repair.recheck(database, prepared)
+                    STAGE = 'single_authenticated_settings_send'
+                    report['send_attempted'] = True
+                    report['request_sent'] = None
+                    return fresh
+
+                try:
+                    acknowledgement = settings_repair.send(client, session, prepared,
+                        persist_settings, before_send=before_settings_send)
+                    report.update(request_sent=acknowledgement['sent'], acknowledgement=acknowledgement)
+                except Exception as error:
+                    if not report['send_attempted']:
+                        raise
+                    report['acknowledgement'] = {'sent': None, 'unknown': True,
+                        'error_code': fixed_code(error)}
+            STAGE = 'authoritative_settings_readback'
+            report['settings_readback'] = settings_repair.verify_result(database, prepared)
+            raise InspectionComplete()
         if args.mode == 'inspect':
             STAGE = 'read_only_admission_inspection'
             report.update(selection=incoming, proof=request.inspect(database, incoming),
@@ -331,7 +386,8 @@ def main():
         print('{"proposal_trial_cleanup":"confirmed"}')
         return 0
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--mode', required=True, choices=('start', 'inspect', 'observe', 'download'))
+    parser.add_argument('--mode', required=True, choices=('start', 'inspect', 'observe', 'download',
+        'settings-plan', 'settings-apply', 'settings-observe'))
     parser.add_argument('--input-object', required=True)
     parser.add_argument('--input-sha256', required=True)
     parser.add_argument('--activate', action='store_true')

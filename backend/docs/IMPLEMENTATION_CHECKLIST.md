@@ -105,6 +105,36 @@ PGlite query fixture exercises nonempty diagnostic/model/route projection.
 Runtime files and deployment inputs are unchanged. Live inspection, any Owner
 configuration decision and actual completed issuance remain separate evidence.
 
+## November 8 — scoped Owner repair of verifier routing and request capacity
+
+The selected private diagnosis identifies repeated invalid Luna verifier results,
+successful `gpt-6.1-sol` verification, inherited default routing and an enabled
+workspace limit of two accepted model requests. The trial workflow now offers
+read-only `settings-plan`, explicitly activated `settings-apply`, and read-only
+`settings-observe`. Planning requires the exact selected diagnostic and a fresh
+successful attempt bound to an existing enabled Sol configuration and connection.
+It refuses changed model identities/revisions, active issuance, reservations or
+restore, and preserves the selected task profile and strategy.
+
+The reviewed batch can only select that existing Sol configuration for
+`verify_grounding`, disable default-route inheritance, and raise an observed
+capacity of two to four. Already-correct commands are omitted. Enabled state,
+admission cutoff, provider connections, capabilities, credentials and daily
+allowances remain unchanged. Existing jobs retain their frozen catalog snapshots;
+the route repair affects newly frozen jobs. No generation or job-reset command
+is included. Exact intent is encrypted and read back before one genuine Owner
+API batch. Fresh checks precede authentication, persistence and send. Ambiguous
+results are reconciled by authoritative batch and command receipts plus current
+row readback, never a second send.
+
+Thirty-five focused helper/runner controls and two PostgreSQL tests against all
+committed migrations pass. The latter execute the generated read-only queries,
+verify exact admission/profile/allowance preservation and idempotent replay, and
+prove a stale second revision rolls back the route command and receipts. These
+are local tests only; no settings mutation, provider call or new issuance has
+been performed by this preparation. Hosted plan review, application and a
+separate actual proposal request remain pending.
+
 ## November 8 — latency correction deployed; saved-work trial started
 
 [Release 42511889721](https://github.com/salahassi/tenders/actions/runs/42511889721)
