@@ -5,6 +5,26 @@ The repository-root [AGENTS.md](../../AGENTS.md) points here so the established
 route is available in every checkout, without relying on conversation history.
 Last reviewed: November 8, 2026.
 
+## Legacy whole-proposal review release (November 8, prepared)
+
+`deploy-proposal-review.yml` is the bounded eighth-child and executor-seven
+release. Read its complete workflow, coordinator and schema guard before use.
+The exact frozen SQL is `77631534`; its parent is checkpoint SQL `6bf6a506`,
+catalog `37e48b5e`, structure `5dfdc428`, retaining all22 prior ledger rows.
+Candidate worker/scheduler `4470a2fe` is image `8c836993`, artifact source
+`7c93e7e`, qualification `f2a22735`. The deployed pair remains `de4312a0` until
+an actual passed release receipt is recorded. API, source-browser, frontend,
+private settings and resource envelopes are retained.
+
+The 170-second creation-time deadline includes queue/setup and cleanup. SQL is
+applied and independently read back before scheduler drain and worker-first
+rollout. All four executor-seven service routes and the retained null-identity
+poll rejection must pass before scheduler activation. Before activation only,
+bounded rollback retains the SQL capability fence; afterward use inspection and
+explicit forward recovery. No customer command or provider activation is part
+of release. A subsequent single canonical `generation.retry` is separately
+bound to the chosen saved opportunity and its new authoritative issuance clock.
+
 ## Generated-delivery checkpoint decoding (November 8, current schema)
 
 [Run42530253700](https://github.com/salahassi/tenders/actions/runs/42530253700)

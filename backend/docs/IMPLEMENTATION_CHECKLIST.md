@@ -1,5 +1,14 @@
 # Implementation status and continuation plan
 
+## November 8 — final integrated release controls ready
+
+After integrating native proof and freezing both qualification and schema,
+all55 focused coordinator, trial-runner and runtime-qualification controls pass.
+The permanent access runbook now records the exact prepared eighth-child/runtime
+pair and its rollback boundary. Only documentation and operations evidence have
+changed since the package and immutable-image gates; copied product bytes remain
+qualified. Hosted release and the selected customer continuation are next.
+
 ## November 8 — final whole-review schema guard and source freeze
 
 The final eighth-child SQL is `77631534`. Its only change since the earlier
