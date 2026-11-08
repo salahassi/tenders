@@ -43,6 +43,9 @@ def projection():
     body=text.split(start)[1].split('\nend $$;',1)[0].split(';begin\n',1)[1]
     marker=' j:=app_private.generated_delivery_job(job_id,lease);'
     require(body.count(marker)==1);body=body.replace(marker," perform app_private.delivery_actor(j.workspace_id,j.created_by,true);")
+    marker=' select * into p from public.generation_plans where workspace_id=j.workspace_id and id=j.entity_id;'
+    require(body.count(marker)==1)
+    body=body.replace(marker,marker+"\n p.status:='completed';p.error_code:=NULL; -- Local prospective values only; stored failed state remains in metadata.")
     marker="last_state.checkpoint#>>'{channel_values,reportRef}'"
     require(body.count(marker)==1)
     body=body.replace(marker,"(select x->>'ref' from jsonb_array_elements(decoded_refs) x where x->>'step_id'=s.id::text)")
@@ -70,7 +73,7 @@ def sql(selection,proof,*,include_context=False):
     return f"""BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY;
 SET LOCAL ROLE tdp_app_owner;SET LOCAL statement_timeout='10s';SET LOCAL lock_timeout='1s';
 DO $delivery_inspection$
-DECLARE j public.jobs;p public.generation_plans;v public.proposal_versions;prop public.proposals;
+DECLARE j public.jobs;p public.generation_plans;v public.proposal_versions;prop public.proposals;issuance public.proposal_issuance_requests;
  r record;decoded jsonb;decoded_bytes bytea;encoded text;direct_ref text;decoded_ref text;decode_status text;
  direct_report jsonb;decoded_report jsonb;rows jsonb:='[]';decoded_refs jsonb:='[]';result jsonb;row_value jsonb;
  count_steps bigint;source_current boolean:=false;context_status text:='not_requested';
@@ -94,10 +97,14 @@ BEGIN
   AND checkpoint->>'generated_version_id'=v.id::text AND checkpoint->>'issuance_request_id'=p.issuance_request_id::text
  ORDER BY created_at DESC,id DESC LIMIT 1;
  result:=jsonb_build_object('version',1,'kind','{KIND}','selection',jsonb_build_object('version',1,'workspace_id','{w}','opportunity_id','{o}'),
-  'status','not_found','plan_id',p.id,'version_id',v.id,'prepare_job_id',j.id);
+  'status','not_found','plan_id',p.id,'version_id',v.id,'prepare_job_id',j.id,
+  'stored_plan_status',p.status,'stored_plan_stage',p.stage,'stored_plan_error_code',p.error_code);
  IF j.id IS NOT NULL THEN
+  SELECT * INTO issuance FROM public.proposal_issuance_requests WHERE workspace_id='{w}' AND id=p.issuance_request_id AND plan_id=p.id;
   IF j.status<>'failed' OR j.error_code IS DISTINCT FROM 'GENERATED_DELIVERY_VALIDATION_FAILED' OR j.lease_token IS NOT NULL OR j.lease_until IS NOT NULL
-   OR p.status<>'completed' OR p.frozen_context->>'generated_delivery_version' IS DISTINCT FROM '3'
+   OR p.status<>'failed' OR p.stage<>'completed' OR p.error_code IS DISTINCT FROM 'GENERATED_DELIVERY_VALIDATION_FAILED'
+   OR issuance.id IS NULL OR issuance.outcome IS DISTINCT FROM 'failed' OR issuance.error_code IS DISTINCT FROM j.error_code
+   OR issuance.requested_by IS DISTINCT FROM '{actor}'::uuid OR p.frozen_context->>'generated_delivery_version' IS DISTINCT FROM '3'
    OR v.id IS NULL OR prop.active_version_id IS DISTINCT FROM v.id OR v.content_hash IS DISTINCT FROM j.checkpoint->>'generated_version_hash'
    OR p.input_hash IS DISTINCT FROM j.input_hash THEN RAISE EXCEPTION 'PRIVATE_DELIVERY_SELECTION';END IF;
   BEGIN PERFORM app_private.assert_plan_source_resolution(p.id);source_current:=true;
@@ -177,9 +184,15 @@ ROLLBACK;
 def validate(value,selection,*,include_context=False):
     require(isinstance(value,dict) and value.get('version')==1 and type(value['version']) is int and value.get('kind')==KIND
         and value.get('selection')==selection and value.get('status') in ('available','not_found'))
-    base={'version','kind','selection','status','plan_id','version_id','prepare_job_id'}
+    base={'version','kind','selection','status','plan_id','version_id','prepare_job_id','stored_plan_status','stored_plan_stage','stored_plan_error_code'}
     require(valid_uuid(value.get('plan_id')) and all(value.get(k) is None or valid_uuid(value[k]) for k in ('version_id','prepare_job_id')))
+    require(value.get('stored_plan_status') in ('queued','running','blocked','completed','failed','canceled')
+        and value.get('stored_plan_stage') in ('analysis','planning','detailing','drafting','commercial','synthesis','review','reconciliation','completed')
+        and (value.get('stored_plan_error_code') is None or isinstance(value['stored_plan_error_code'],str)
+            and re.fullmatch('[A-Z][A-Z0-9_]{0,119}',value['stored_plan_error_code'])))
     if value['status']=='not_found':require(set(value)==base);return value
+    require(value['stored_plan_status']=='failed' and value['stored_plan_stage']=='completed'
+        and value['stored_plan_error_code']=='GENERATED_DELIVERY_VALIDATION_FAILED')
     require(set(value)==base|{'workflow_version','source_resolution_version','source_resolution_current','requirements_count',
         'completed_steps','truncated','steps','task_counts','receipt_counts','context_status','prospective_context'})
     require(all(type(value[k]) is int and 0<=value[k]<=1_000_000 for k in ('workflow_version','requirements_count','completed_steps'))

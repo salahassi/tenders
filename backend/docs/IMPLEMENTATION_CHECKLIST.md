@@ -1,5 +1,22 @@
 # Implementation status and continuation plan
 
+## November 8 — delivery inspection binds the actual failed issuance state
+
+The initial synthetic inspector fixture assumed the plan remained completed.
+Review caught that the real failure chain marks its status failed while leaving
+its stage completed; no hosted inspection ran with that incorrect guard.
+The selector now binds the exact failed preparation job, current failed issuance
+and matching error, completed stage and active version. The regression invokes
+the actual `fail_generated_delivery` and `fail_proposal_issuance` SQL and verifies
+read-only inspection retains that failed state and rejects issuance mismatch.
+All18 inspector/trial controls pass with this real transition.
+
+Optional context remains disabled. Its prepared projection normalizes status
+and error only in a local PL/pgSQL row variable, matching the prospective local
+retry state; stored status/stage/error remain explicit in metadata. It does not
+change the database, request a new issuance, acquire a lease or accept content.
+Actual-context validation and hosted diagnosis are still pending.
+
 ## November 8 — private generated-delivery receipt diagnosis prepared
 
 The existing encrypted trial inspection now includes one private metadata field
