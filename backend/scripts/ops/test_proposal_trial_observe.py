@@ -210,8 +210,10 @@ const job=(await db.query(`insert into public.jobs(workspace_id,type,entity_id,s
 await db.query(`insert into public.jobs(workspace_id,type,entity_id,status,input_hash,created_by)
  values($1,'draft_section',$2,'succeeded',repeat('b',64),$3)`,[w,target.plan_id,target.actor_id]);
 await db.query('update public.generation_plans set issuance_request_id=$1 where id=$2',[target.issuance_request_id,target.plan_id]);
-await db.query(`insert into public.model_attempts(workspace_id,job_id,lease_token,provider,model,operation,round_number,worker_attempt,status,sent,result_code,http_status)
- values($1,$2,gen_random_uuid(),'qwen_free','synthetic','analyze_chunk',1,1,'waiting',true,'MODEL_IN_PROGRESS',200)`,[w,job]);
+await db.query(`insert into public.model_attempts(workspace_id,job_id,lease_token,provider,model,operation,round_number,worker_attempt,status,sent,result_code,http_status,request_phase,execution_metadata,response_id)
+ values($1,$2,gen_random_uuid(),'qwen_free','synthetic','analyze_chunk',1,1,'waiting',true,'MODEL_IN_PROGRESS',200,'generation','{"secret":"PRIVATE RESPONSE"}','PRIVATE REMOTE ID'),
+ ($1,$2,gen_random_uuid(),'qwen_free','synthetic','analyze_chunk',1,2,'waiting',true,'MODEL_IN_PROGRESS',200,'poll',null,null),
+ ($1,$2,gen_random_uuid(),'qwen_free','synthetic','analyze_chunk',1,3,'skipped',false,'MODEL_COOLDOWN',null,null,null,null)`,[w,job]);
 await db.query(`insert into public.model_attempts(workspace_id,job_id,lease_token,provider,model,operation,round_number,worker_attempt,status,sent,result_code,http_status,started_at)
  values($1,$2,gen_random_uuid(),'qwen_free','historical','analyze_chunk',1,1,'failed',true,'MODEL_NETWORK_UNCERTAIN',503,clock_timestamp()-interval '1 day')`,[w,job]);
 const state=async()=>{
@@ -225,10 +227,23 @@ const report=(await db.exec(actualSql)).flatMap(r=>r.rows||[]).find(r=>r.jsonb_b
 assert.equal(report.target.operation,'generation.retry'); assert.equal(report.issuance.operation,'generation.retry');
 assert.equal(report.guards.actor,true);assert.equal(report.guards.selected_target,true);
 assert.equal(report.job_progress.total,1);assert.equal(report.job_progress.completed,0);
-assert.equal(report.job_progress.groups[0].status,'retry_wait');assert.equal(report.attempt_progress.total,1);
-assert.equal(report.attempt_progress.accepted_waits,1);assert.equal(report.package,null);
+assert.equal(report.job_progress.groups[0].status,'retry_wait');assert.equal(report.attempt_progress.total,3);
+assert.equal(report.attempt_progress.accepted_waits,2);assert.equal(report.package,null);
+assert.equal(report.attempt_progress.accepted_http_attempts,1);assert.equal(report.attempt_progress.poll_attempts,1);
+assert.equal(report.attempt_progress.skipped_attempts,1);
+assert.equal(report.attempt_timeline.total,3);assert.equal(report.attempt_timeline.truncated,false);
+assert.deepEqual(report.attempt_timeline.attempts.map(a=>a.request_phase),['generation','poll',null]);
+assert.ok(report.attempt_timeline.attempts.every(a=>a.job_id===job && a.type==='analyze_chunk' && a.model==='synthetic'));
 assert.doesNotMatch(JSON.stringify(report),/PRIVATE/);assert.deepEqual(await state(),before);
-report.target.workspace_id=target.workspace_id;console.log(JSON.stringify(report));await db.close();
+await db.query(`insert into public.model_attempts(workspace_id,job_id,lease_token,provider,model,operation,round_number,worker_attempt,status,sent,result_code)
+ select $1,$2,gen_random_uuid(),'qwen_free','synthetic','analyze_chunk',1,4,'skipped',false,'MODEL_COOLDOWN' from generate_series(1,201)`,[w,job]);
+const extendedBefore=await state();
+const bounded=(await db.exec(actualSql)).flatMap(r=>r.rows||[]).find(r=>r.jsonb_build_object).jsonb_build_object;
+assert.equal(bounded.attempt_timeline.total,204);assert.equal(bounded.attempt_timeline.truncated,true);
+assert.equal(bounded.attempt_timeline.attempts.length,200);assert.equal(bounded.attempt_progress.skipped_attempts,202);
+assert.ok(bounded.attempt_timeline.attempts.every(a=>a.status==='skipped'));
+assert.deepEqual(await state(),extendedBefore);
+bounded.target.workspace_id=target.workspace_id;console.log(JSON.stringify(bounded));await db.close();
 '''
         result = subprocess.run(['node', '--input-type=module', '-e', script], cwd=HERE.parent.parent,
             input=json.dumps({'target': self.target, 'sql': m.observation_sql(self.target)}),

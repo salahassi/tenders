@@ -1,5 +1,74 @@
 # Implementation status and continuation plan
 
+## November 8 — bounded SQL-only retry compatibility release
+
+The new release workflow applies only the reviewed modern-routing retry migration;
+all five deployed images, workload definitions, private configuration and provider
+settings remain unchanged. The atomic schema wrapper starts from the exact
+deployed dispatch SQL/catalog/structure receipt, preserves every existing row and
+schema/authority attribute except the reviewed command body, and permits only
+the new private invoker helper. It appends a separate checksum/catalog/structure
+receipt after these checks, retaining the original application and dispatch
+release rows byte for byte. A lost COMMIT acknowledgement triggers one read-only
+verification, never an apply retry or speculative DDL rollback.
+
+Trial verification now explicitly accepts either the exact predecessor state or
+the complete new receipt with its exact current catalog. Partial receipts,
+untracked changes, wrong source hashes or unknown later schema changes fail
+closed. There is no exception-based fallback to weaker validation. Runtime image
+qualification remains valid because the change affects migrations and operations
+only, outside the immutable image's copied inputs.
+
+Local operations validation: 12 tests pass, including an executable PostgreSQL
+transaction with eleven mutation/authority fault injections, unchanged predecessor
+receipts, replay, read-only observation, partial-ledger rejection, bounded SQL
+transport and unknown-commit reconciliation. Workflow YAML, shell and embedded
+Python syntax pass. The run deadline includes queue/setup and reserves owned
+client cleanup inside 170 seconds. No production deployment or business retry
+has been performed by this release change; hosted acceptance remains pending.
+The trial's read-only admission preflight now mirrors the installed helper's
+exact branches, with explicit installed/legacy/modern and queued/blocked model-job
+metadata. Before installation it retains the legacy result. All 18 request
+controls pass across actual parent/child SQL definitions, including recent and
+aged same-job ambiguity; no assertion or audit function is called by inspection.
+Independent review reproduced an initially omitted target-function attribute
+check; full `pg_proc` equality except the body now rejects immutable/strict or
+other unreviewed command-attribute changes. Both regressions pass with the fix.
+
+## November 8 — modern model routing in saved proposal resume
+
+The canonical whole-plan retry guard still recognized only the legacy
+`model_routing.enabled` setting. Modern task-model routes use a separate
+execution setting and retain their own automatic route checkpoints, so unrelated
+historical unknown usage could prevent an otherwise eligible current proposal
+from resuming. The new migration changes only that admission predicate beneath
+the existing Owner, revision, evidence, source, current-contract and idempotency
+checks. It recognizes the actual modern admission cutoff and existing catalog
+continuations without converting old manual checkpoints or paid work. Local
+stage transitions are distinguished from model calls; local-only work retains
+the admission requirement for future model steps.
+
+Reserved usage still blocks whole-plan retry. A current ambiguous call on a
+resumed model job still blocks; eligible old ambiguity retains every receipt and
+model allowance and gets the existing recovery audit. Provider reservation
+continues to enforce account, model, input and phase identity. No usage row,
+provider setting, frozen input or previous issuance is rewritten. The added
+helper is private, SECURITY INVOKER, and inaccessible to browser/service roles.
+
+Implementation and independent review are complete in an isolated worktree.
+The 12 latest-schema retry regressions and 15 issuance tests pass, including
+new issuance admission, unchanged 600-second clock on replay, preserved unknown
+and reserved accounting, nonempty model budgets, manual policy, cutoff changes,
+local transitions, frozen routes and private helper privileges. Both package
+typechecks/builds pass. The full backend run exercised 3,526 tests: 3,519 passed
+and seven existing DOCX/OCR integration cases exceeded their unchanged timeout
+limits under concurrent load. All 99 tests in those four files then passed with
+one worker and the original limits. The frontend run passed 388/389 tests; the
+single UI wait failure passed with all 19 tests in its isolated file. Thus every
+case passed across the runs; the initial full runs were not clean single passes.
+Deployment and hosted retry acceptance remain pending; this change has made no
+live command, provider, deployment or customer-data mutation.
+
 ## November 8 — authorized technical and financial proposal trial
 
 The Owner explicitly selected an actual technical/financial proposal generation
@@ -26,13 +95,72 @@ full-migration read-only SQL fixtures, exact issuance isolation, unknown-send
 handling, artifact integrity and a reviewed UTF-16 entity regression. Eleven
 coordinator checks and all 15 private-transfer checks pass. The optional transfer
 HTTP cap preserves existing defaults while limiting this runner's key-revocation
-cleanup to five seconds. Independent integration review closed active-state
+cleanup to ten seconds. Independent integration review closed active-state
 polling, ambiguous-send reconciliation and cleanup-reserve findings. Both package
 typechecks/builds and the frontend's 389 tests retain the preceding release's
 evidence because application/dependency/schema inputs are unchanged. The prior
 backend full-suite result remains 3,513/3,514 with the unchanged affected file
 passing 18/18 in isolation; it is not represented as a new green complete run.
 Hosted generation, actual file download and final duration remain pending.
+
+The first harness run [42506306648](https://github.com/salahassi/tenders/actions/runs/42506306648)
+at `e4c4e81` stopped after 37 seconds including queue, before any generation send:
+the privately recovered encrypted report confirms `send_attempted=false`,
+`request_sent=false`, `intent_persisted=false`, and owned-client cleanup success.
+Private input transfer failed with `DO_API_NETWORK_OR_TLS_FAILURE`; report bytes
+were persisted despite the same error during transfer completion. The initial
+five-second HTTP cap was too short for this observed path. It is now ten seconds,
+with a corresponding 70-second final reserve; the three-minute run bound is
+retained. This is a harness/access failure, not a proposal-model outcome.
+An independent scoped transfer probe measured key creation at 4.146 seconds and
+revocation at 5.361 seconds; final inventory contained no keys. This explains the
+five-second cap failure without attributing it to application processing.
+
+The corrected run [42506565368](https://github.com/salahassi/tenders/actions/runs/42506565368)
+at `ca2ce7f` completed private transfer and cleanup in 48 seconds including queue.
+It sent no generation command and persisted no request intent: admission inspection
+stopped at `PROPOSAL_TRIAL_PRECONDITION_USAGE_READY`. A read-only inspection mode
+now retains the request proof and bounded usage/job metadata to distinguish an
+active reservation from unknown historical usage before choosing the canonical
+operation. It neither settles usage nor changes routing or provider configuration.
+
+Read-only inspection [42506879559](https://github.com/salahassi/tenders/actions/runs/42506879559)
+at `5382232` passed in 51 seconds including queue. It found no reserved provider
+usage, historical unknown usage, enabled modern execution/configurations, disabled
+legacy routing, and a failed current-contract plan with unchanged evidence and
+no active proposal version. Canonical retry still consults the legacy routing
+guard; canonical fresh generation does not. The harness now chooses the normal
+fresh `proposal.generate` command when this retry-only guard prevents reuse,
+while retaining failed/canceled-plan, active-version, lease and concurrent-plan
+checks. It sends no retry followed by generation. All 18 request controls and
+12 coordinator controls pass; saved work and unknown accounting are retained.
+The application retry compatibility defect is being corrected separately.
+
+The single authorized `proposal.generate` was accepted in
+[42507148785](https://github.com/salahassi/tenders/actions/runs/42507148785)
+at `b7b9a60` (62-second run). Its database clock is 17:53:30–18:03:30 UTC.
+Authenticated command, exact durable intent, issuance binding and cleanup pass.
+Read-only observations `42507262148` (103 seconds) and `42507449383` (99 seconds)
+retain that exact request and deadline. At approximately 257 seconds, two of
+twelve analysis jobs had completed; two were waiting and eight queued. A separate
+successful render job is not counted as complete analysis or an issued package.
+Full proposal completion is still unproven. The observer now adds a bounded,
+content-free private attempt timeline to distinguish model skips, accepted calls,
+poll exchanges and provider latency without changing processing or its deadline.
+
+Final read-only observation [42508072180](https://github.com/salahassi/tenders/actions/runs/42508072180)
+at `aaf54b1` passed in 47 seconds including queue. The actual issuance **failed**
+at its original 18:03:30 UTC deadline with `PROPOSAL_ISSUANCE_TIMEOUT`; no complete
+technical/financial package was issued or downloaded. Seven of twelve analysis
+jobs completed, five stopped, and the separate render job is not final delivery.
+The exact trial recorded 21 accepted generation exchanges, 32 polls and 45
+unconfigured-model skips. Three independent grounding verifiers failed with
+`EVIDENCE_REFERENCE_INVALID` and used the existing fallback. The measured writer
+and verifier roles are distinct; this was not a duplicate generation retry.
+No further paid request was sent. The scheduler correction improves progress
+but does not close whole-proposal latency. Lossless prompt projection, explicit
+handling of deterministic source quotations and bounded faster status polling
+are being evaluated separately before another actual trial.
 
 ## November 8 — remove synchronous proposal dispatch waits
 

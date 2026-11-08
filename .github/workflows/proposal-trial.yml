@@ -9,6 +9,7 @@ on:
         default: observe
         options:
           - start
+          - inspect
           - observe
           - download
       input_object:
@@ -52,7 +53,7 @@ jobs:
           python3 - <<'PY'
           import os,re
           mode=os.environ['TRIAL_MODE']
-          if mode not in {'start','observe','download'}:raise SystemExit('Invalid trial mode')
+          if mode not in {'start','inspect','observe','download'}:raise SystemExit('Invalid trial mode')
           if mode=='start' and os.environ['RUN_PROPOSAL_TRIAL']!='true':raise SystemExit('Start requires explicit activation')
           if os.environ['GITHUB_RUN_ATTEMPT']!='1':raise SystemExit('Workflow replay is refused')
           if not re.fullmatch(r'(requests|diagnostics)/[A-Za-z0-9][A-Za-z0-9._/-]{0,160}\.bundle',os.environ['TRIAL_INPUT_OBJECT']):raise SystemExit('Invalid private input object')
@@ -72,7 +73,7 @@ jobs:
           ]
           try:
               for command,limit in steps:
-                  available=int(deadline-time.time())-105
+                  available=int(deadline-time.time())-110
                   if available<5:raise RuntimeError('SETUP_BUDGET')
                   result=subprocess.run(command,stdout=subprocess.PIPE,stderr=subprocess.PIPE,timeout=min(limit,available))
                   if result.returncode:raise RuntimeError('SETUP_FAILED')

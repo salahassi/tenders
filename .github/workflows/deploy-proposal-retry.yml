@@ -1,0 +1,59 @@
+name: Deploy proposal retry compatibility
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: tenderdesk-digitalocean-production
+  cancel-in-progress: false
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Bind total deadline to run creation including queue time
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 backend/scripts/ops/proposal-trial-runner.py --bind-deadline
+      - name: Prepare bounded original-CA access
+        env:
+          DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+        run: |
+          python3 - <<'PY'
+          import os,subprocess,sys,time
+          if os.environ['GITHUB_RUN_ATTEMPT']!='1':raise SystemExit('Workflow replay is refused')
+          available=int(os.environ['TENDERDESK_RUN_DEADLINE_EPOCH'])-time.time()-85
+          if available<5:raise SystemExit('Insufficient run budget before access preparation')
+          try:
+              result=subprocess.run([sys.executable,'backend/scripts/ops/digitalocean-runner.py'],
+                  stdout=subprocess.PIPE,stderr=subprocess.PIPE,timeout=min(35,available))
+              if result.returncode:raise RuntimeError('ACCESS_FAILED')
+          except Exception:
+              raise SystemExit('Proposal retry access preparation failed within its reserved budget')
+          print('Original-CA access is ready; no runtime mutation was requested.')
+          PY
+      - name: Apply and verify only the reviewed retry compatibility SQL
+        env:
+          DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+        run: python3 backend/scripts/ops/proposal-retry-release.py
+      - name: Remove only the owned temporary database client
+        if: ${{ always() }}
+        run: |
+          if [ -n "${DOKS_WORKDIR:-}" ] && [ -x "${KUBECTL:-}" ]; then
+            python3 backend/scripts/ops/proposal-retry-release.py --cleanup
+          fi
+      - name: Remove private runner credentials
+        if: ${{ always() }}
+        run: |
+          python3 - <<'PY'
+          import os,pathlib,re,shutil
+          run,attempt=os.environ['GITHUB_RUN_ID'],os.environ['GITHUB_RUN_ATTEMPT']
+          if not re.fullmatch(r'[0-9]{1,20}',run) or not re.fullmatch(r'[0-9]{1,6}',attempt):raise SystemExit(1)
+          directory=pathlib.Path(os.environ['RUNNER_TEMP'])/('td-deploy-'+run+'-'+attempt)
+          if directory.exists():shutil.rmtree(directory)
+          print('Private retry release credentials removed.')
+          PY

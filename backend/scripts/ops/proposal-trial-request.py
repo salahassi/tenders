@@ -90,6 +90,31 @@ WITH owners AS MATERIALIZED (
  SELECT j.id,j.status,j.lease_token,j.lease_until FROM public.jobs j WHERE j.workspace_id='{w}' AND
  (j.entity_id IN (SELECT id FROM plans) OR j.checkpoint->>'issuance_request_id' IN
   (SELECT r.id::text FROM public.proposal_issuance_requests r JOIN plans p ON r.workspace_id=p.workspace_id AND r.plan_id=p.id))
+), retry_admission AS MATERIALIZED (
+ SELECT to_regprocedure('app_private.assert_generation_retry_usage(public.generation_plans,text)') IS NOT NULL AS modern_guard_installed,
+  EXISTS(SELECT 1 FROM public.provider_usage WHERE workspace_id='{w}' AND state='reserved') AS has_reserved,
+  EXISTS(SELECT 1 FROM public.provider_usage WHERE workspace_id='{w}' AND state='unknown') AS has_unknown,
+  EXISTS(SELECT 1 FROM public.model_routing WHERE workspace_id='{w}' AND enabled) AS legacy_routing_enabled,
+  coalesce((SELECT s.enabled AND (s.admitted_after IS NULL OR p.created_at>=s.admitted_after)
+   FROM latest p LEFT JOIN public.model_execution_settings s ON s.workspace_id=p.workspace_id),false) AS modern_admission
+), queued_model_jobs AS MATERIALIZED (
+ SELECT j.* FROM public.jobs j JOIN public.generation_steps step ON step.workspace_id=j.workspace_id AND step.job_id=j.id
+ JOIN latest p ON p.workspace_id=j.workspace_id AND p.id=j.entity_id AND p.id=step.plan_id
+ WHERE step.status='queued' AND app_private.queue_work_class(j)<>'local'
+), model_job_readiness AS MATERIALIZED (
+ SELECT j.id,CASE WHEN j.checkpoint->>'model_executor'='2' AND j.checkpoint#>>'{{model_routing,mode}}'='round_robin'
+  THEN NOT EXISTS(SELECT 1 FROM public.provider_usage u WHERE u.workspace_id=j.workspace_id AND u.job_id=j.id
+   AND app_private.model_usage_blocks_recovery(j,u,now()))
+  ELSE a.modern_admission AND NOT(j.checkpoint ? 'model_routing')
+   AND NOT EXISTS(SELECT 1 FROM public.provider_usage u WHERE u.workspace_id=j.workspace_id AND u.job_id=j.id)
+  END AS ready
+ FROM queued_model_jobs j CROSS JOIN retry_admission a
+), retry_usage AS MATERIALIZED (
+ SELECT a.*,NOT a.has_reserved AND (NOT a.has_unknown OR a.legacy_routing_enabled) AS legacy_ready,
+  NOT a.has_reserved AND (NOT a.has_unknown OR a.legacy_routing_enabled OR
+   (a.modern_guard_installed AND NOT EXISTS(SELECT 1 FROM model_job_readiness WHERE ready IS NOT TRUE)
+    AND (EXISTS(SELECT 1 FROM model_job_readiness) OR a.modern_admission))) AS ready
+ FROM retry_admission a
 )
 SELECT jsonb_build_object('version',1,'kind','proposal_trial_request_proof','observed_at',now(),
  'selection',jsonb_build_object('version',1,'workspace_id','{w}','opportunity_id','{o}'),
@@ -97,6 +122,8 @@ SELECT jsonb_build_object('version',1,'kind','proposal_trial_request_proof','obs
  'opportunity',(SELECT jsonb_build_object('id',id,'revision',revision) FROM opportunity),
  'proposal',(SELECT jsonb_build_object('id',id,'revision',revision,'active_version_id',active_version_id) FROM proposal LIMIT 1),
  'workspace_evidence_revision',(SELECT evidence_revision FROM public.workspaces WHERE id='{w}'),
+ 'retry_usage',(SELECT to_jsonb(r)||jsonb_build_object('queued_model_jobs',(SELECT count(*) FROM model_job_readiness),
+  'blocked_model_jobs',(SELECT count(*) FROM model_job_readiness WHERE ready IS NOT TRUE)) FROM retry_usage r),
  'plan',(SELECT jsonb_build_object('id',id,'proposal_id',proposal_id,'revision',revision,'status',status,'stage',stage,
   'input_hash',input_hash,'evidence_revision',evidence_revision,'base_version_id',base_version_id,'issuance_request_id',issuance_request_id,
   'current_contract',coalesce(frozen_context->'generated_delivery_version'='3'::jsonb AND frozen_context->'proposal_consistency_version'='1'::jsonb,false)) FROM latest),
@@ -111,20 +138,19 @@ SELECT jsonb_build_object('version',1,'kind','proposal_trial_request_proof','obs
   'proposal_identity',(SELECT count(*) FROM proposal)<=1 AND NOT EXISTS(SELECT 1 FROM latest p WHERE NOT EXISTS(SELECT 1 FROM proposal s WHERE s.id=p.proposal_id)),
   'no_other_active_plan',NOT EXISTS(SELECT 1 FROM plans WHERE status IN ('queued','running','blocked') AND id IS DISTINCT FROM (SELECT id FROM latest)),
   'no_selected_leases',NOT EXISTS(SELECT 1 FROM selected_jobs WHERE status='running' OR lease_token IS NOT NULL OR lease_until>now()),
-  'usage_ready',NOT EXISTS(SELECT 1 FROM public.provider_usage WHERE workspace_id='{w}' AND (state='reserved' OR
-    (state='unknown' AND NOT EXISTS(SELECT 1 FROM public.model_routing WHERE workspace_id='{w}' AND enabled))))
+  'usage_ready',(SELECT ready FROM retry_usage)
   ));
 ROLLBACK;
 """
 
 
-def read(database, sql):
+def read(database, sql, *, max_bytes=64 * 1024):
     # Unlike the migration helper's five-minute subprocess bound, every read has
     # a 35-second transport bound inside the coordinator's shorter trial budget.
     raw = d.command(['exec', '-i', database.pod, '-n', d.NAMESPACE, '--', 'psql', '-X', '--quiet',
                      '--no-align', '--tuples-only', '--set=ON_ERROR_STOP=1', '--dbname=' + d.DATABASE, '--file=-'],
                     payload=sql, timeout=35)
-    require(len(raw.encode()) <= 64 * 1024, 'PROPOSAL_TRIAL_PROOF_TOO_LARGE')
+    require(len(raw.encode()) <= max_bytes, 'PROPOSAL_TRIAL_PROOF_TOO_LARGE')
     try:
         return json.loads(raw)
     except (ValueError, TypeError):
@@ -133,7 +159,8 @@ def read(database, sql):
 
 def validate_proof(proof):
     require(isinstance(proof, dict) and type(proof.get('version')) is int and proof['version'] == 1 and proof.get('kind') == 'proposal_trial_request_proof'
-            and isinstance(proof.get('guards'), dict) and set(proof['guards']) == GUARDS,
+            and isinstance(proof.get('guards'), dict) and set(proof['guards']) == GUARDS
+            and all(type(value) is bool for value in proof['guards'].values()),
             'PROPOSAL_TRIAL_PROOF_INVALID')
     validate_selection(proof.get('selection'))
     for name in sorted(BASE_GUARDS):
@@ -170,6 +197,51 @@ def inspect(database, selection):
     return result
 
 
+def diagnostic_sql(selection):
+    """Metadata only: never return prompts, call keys, remote IDs or credentials."""
+    validate_selection(selection)
+    w, o = selection['workspace_id'], selection['opportunity_id']
+    return PREFIX + f"""
+WITH pending AS MATERIALIZED (
+ SELECT u.id,u.state,u.error_code,u.created_at,u.updated_at,u.remote_deadline,u.reconciliation_after,
+  u.remote_request_id IS NOT NULL AS has_remote_request,u.provider,u.model,u.connection_id,u.model_config_id,
+  u.job_id,j.status AS job_status,j.type AS job_type,j.entity_id,j.error_code AS job_error_code,
+  j.lease_until,j.lease_token IS NOT NULL AS has_job_lease,j.cancel_requested,j.next_attempt_at,
+  j.checkpoint->'model_routing'->>'mode' AS routing_mode,j.checkpoint->>'model_executor' AS model_executor,
+  coalesce(p.opportunity_id='{o}'::uuid,false) AS selected_opportunity
+ FROM public.provider_usage u LEFT JOIN public.jobs j ON j.workspace_id=u.workspace_id AND j.id=u.job_id
+ LEFT JOIN public.generation_plans p ON p.workspace_id=j.workspace_id AND p.id=j.entity_id
+ WHERE u.workspace_id='{w}' AND u.state IN ('reserved','unknown')
+), bounded AS (SELECT * FROM pending ORDER BY (state='reserved') DESC,created_at,id LIMIT 100)
+SELECT jsonb_build_object('version',1,'kind','proposal_trial_usage_diagnostic','observed_at',now(),
+ 'selection',jsonb_build_object('version',1,'workspace_id','{w}','opportunity_id','{o}'),
+ 'total',(SELECT count(*) FROM pending),'truncated',(SELECT count(*) FROM pending)>100,
+ 'reserved_count',(SELECT count(*) FROM pending WHERE state='reserved'),
+ 'unknown_count',(SELECT count(*) FROM pending WHERE state='unknown'),
+ 'routing_count',(SELECT count(*) FROM public.model_routing WHERE workspace_id='{w}'),
+ 'routing_enabled',EXISTS(SELECT 1 FROM public.model_routing WHERE workspace_id='{w}' AND enabled),
+ 'modern_execution',(SELECT jsonb_build_object('enabled',enabled,'admitted_after',admitted_after) FROM public.model_execution_settings WHERE workspace_id='{w}'),
+ 'enabled_connection_count',(SELECT count(*) FROM public.model_connections WHERE workspace_id='{w}' AND enabled),
+ 'enabled_configuration_count',(SELECT count(*) FROM public.model_configurations c JOIN public.model_connections n
+   ON n.workspace_id=c.workspace_id AND n.id=c.connection_id WHERE c.workspace_id='{w}' AND c.enabled AND n.enabled),
+ 'task_route_count',(SELECT count(*) FROM public.model_task_routes WHERE workspace_id='{w}'),
+ 'selected_latest_plan_created_at',(SELECT max(created_at) FROM public.generation_plans WHERE workspace_id='{w}' AND opportunity_id='{o}' AND kind='proposal'),
+ 'rows',coalesce((SELECT jsonb_agg(to_jsonb(bounded) ORDER BY (state='reserved') DESC,created_at,id) FROM bounded),'[]'::jsonb));
+ROLLBACK;
+"""
+
+
+def diagnostic(database, selection):
+    value = read(database, diagnostic_sql(selection), max_bytes=256 * 1024)
+    require(isinstance(value, dict) and value.get('version') == 1
+            and value.get('kind') == 'proposal_trial_usage_diagnostic' and value.get('selection') == selection
+            and isinstance(value.get('rows'), list) and len(value['rows']) <= 100
+            and all(revision(value.get(k)) for k in ('total', 'reserved_count', 'unknown_count', 'routing_count'))
+            and type(value.get('truncated')) is bool and type(value.get('routing_enabled')) is bool,
+            'PROPOSAL_TRIAL_USAGE_DIAGNOSTIC_INVALID')
+    return value
+
+
 def existing_target(proof):
     plan, issuance = proof['plan'], proof['latest_issuance']
     require(plan is not None and issuance is not None, 'PROPOSAL_TRIAL_EXISTING_ISSUANCE_REQUIRED')
@@ -185,11 +257,14 @@ def prepare(proof):
     if plan and (plan['status'] in {'queued', 'running', 'completed'} or issuance and issuance['outcome'] in {'active', 'issued'}):
         require(proof['guards']['no_other_active_plan'] is True, 'PROPOSAL_TRIAL_PRECONDITION_NO_OTHER_ACTIVE_PLAN')
         return envelope | {'mode': 'observe_existing', 'target': existing_target(proof)}
-    for name in sorted(GUARDS):
+    # The server's legacy workspace usage admission gate applies to retry.
+    # Fresh generation retains the worker's capacity and same-request ambiguity
+    # guards; historical unknown accounting is neither cleared nor rewritten.
+    for name in sorted(GUARDS - {'usage_ready'}):
         require(proof['guards'][name] is True, 'PROPOSAL_TRIAL_PRECONDITION_' + name.upper())
     if plan and plan.get('stage') == 'completed' and issuance:
         raise TrialRequestError('PROPOSAL_RENDER_RETRY_REQUIRED')
-    retry = bool(plan and plan['status'] in {'failed', 'canceled', 'blocked'} and plan['current_contract']
+    retry = bool(proof['guards']['usage_ready'] and plan and plan['status'] in {'failed', 'canceled', 'blocked'} and plan['current_contract']
                  and plan['evidence_revision'] == proof['workspace_evidence_revision']
                  and plan.get('base_version_id') == proposal.get('active_version_id'))
     if retry:

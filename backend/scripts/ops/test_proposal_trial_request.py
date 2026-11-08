@@ -60,6 +60,34 @@ class RequestTests(unittest.TestCase):
             with self.assertRaisesRegex(m.TrialRequestError, 'CURRENT_RETRY_REQUIRED'):
                 m.prepare(proof)
 
+    def test_legacy_usage_admission_falls_back_to_exact_fresh_generate(self):
+        for status in ('failed', 'canceled'):
+            proof = copy.deepcopy(self.proof)
+            proof['plan']['status'] = status
+            proof['guards']['usage_ready'] = False
+            prepared = m.prepare(proof)
+            self.assertEqual(prepared['operation'], 'proposal.generate')
+            self.assertEqual(prepared['body'], {'commands': [{'operation': 'proposal.generate',
+                'input': {'id': O, 'expected_revision': 12}}]})
+            self.assertEqual(proof['plan']['id'], G)
+            self.assertEqual(proof['plan']['input_hash'], 'a' * 64)
+
+    def test_fresh_usage_fallback_preserves_active_version_and_work_guards(self):
+        base = copy.deepcopy(self.proof); base['guards']['usage_ready'] = False
+        changed = copy.deepcopy(base); changed['proposal']['active_version_id'] = J
+        with self.assertRaisesRegex(m.TrialRequestError, 'EXISTING_VERSION_REQUIRES_REVIEW'):
+            m.prepare(changed)
+        changed = copy.deepcopy(base); changed['plan']['status'] = 'blocked'
+        with self.assertRaisesRegex(m.TrialRequestError, 'CURRENT_RETRY_REQUIRED'):
+            m.prepare(changed)
+        for guard in ('no_selected_leases', 'no_other_active_plan'):
+            changed = copy.deepcopy(base); changed['guards'][guard] = False
+            with self.assertRaisesRegex(m.TrialRequestError, guard.upper()):
+                m.prepare(changed)
+        changed = copy.deepcopy(base); changed['guards']['usage_ready'] = None
+        with self.assertRaisesRegex(m.TrialRequestError, 'PROOF_INVALID'):
+            m.prepare(changed)
+
     def test_initial_generate_without_any_saved_plan(self):
         proof = copy.deepcopy(self.proof)
         proof.update(plan=None, proposal=None, latest_issuance=None)
@@ -77,7 +105,7 @@ class RequestTests(unittest.TestCase):
         self.persist.assert_not_called(); self.client.request.assert_not_called()
 
     def test_each_authority_and_ambiguity_guard_stops_new_request(self):
-        for guard in m.GUARDS:
+        for guard in m.GUARDS - {'usage_ready'}:
             with self.subTest(guard=guard):
                 proof = copy.deepcopy(self.proof); proof['guards'][guard] = False
                 with self.assertRaisesRegex(m.TrialRequestError, guard.upper()): m.prepare(proof)
@@ -169,6 +197,7 @@ class SQLFixtureTests(unittest.TestCase):
         proof = fixture(); prepared = m.prepare(proof)
         schema = f"""
 CREATE ROLE tdp_app_owner; GRANT ALL ON SCHEMA public TO tdp_app_owner;
+CREATE SCHEMA app_private AUTHORIZATION tdp_app_owner;
 SET ROLE tdp_app_owner;
 CREATE TABLE workspaces(id uuid,evidence_revision bigint);
 CREATE TABLE memberships(workspace_id uuid,user_id uuid,active boolean,role text);
@@ -177,9 +206,15 @@ CREATE TABLE opportunities(id uuid,workspace_id uuid,revision int,archived boole
 CREATE TABLE proposals(id uuid,workspace_id uuid,opportunity_id uuid,revision int,active_version_id uuid);
 CREATE TABLE generation_plans(id uuid,workspace_id uuid,opportunity_id uuid,proposal_id uuid,revision int,status text,stage text,input_hash text,evidence_revision bigint,base_version_id uuid,issuance_request_id uuid,frozen_context jsonb,kind text,created_at timestamptz);
 CREATE TABLE proposal_issuance_requests(id uuid,workspace_id uuid,plan_id uuid,requested_by uuid,operation text,idempotency_key text,outcome text,accepted_at timestamptz,deadline_at timestamptz);
-CREATE TABLE jobs(id uuid,workspace_id uuid,entity_id uuid,status text,lease_token uuid,lease_until timestamptz,checkpoint jsonb);
-CREATE TABLE provider_usage(workspace_id uuid,state text);
+CREATE TABLE jobs(id uuid,workspace_id uuid,entity_id uuid,status text,lease_token uuid,lease_until timestamptz,checkpoint jsonb,type text,error_code text,cancel_requested boolean,next_attempt_at timestamptz);
+CREATE TABLE provider_usage(workspace_id uuid,state text,id uuid DEFAULT gen_random_uuid(),job_id uuid,error_code text,created_at timestamptz DEFAULT now(),updated_at timestamptz DEFAULT now(),remote_deadline timestamptz,reconciliation_after timestamptz,remote_request_id text,provider text,model text,connection_id uuid,model_config_id uuid);
+CREATE TABLE generation_steps(workspace_id uuid,job_id uuid,plan_id uuid,status text);
+CREATE TABLE model_attempts(workspace_id uuid,job_id uuid,usage_id uuid,provider text,model text,connection_id uuid,model_config_id uuid,status text,result_code text,response_id text,finish_reason text);
 CREATE TABLE model_routing(workspace_id uuid,enabled boolean);
+CREATE TABLE model_execution_settings(workspace_id uuid,enabled boolean,admitted_after timestamptz);
+CREATE TABLE model_connections(id uuid,workspace_id uuid,enabled boolean);
+CREATE TABLE model_configurations(id uuid,workspace_id uuid,connection_id uuid,enabled boolean);
+CREATE TABLE model_task_routes(workspace_id uuid);
 CREATE TABLE restore_sessions(workspace_id uuid,state text);
 INSERT INTO workspaces VALUES('{W}',8);
 INSERT INTO memberships VALUES('{W}','{A}',true,'Owner');
@@ -191,21 +226,57 @@ INSERT INTO proposal_issuance_requests VALUES('{I}','{W}','{G}','{A}','generatio
 RESET ROLE;
 """
         inspect_sql = m.inspection_sql(proof['selection']).replace("current_database()='tenderdesk_app'", "current_database()='postgres'")
+        migrations = HERE.parent.parent / 'supabase' / 'migrations'
+        def function_source(filename, declaration):
+            source = (migrations / filename).read_text()
+            start = source.index(declaration)
+            return source[start:source.index('$$;', start) + 3]
+        helpers = function_source('20261021220730_fair_generation_queue.sql',
+            'create function app_private.queue_work_class') + '\n' + function_source(
+            '20261104121443_automatic_usage_recovery.sql', 'create function app_private.model_usage_blocks_recovery')
+        child = function_source('20261108175251_generation_retry_modern_usage_scope.sql',
+            'create function app_private.assert_generation_retry_usage')
         script = """
 import {PGlite} from '@electric-sql/pglite';
 let input=''; for await(const chunk of process.stdin) input+=chunk;
-const x=JSON.parse(input), db=new PGlite(); await db.exec(x.schema);
+const x=JSON.parse(input), db=new PGlite(); await db.exec(x.schema); await db.exec(x.helpers);
 async function read(sql){const r=await db.exec(sql);return r.flatMap(v=>v.rows??[]).find(v=>v.jsonb_build_object)?.jsonb_build_object;}
 const normal=await read(x.inspect), accepted=await read(x.acceptance);
 await db.exec(`UPDATE identity_allowlist SET status='disabled'`); const disabled=await read(x.inspect);
-await db.exec(`UPDATE identity_allowlist SET status='active'; INSERT INTO provider_usage VALUES('${x.w}','reserved')`); const reserved=await read(x.inspect);
+await db.exec(`UPDATE identity_allowlist SET status='active'; INSERT INTO provider_usage(workspace_id,state) VALUES('${x.w}','reserved')`); const reserved=await read(x.inspect);
 await db.exec(`UPDATE provider_usage SET state='unknown'`); const unknown=await read(x.inspect);
 await db.exec(`INSERT INTO model_routing VALUES('${x.w}',true)`); const routed=await read(x.inspect);
 await db.exec(`UPDATE proposal_issuance_requests SET idempotency_key='different'`); const mismatch=await read(x.acceptance);
-console.log(JSON.stringify({normal,accepted,disabled,reserved,unknown,routed,mismatch})); await db.close();
+const diagnostic=await read(x.diagnostic);
+await db.exec(`INSERT INTO provider_usage(workspace_id,state,remote_request_id) SELECT '${x.w}','reserved','private-remote-id' FROM generate_series(1,101)`);
+const bounded=await read(x.diagnostic);
+await db.exec(`UPDATE model_routing SET enabled=false;
+ UPDATE provider_usage SET state='unknown',remote_request_id=null,created_at=now()-interval '20 minutes',remote_deadline=null;
+ INSERT INTO model_execution_settings VALUES('${x.w}',true,now()-interval '1 day');
+ INSERT INTO jobs(id,workspace_id,entity_id,status,checkpoint,type) VALUES('${x.j}','${x.w}','${x.g}','failed','{}','analyze_chunk');
+ INSERT INTO generation_steps VALUES('${x.w}','${x.j}','${x.g}','queued')`);
+const parentModern=await read(x.inspect);
+await db.exec(x.child); const childUntouched=await read(x.inspect);
+await db.exec(`UPDATE jobs SET checkpoint='{"model_executor":2,"model_routing":{"mode":"round_robin"}}';
+ UPDATE model_execution_settings SET enabled=false,admitted_after=now()+interval '1 day'`);
+const childFrozen=await read(x.inspect);
+await db.exec(`INSERT INTO provider_usage(workspace_id,state,job_id) VALUES('${x.w}','unknown','${x.j}')`);
+const childRecent=await read(x.inspect);
+await db.exec(`UPDATE provider_usage SET created_at=now()-interval '20 minutes' WHERE job_id='${x.j}'`);
+const childAged=await read(x.inspect);
+await db.exec(`UPDATE jobs SET checkpoint='{"model_routing":{"mode":"manual"}}'`);
+const childManual=await read(x.inspect);
+await db.exec(`UPDATE jobs SET type='advance_plan'`);
+const childLocalDenied=await read(x.inspect);
+await db.exec(`UPDATE model_execution_settings SET enabled=true,admitted_after=now()-interval '1 day'`);
+const childLocalAllowed=await read(x.inspect);
+await db.exec(`UPDATE provider_usage SET state='reserved' WHERE id=(SELECT id FROM provider_usage LIMIT 1)`);
+const childReserved=await read(x.inspect);
+console.log(JSON.stringify({normal,accepted,disabled,reserved,unknown,routed,mismatch,diagnostic,bounded,
+ parentModern,childUntouched,childFrozen,childRecent,childAged,childManual,childLocalDenied,childLocalAllowed,childReserved})); await db.close();
 """
         result = subprocess.run(['node', '--input-type=module', '-e', script], input=json.dumps({
-            'schema': schema, 'inspect': inspect_sql, 'acceptance': m.acceptance_sql(prepared), 'w': W}),
+            'schema': schema, 'inspect': inspect_sql, 'acceptance': m.acceptance_sql(prepared), 'diagnostic': m.diagnostic_sql(proof['selection']), 'w': W, 'j': J, 'g': G, 'helpers': helpers, 'child': child}),
             text=True, capture_output=True, cwd=HERE.parent.parent, timeout=35)
         self.assertEqual(result.returncode, 0, result.stderr)
         data = json.loads(result.stdout)
@@ -217,6 +288,26 @@ console.log(JSON.stringify({normal,accepted,disabled,reserved,unknown,routed,mis
         self.assertEqual(data['accepted']['count'], 1); self.assertTrue(data['accepted']['bound'])
         self.assertEqual(data['accepted']['target']['operation'], 'generation.retry')
         self.assertEqual(data['mismatch']['count'], 0)
+        self.assertEqual(data['diagnostic']['unknown_count'], 1)
+        self.assertTrue(data['diagnostic']['routing_enabled'])
+        self.assertEqual(data['bounded']['total'], 102)
+        self.assertTrue(data['bounded']['truncated'])
+        self.assertEqual(len(data['bounded']['rows']), 100)
+        self.assertTrue(all(row['state'] == 'reserved' and row['has_remote_request'] for row in data['bounded']['rows']))
+        self.assertNotIn('private-remote-id', json.dumps(data['bounded']))
+        self.assertNotIn('remote_request_id', json.dumps(data['bounded']))
+        self.assertFalse(data['parentModern']['retry_usage']['modern_guard_installed'])
+        self.assertTrue(data['parentModern']['retry_usage']['modern_admission'])
+        self.assertFalse(data['parentModern']['guards']['usage_ready'])
+        for name in ('childUntouched', 'childFrozen', 'childAged', 'childLocalAllowed'):
+            self.assertTrue(data[name]['retry_usage']['modern_guard_installed'], name)
+            self.assertTrue(data[name]['guards']['usage_ready'], name)
+            self.assertEqual(m.prepare(data[name])['operation'], 'generation.retry', name)
+        for name in ('childRecent', 'childManual', 'childLocalDenied', 'childReserved'):
+            self.assertFalse(data[name]['guards']['usage_ready'], name)
+        self.assertEqual(data['childRecent']['retry_usage']['blocked_model_jobs'], 1)
+        self.assertEqual(data['childAged']['retry_usage']['blocked_model_jobs'], 0)
+        self.assertEqual(data['childLocalDenied']['retry_usage']['queued_model_jobs'], 0)
 
 
 if __name__ == '__main__':
