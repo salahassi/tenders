@@ -44,6 +44,10 @@ PRIVATE_VALUES = set()
 PUBLIC_STATE = {}
 
 
+class InspectionComplete(Exception):
+    pass
+
+
 def require(value, code):
     if not value:
         raise RuntimeError('PROPOSAL_TRIAL_' + code)
@@ -182,9 +186,15 @@ def run(args):
         release.base.save_client(database)
         database.prepare()
         verify_runtime(database)
+        if args.mode == 'inspect':
+            STAGE = 'read_only_admission_inspection'
+            report.update(selection=incoming, proof=request.inspect(database, incoming),
+                admission_diagnostic=request.diagnostic(database, incoming))
+            raise InspectionComplete()
         if args.mode == 'start':
             STAGE = 'fresh_target_inspection'
             proof = request.inspect(database, incoming)
+            report.update(selection=incoming, proof=proof)
             prepared = request.prepare(proof)
             report.update(selection=incoming, prepared=prepared)
             if prepared['mode'] == 'observe_existing':
@@ -254,6 +264,8 @@ def run(args):
             client, config, session = open_session(target['actor_id'], target['workspace_id'])
             STAGE = 'authenticated_existing_files'
             report['download'] = download.download(client, config, session, sample)
+    except InspectionComplete:
+        pass
     except (Exception, release.DeadlineExceeded) as error:
         report.update(failure_code=fixed_code(error), failure_stage=STAGE)
     finally:
@@ -305,7 +317,7 @@ def main():
         print('{"proposal_trial_cleanup":"confirmed"}')
         return 0
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--mode', required=True, choices=('start', 'observe', 'download'))
+    parser.add_argument('--mode', required=True, choices=('start', 'inspect', 'observe', 'download'))
     parser.add_argument('--input-object', required=True)
     parser.add_argument('--input-sha256', required=True)
     parser.add_argument('--activate', action='store_true')

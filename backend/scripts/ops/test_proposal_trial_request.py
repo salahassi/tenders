@@ -177,9 +177,13 @@ CREATE TABLE opportunities(id uuid,workspace_id uuid,revision int,archived boole
 CREATE TABLE proposals(id uuid,workspace_id uuid,opportunity_id uuid,revision int,active_version_id uuid);
 CREATE TABLE generation_plans(id uuid,workspace_id uuid,opportunity_id uuid,proposal_id uuid,revision int,status text,stage text,input_hash text,evidence_revision bigint,base_version_id uuid,issuance_request_id uuid,frozen_context jsonb,kind text,created_at timestamptz);
 CREATE TABLE proposal_issuance_requests(id uuid,workspace_id uuid,plan_id uuid,requested_by uuid,operation text,idempotency_key text,outcome text,accepted_at timestamptz,deadline_at timestamptz);
-CREATE TABLE jobs(id uuid,workspace_id uuid,entity_id uuid,status text,lease_token uuid,lease_until timestamptz,checkpoint jsonb);
-CREATE TABLE provider_usage(workspace_id uuid,state text);
+CREATE TABLE jobs(id uuid,workspace_id uuid,entity_id uuid,status text,lease_token uuid,lease_until timestamptz,checkpoint jsonb,type text,error_code text,cancel_requested boolean,next_attempt_at timestamptz);
+CREATE TABLE provider_usage(workspace_id uuid,state text,id uuid DEFAULT gen_random_uuid(),job_id uuid,error_code text,created_at timestamptz DEFAULT now(),updated_at timestamptz DEFAULT now(),remote_deadline timestamptz,reconciliation_after timestamptz,remote_request_id text,provider text,model text,connection_id uuid,model_config_id uuid);
 CREATE TABLE model_routing(workspace_id uuid,enabled boolean);
+CREATE TABLE model_execution_settings(workspace_id uuid,enabled boolean,admitted_after timestamptz);
+CREATE TABLE model_connections(id uuid,workspace_id uuid,enabled boolean);
+CREATE TABLE model_configurations(id uuid,workspace_id uuid,connection_id uuid,enabled boolean);
+CREATE TABLE model_task_routes(workspace_id uuid);
 CREATE TABLE restore_sessions(workspace_id uuid,state text);
 INSERT INTO workspaces VALUES('{W}',8);
 INSERT INTO memberships VALUES('{W}','{A}',true,'Owner');
@@ -198,14 +202,17 @@ const x=JSON.parse(input), db=new PGlite(); await db.exec(x.schema);
 async function read(sql){const r=await db.exec(sql);return r.flatMap(v=>v.rows??[]).find(v=>v.jsonb_build_object)?.jsonb_build_object;}
 const normal=await read(x.inspect), accepted=await read(x.acceptance);
 await db.exec(`UPDATE identity_allowlist SET status='disabled'`); const disabled=await read(x.inspect);
-await db.exec(`UPDATE identity_allowlist SET status='active'; INSERT INTO provider_usage VALUES('${x.w}','reserved')`); const reserved=await read(x.inspect);
+await db.exec(`UPDATE identity_allowlist SET status='active'; INSERT INTO provider_usage(workspace_id,state) VALUES('${x.w}','reserved')`); const reserved=await read(x.inspect);
 await db.exec(`UPDATE provider_usage SET state='unknown'`); const unknown=await read(x.inspect);
 await db.exec(`INSERT INTO model_routing VALUES('${x.w}',true)`); const routed=await read(x.inspect);
 await db.exec(`UPDATE proposal_issuance_requests SET idempotency_key='different'`); const mismatch=await read(x.acceptance);
-console.log(JSON.stringify({normal,accepted,disabled,reserved,unknown,routed,mismatch})); await db.close();
+const diagnostic=await read(x.diagnostic);
+await db.exec(`INSERT INTO provider_usage(workspace_id,state,remote_request_id) SELECT '${x.w}','reserved','private-remote-id' FROM generate_series(1,101)`);
+const bounded=await read(x.diagnostic);
+console.log(JSON.stringify({normal,accepted,disabled,reserved,unknown,routed,mismatch,diagnostic,bounded})); await db.close();
 """
         result = subprocess.run(['node', '--input-type=module', '-e', script], input=json.dumps({
-            'schema': schema, 'inspect': inspect_sql, 'acceptance': m.acceptance_sql(prepared), 'w': W}),
+            'schema': schema, 'inspect': inspect_sql, 'acceptance': m.acceptance_sql(prepared), 'diagnostic': m.diagnostic_sql(proof['selection']), 'w': W}),
             text=True, capture_output=True, cwd=HERE.parent.parent, timeout=35)
         self.assertEqual(result.returncode, 0, result.stderr)
         data = json.loads(result.stdout)
@@ -217,6 +224,14 @@ console.log(JSON.stringify({normal,accepted,disabled,reserved,unknown,routed,mis
         self.assertEqual(data['accepted']['count'], 1); self.assertTrue(data['accepted']['bound'])
         self.assertEqual(data['accepted']['target']['operation'], 'generation.retry')
         self.assertEqual(data['mismatch']['count'], 0)
+        self.assertEqual(data['diagnostic']['unknown_count'], 1)
+        self.assertTrue(data['diagnostic']['routing_enabled'])
+        self.assertEqual(data['bounded']['total'], 102)
+        self.assertTrue(data['bounded']['truncated'])
+        self.assertEqual(len(data['bounded']['rows']), 100)
+        self.assertTrue(all(row['state'] == 'reserved' and row['has_remote_request'] for row in data['bounded']['rows']))
+        self.assertNotIn('private-remote-id', json.dumps(data['bounded']))
+        self.assertNotIn('remote_request_id', json.dumps(data['bounded']))
 
 
 if __name__ == '__main__':

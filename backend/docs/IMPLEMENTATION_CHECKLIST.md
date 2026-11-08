@@ -43,6 +43,17 @@ were persisted despite the same error during transfer completion. The initial
 five-second HTTP cap was too short for this observed path. It is now ten seconds,
 with a corresponding 70-second final reserve; the three-minute run bound is
 retained. This is a harness/access failure, not a proposal-model outcome.
+An independent scoped transfer probe measured key creation at 4.146 seconds and
+revocation at 5.361 seconds; final inventory contained no keys. This explains the
+five-second cap failure without attributing it to application processing.
+
+The corrected run [42506565368](https://github.com/salahassi/tenders/actions/runs/42506565368)
+at `ca2ce7f` completed private transfer and cleanup in 48 seconds including queue.
+It sent no generation command and persisted no request intent: admission inspection
+stopped at `PROPOSAL_TRIAL_PRECONDITION_USAGE_READY`. A read-only inspection mode
+now retains the request proof and bounded usage/job metadata to distinguish an
+active reservation from unknown historical usage before choosing the canonical
+operation. It neither settles usage nor changes routing or provider configuration.
 
 ## November 8 — remove synchronous proposal dispatch waits
 

@@ -154,6 +154,18 @@ class TrialRunnerTests(unittest.TestCase):
         self.download.assert_not_called()
         self.send.assert_not_called()
 
+    def test_inspect_retains_private_admission_evidence_without_command_or_session(self):
+        with patch.object(m.request, 'diagnostic', return_value={'reserved': 0, 'unknown': 2}, create=True) as diagnostic:
+            result = m.run(self.args('inspect', activate=False))
+        self.assertTrue(result['cleanup_verified'])
+        self.assertFalse(result['send_attempted'])
+        self.assertEqual(self.reports[-1]['admission_diagnostic'], {'reserved': 0, 'unknown': 2})
+        diagnostic.assert_called_once_with(self.database, self.incoming)
+        self.prepare.assert_not_called()
+        self.send.assert_not_called()
+        self.session.assert_not_called()
+        self.sample.assert_not_called()
+
     def test_work_budget_reserves_cleanup_and_report_with_queue_time(self):
         for remaining, expected in ((170, 100), (115, 45), (110, 40)):
             with patch.object(m.release, 'remaining_run_seconds', return_value=remaining):

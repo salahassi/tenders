@@ -118,13 +118,13 @@ ROLLBACK;
 """
 
 
-def read(database, sql):
+def read(database, sql, *, max_bytes=64 * 1024):
     # Unlike the migration helper's five-minute subprocess bound, every read has
     # a 35-second transport bound inside the coordinator's shorter trial budget.
     raw = d.command(['exec', '-i', database.pod, '-n', d.NAMESPACE, '--', 'psql', '-X', '--quiet',
                      '--no-align', '--tuples-only', '--set=ON_ERROR_STOP=1', '--dbname=' + d.DATABASE, '--file=-'],
                     payload=sql, timeout=35)
-    require(len(raw.encode()) <= 64 * 1024, 'PROPOSAL_TRIAL_PROOF_TOO_LARGE')
+    require(len(raw.encode()) <= max_bytes, 'PROPOSAL_TRIAL_PROOF_TOO_LARGE')
     try:
         return json.loads(raw)
     except (ValueError, TypeError):
@@ -168,6 +168,51 @@ def inspect(database, selection):
     result = validate_proof(read(database, inspection_sql(selection)))
     require(result['selection'] == selection, 'PROPOSAL_TRIAL_SELECTION_MISMATCH')
     return result
+
+
+def diagnostic_sql(selection):
+    """Metadata only: never return prompts, call keys, remote IDs or credentials."""
+    validate_selection(selection)
+    w, o = selection['workspace_id'], selection['opportunity_id']
+    return PREFIX + f"""
+WITH pending AS MATERIALIZED (
+ SELECT u.id,u.state,u.error_code,u.created_at,u.updated_at,u.remote_deadline,u.reconciliation_after,
+  u.remote_request_id IS NOT NULL AS has_remote_request,u.provider,u.model,u.connection_id,u.model_config_id,
+  u.job_id,j.status AS job_status,j.type AS job_type,j.entity_id,j.error_code AS job_error_code,
+  j.lease_until,j.lease_token IS NOT NULL AS has_job_lease,j.cancel_requested,j.next_attempt_at,
+  j.checkpoint->'model_routing'->>'mode' AS routing_mode,j.checkpoint->>'model_executor' AS model_executor,
+  coalesce(p.opportunity_id='{o}'::uuid,false) AS selected_opportunity
+ FROM public.provider_usage u LEFT JOIN public.jobs j ON j.workspace_id=u.workspace_id AND j.id=u.job_id
+ LEFT JOIN public.generation_plans p ON p.workspace_id=j.workspace_id AND p.id=j.entity_id
+ WHERE u.workspace_id='{w}' AND u.state IN ('reserved','unknown')
+), bounded AS (SELECT * FROM pending ORDER BY (state='reserved') DESC,created_at,id LIMIT 100)
+SELECT jsonb_build_object('version',1,'kind','proposal_trial_usage_diagnostic','observed_at',now(),
+ 'selection',jsonb_build_object('version',1,'workspace_id','{w}','opportunity_id','{o}'),
+ 'total',(SELECT count(*) FROM pending),'truncated',(SELECT count(*) FROM pending)>100,
+ 'reserved_count',(SELECT count(*) FROM pending WHERE state='reserved'),
+ 'unknown_count',(SELECT count(*) FROM pending WHERE state='unknown'),
+ 'routing_count',(SELECT count(*) FROM public.model_routing WHERE workspace_id='{w}'),
+ 'routing_enabled',EXISTS(SELECT 1 FROM public.model_routing WHERE workspace_id='{w}' AND enabled),
+ 'modern_execution',(SELECT jsonb_build_object('enabled',enabled,'admitted_after',admitted_after) FROM public.model_execution_settings WHERE workspace_id='{w}'),
+ 'enabled_connection_count',(SELECT count(*) FROM public.model_connections WHERE workspace_id='{w}' AND enabled),
+ 'enabled_configuration_count',(SELECT count(*) FROM public.model_configurations c JOIN public.model_connections n
+   ON n.workspace_id=c.workspace_id AND n.id=c.connection_id WHERE c.workspace_id='{w}' AND c.enabled AND n.enabled),
+ 'task_route_count',(SELECT count(*) FROM public.model_task_routes WHERE workspace_id='{w}'),
+ 'selected_latest_plan_created_at',(SELECT max(created_at) FROM public.generation_plans WHERE workspace_id='{w}' AND opportunity_id='{o}' AND kind='proposal'),
+ 'rows',coalesce((SELECT jsonb_agg(to_jsonb(bounded) ORDER BY (state='reserved') DESC,created_at,id) FROM bounded),'[]'::jsonb));
+ROLLBACK;
+"""
+
+
+def diagnostic(database, selection):
+    value = read(database, diagnostic_sql(selection), max_bytes=256 * 1024)
+    require(isinstance(value, dict) and value.get('version') == 1
+            and value.get('kind') == 'proposal_trial_usage_diagnostic' and value.get('selection') == selection
+            and isinstance(value.get('rows'), list) and len(value['rows']) <= 100
+            and all(revision(value.get(k)) for k in ('total', 'reserved_count', 'unknown_count', 'routing_count'))
+            and type(value.get('truncated')) is bool and type(value.get('routing_enabled')) is bool,
+            'PROPOSAL_TRIAL_USAGE_DIAGNOSTIC_INVALID')
+    return value
 
 
 def existing_target(proof):
