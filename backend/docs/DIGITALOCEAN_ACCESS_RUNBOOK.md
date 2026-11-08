@@ -5,6 +5,25 @@ The repository-root [AGENTS.md](../../AGENTS.md) points here so the established
 route is available in every checkout, without relying on conversation history.
 Last reviewed: November 8, 2026.
 
+## Proposal latency correction (November 8, deployed)
+
+[Run 42511889721](https://github.com/salahassi/tenders/actions/runs/42511889721)
+from `47cdca4` deployed qualified worker/scheduler `03c68b58` in 67 seconds
+including queue. API `f573e991`, source-browser `077b06ed`, frontend `522ad1b7`
+and private configuration are retained. The scheduler was temporarily drained
+and restored to its original replica count after validation. The new child
+poll ledger has SQL `d2c683dd`, catalog `321a5873` and structure `089a08ae`.
+Historical application, dispatch and retry receipts remain intact. See the
+[exact release receipt](evidence/proposal-latency-passed-20261108-42511889721.json).
+
+The latency workflow now applies only to its previous c6 pair; a successful
+release deliberately prevents another unchanged apply. Its inspect mode is
+read-only and supports a paused pair. Once scheduler activation is attempted,
+new version-6 phases may exist, so failures require forward recovery rather than
+restoring an incompatible worker. Actual proposal issuance is a separate trial.
+Use the latency qualification and child ledger for current trial observations;
+older c6 qualification is historical.
+
 ## Modern proposal retry compatibility (November 8, deployed)
 
 Run [42509645314](https://github.com/salahassi/tenders/actions/runs/42509645314)

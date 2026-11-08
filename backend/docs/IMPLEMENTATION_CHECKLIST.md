@@ -1,5 +1,23 @@
 # Implementation status and continuation plan
 
+## November 8 — latency correction deployed; saved-work trial started
+
+[Release 42511889721](https://github.com/salahassi/tenders/actions/runs/42511889721)
+passed from `47cdca4` in 67 seconds including queue. Worker and scheduler now use
+qualified `03c68b58`; API, source-browser, frontend and private configuration are
+retained. The scheduler was drained before replacement and restored to its
+original single replica only after the pre-activation checks. Both components
+are ready, exact schema readback passes, and owned cleanup is verified.
+
+The additive polling ledger records SQL `d2c683dd`, catalog `321a5873` and
+structure `089a08ae`, preserving all predecessor receipts and business rows.
+The [release receipt](evidence/proposal-latency-passed-20261108-42511889721.json)
+contains exact bindings. PR50 merged as `39efbb80`; its redirect-only Pages run
+42511868120 passed in 30 seconds. Combined operations checks pass 37 latency
+and 15 trial controls after integration. A separate explicitly authorized
+`generation.retry` trial is now starting; deployment success does not claim
+completed technical/financial documents.
+
 ## November 8 — latency runtime qualified and published
 
 The frozen source `3ea8899` built offline and passed all nine actual dispatch
