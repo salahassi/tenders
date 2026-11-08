@@ -1,5 +1,24 @@
 # Implementation status and continuation plan
 
+## November 8 — active commercial pipeline fixture uses installed worker capability
+
+The current full-pipeline synthetic fixture now chooses the real worker-six
+claim RPC when that API is installed, retaining the existing worker-five helper
+for older migration boundaries. It cancels only the fixture's local render jobs
+as before. The complete flexible-input pipeline asserts that newly enqueued
+commercial work carries input version 2 and minimum executor 6 through the
+actual migrated queue and task context. Frozen generation/generation-plan-status
+fixtures and direct v5 capability, fairness and historical claim controls remain
+unchanged; no global RPC remapping is introduced.
+
+With the successor SQL draft copied only into an isolated local test checkout,
+27 flexible-pipeline/worker-capability controls pass and backend typecheck passes.
+Separately, 117 real queue-wake/ordinary-export/empty-intake controls pass against
+that draft and the worker-six runtime. The draft SQL and dependency links are not
+part of this test-only change. Final frozen-SQL full-package, native authority,
+publication, deployment and customer issuance gates remain pending. No live
+call, model request or customer record edit ran here.
+
 ## November 8 — exhausted commercial continuation reconciled
 
 Read-only run42524650965 at `375f638` confirms the sixth continuation failed

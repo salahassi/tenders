@@ -1,7 +1,7 @@
 import { sourceContractFixture } from "./sourceContractFixture";
 // @vitest-environment node
 import { beforeAll, afterAll, beforeEach, afterEach, expect, it } from "vitest";
-import { workflowFixture, claimModelWorker5 } from "./workflowFixture";
+import { workflowFixture, claimCurrentModelWorker } from "./workflowFixture";
 import {
   taskInput,
   processGeneration,
@@ -539,12 +539,20 @@ it.each([
       if ((await f.db.query<{ status: string }>(
         "select status from public.generation_plans where id=$1", [plan.id],
       )).rows[0].status === "completed") break;
-      const job = await claimModelWorker5(f, internal);
+      const job = await claimCurrentModelWorker(f, internal);
       if (!job) break;
       const ctx = await internal("generation_context", {
         job_id: job.id,
         lease: job.lease_token,
       });
+      if (ctx.step.task === "plan_commercial") {
+        expect(job.checkpoint).toMatchObject({
+          commercial_input_version: 2,
+          minimum_worker_executor: 6,
+        });
+        expect(ctx.step.input.commercial_input_version).toBe(2);
+        expect(taskInput(ctx).context.commercial_input_version).toBe(2);
+      }
       if (ctx.step.task !== "advance_plan") {
         const input = taskInput(ctx);
         expect(input.manifest.length).toBeGreaterThan(0);
