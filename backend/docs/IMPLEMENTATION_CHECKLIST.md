@@ -1,5 +1,127 @@
 # Implementation status and continuation plan
 
+## November 8 — remove synchronous proposal dispatch waits
+
+Implementation separates persistent worker foreground processing from awaited
+housekeeping. The foreground returns a validated future-poll hint without
+sleeping; the scheduler records that hint in a durable outbox, immediately
+continues after claimed work, and retains the scheduled wake through empty
+follow-ups or process restart. Maintenance has an independent authenticated
+endpoint, durable lease and cadence. Existing business admission, job leases,
+provider request identities, issuance deadline and Edge invocation behavior
+remain authoritative.
+
+Focused worker controls pass 64 tests and scheduler controls pass 24 tests.
+The actual dispatcher SQL passes isolated PostgreSQL tests for due-wake races,
+expired leases, multiple independent future timers, maintenance and role restrictions.
+Both groups pass backend typecheck. Candidate runtime `4b04acaa`, built from
+`e2e209d` using an offline dependency cache, passes all nine native controls
+with the actual default worker and actual scheduler entrypoints. With maintenance
+held, a ready response takes 9 ms and returns the 30,000 ms poll hint; idle
+responses take 7 ms and 2 ms. These are isolated synthetic RPC fixtures, not
+customer model latency. The original image fails the idle-maintenance negative
+control. Exact copied sources, image configuration/layers and container cleanup
+are bound in the build/native/qualification receipts. Published immutable runtime
+`c6f7cce5` was pulled and reverified with temporary registry credentials removed.
+All 389 frontend tests, both package typechecks and both builds pass. The frozen
+backend suite passes 3,513/3,514 tests; one existing delivery integration exceeds
+its unchanged five-second timeout under the complete suite. Its unchanged file
+passes all 18 tests in isolation. This retains the full-suite limitation rather
+than claiming a green full backend run. All new worker regressions pass in the
+complete run. Production rollout remains pending. Schema application must precede
+worker readiness and scheduler replacement; rollback restores scheduler first.
+The schema change is additive and legacy dispatch acknowledgement is retained.
+All 21 focused release/schema controls pass. Independent review closed findings
+on partially restored pods, paused-scheduler detection, elapsed queue/setup
+budget and owned observer cleanup. The workflow binds its deadline to GitHub run
+creation and reserves rollback/cleanup inside 170 seconds, below the three-minute
+owner limit. It does not activate a paused scheduler or initiate a generation.
+
+This correction addresses the reproduced synchronous wait and maintenance
+coupling. It does not establish a new full-proposal completion time. No new
+customer generation or paid-provider evaluation is started for these tests.
+The accepted-model poll policy remains 30 seconds. With twelve analysis chunks,
+two accepted-request slots and at least writer/verification phases, an idealized
+all-pending case already needs approximately 360 seconds of poll-slot time for
+analysis before later proposal stages or repairs. This conditional estimate is
+not a measured production duration; full issuance acceptance remains separate.
+
+## November 8 — read-only diagnosis of the ten-minute proposal failure
+
+The follow-up diagnostic adds a timing history bound to the exact selected plan,
+so a later user request cannot redirect the investigation. Attempts, usage and
+queue-wake arrays each have a 2,048-row serialization limit, exact totals and
+explicit truncation flags. Five inspection controls pass against the complete
+synthetic migration set, including exact-plan isolation, chronological ordering,
+private-field exclusion, cap behavior and unchanged records. This is a read-only
+diagnostic change; application runtime and schema are unchanged.
+
+Static tracing identifies synchronous dispatch coupling: the persistent scheduler
+awaits the worker response; that response awaits a future accepted-model poll wake
+and then maintenance. A controlled composition of the actual scheduler and wake
+helper reproduces a 30,000 ms dispatch hold with zero model/network delay. This
+reproduction establishes the blocking path, not its exact historical duration.
+The composed parallel-request migration permits other jobs' known reservations
+during a poll wake; the original pre-migration single-reservation guard must not
+be mistaken for the currently deployed logic.
+
+[Exact-plan follow-up42495403060](https://github.com/salahassi/tenders/actions/runs/42495403060)
+at `0deb12149089b20698d2965531ea7992a4cebf8f` passed in **88 seconds including
+queue time**, with all five inspection controls and both cleanups. Its privately
+downloaded report matches the original failed plan and has no timing truncation.
+It contains 28 attempts: 15 unconfigured-model skips taking 0.193 seconds total,
+seven generation HTTP exchanges taking 12.177 seconds, and six poll exchanges
+taking 2.424 seconds. These exchange durations exclude asynchronous provider
+processing, so the remaining request duration is not an idle-time measurement.
+
+Four successful result-to-next-sent-phase gaps measure approximately 52–55 seconds.
+Graph yield makes the job due immediately. A committed wake precedes the next
+selected generation by 46.958 seconds; the last accepted repair precedes its
+poll wake by 30.100 seconds. Combined with the actual scheduler/wake reproduction,
+these observations establish internal scheduling delay. They do not divide each
+gap among maintenance, other workspace work, claim and input preparation. The
+exact-plan attempt projection deliberately excludes other workspace attempts.
+
+Both packages pass typecheck and build. Full package suites run concurrently
+report backend 3,498/3,499 and frontend 388/389: one existing five-second backend
+test timeout and one frontend button lookup failure. The exact affected files
+pass unchanged in isolation (18/18 and 19/19). These are separately retained
+results, not a claim of a fully green combined run. No application fix or
+deployment is included in this diagnostic branch.
+
+[Inspection42468242137](https://github.com/salahassi/tenders/actions/runs/42468242137)
+at `6abffe096398af83bc5e4cdb468736427151733c` passed in **85 seconds including
+queue time**. All five read-only inspection controls, original cluster certificate
+authority access, temporary observer removal and private runner cleanup passed.
+The encrypted report was downloaded privately and its plaintext SHA-256 verified.
+The sanitized [receipt](evidence/proposal-timeout-diagnosis-20261108.json) retains
+the observation, source and evidence limits without customer identifiers or text.
+
+The selected opportunity's newest request was accepted at 08:45:28.039854 UTC
+and durably failed at its original 08:55:28.039854 deadline. Of twelve analysis
+jobs, one succeeded, two began but did not complete, and nine had zero attempts.
+The first chunk committed after approximately 275 seconds. Seven accepted model
+requests have settled usage totaling 517,372 input and 21,259 output tokens.
+The last retained operations include grounding verification and result repair;
+repair was admitted with approximately ten seconds remaining. There are zero
+proposal versions. This is actual processing throughput failing the issuance
+deadline, separate from the earlier November 5 no-agent failure.
+
+The current execution setting permits two parallel requests; the read does not
+establish its value during the failed request. Large input counts warrant prompt
+and verification profiling, but do not prove that complete source documents were
+repeated for each chunk. The retained projection cannot separate provider latency,
+polling delay and processing time for every call. Scheduler metadata is fresh at
+observation; it does not by itself reconstruct historical dispatch timing.
+
+No model request, business retry, configuration change or deployment was made by
+this diagnosis. Proposal issuance/export acceptance remains failed. Further
+implementation should measure and improve per-chunk analysis, verification,
+repair and scheduling within the existing deadline, then obtain separately
+authorized actual-request evidence. The old graph inspector expects identical
+API and worker images and must not be dispatched unchanged against the current
+intentionally mixed image baseline.
+
 ## November 8 — model settings saves and repeated workspace reads
 
 **Deployed and accepted:** [run42465497658](https://github.com/salahassi/tenders/actions/runs/42465497658)

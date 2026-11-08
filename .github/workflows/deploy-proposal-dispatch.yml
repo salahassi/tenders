@@ -1,0 +1,70 @@
+name: Deploy bounded proposal dispatch
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: tenderdesk-digitalocean-production
+  cancel-in-progress: false
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Bind total deadline to run creation including queue time
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 - <<'PY'
+          import datetime,json,os,re,time,urllib.request
+          repo,run=os.environ['GITHUB_REPOSITORY'],os.environ['GITHUB_RUN_ID']
+          if not re.fullmatch(r'[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+',repo) or not re.fullmatch(r'[0-9]{1,20}',run):raise SystemExit('Invalid run identity')
+          request=urllib.request.Request('https://api.github.com/repos/'+repo+'/actions/runs/'+run,
+              headers={'Authorization':'Bearer '+os.environ['GH_TOKEN'],'Accept':'application/vnd.github+json'})
+          with urllib.request.urlopen(request,timeout=10) as response:
+              raw=response.read(1048577)
+          if len(raw)>1048576:raise SystemExit('Run metadata too large')
+          value=json.loads(raw)
+          if str(value['id'])!=run or value['repository']['full_name']!=repo or value['head_sha']!=os.environ['GITHUB_SHA']:raise SystemExit('Run metadata mismatch')
+          created=datetime.datetime.fromisoformat(value['created_at'].replace('Z','+00:00')).timestamp()
+          if created>time.time()+5:raise SystemExit('Run creation clock invalid')
+          deadline=int(created)+170
+          if deadline-time.time()<85:raise SystemExit('Insufficient total run budget before setup')
+          with open(os.environ['GITHUB_ENV'],'a') as output:output.write('TENDERDESK_RUN_DEADLINE_EPOCH='+str(deadline)+'\n')
+          print('Total deadline includes queued time; rollback and cleanup remain reserved.')
+          PY
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Verify exact renewed worker and scheduler qualification
+        run: |
+          set -euo pipefail
+          python3 -m pip install --quiet --disable-pip-version-check --requirement backend/scripts/ops/private-transfer-requirements.txt
+          python3 backend/scripts/ops/proposal-dispatch-runtime.py verify
+          python3 -m unittest discover -s backend/scripts/ops -p 'test_proposal_dispatch_release.py'
+      - name: Prepare original-CA access and private registry credentials
+        env:
+          DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+        run: python3 backend/scripts/ops/digitalocean-runner.py
+      - name: Apply compatible SQL and roll out worker then scheduler
+        env:
+          DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+        run: python3 backend/scripts/ops/proposal-dispatch-release.py
+      - name: Remove only the owned temporary database client
+        if: ${{ always() }}
+        run: |
+          if [ -n "${DOKS_WORKDIR:-}" ] && [ -x "${KUBECTL:-}" ]; then
+            python3 backend/scripts/ops/proposal-dispatch-release.py --cleanup
+          fi
+      - name: Remove private runner credentials
+        if: ${{ always() }}
+        run: |
+          python3 - <<'PY'
+          import os,pathlib,re,shutil
+          run,attempt=os.environ['GITHUB_RUN_ID'],os.environ['GITHUB_RUN_ATTEMPT']
+          if not re.fullmatch(r'[0-9]{1,20}',run) or not re.fullmatch(r'[0-9]{1,6}',attempt):raise SystemExit(1)
+          directory=pathlib.Path(os.environ['RUNNER_TEMP'])/('td-deploy-'+run+'-'+attempt)
+          if directory.exists():shutil.rmtree(directory)
+          print('Private dispatch release credentials removed.')
+          PY
