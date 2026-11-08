@@ -1,0 +1,140 @@
+{
+  "release": "proposal-legacy-whole-review-v1",
+  "status": "passed",
+  "mode": "apply",
+  "source_revision": "fc81119a96ff7f81ce0dd1f47c23b14aa9bd85fd",
+  "artifact_source_revision": "7c93e7ec9726b46168a30257793a76ee1ced56c5",
+  "image": "registry.digitalocean.com/tenderdesk-a6093a76/runtime@sha256:4470a2fecd8d0695a51295255fbc73cfc167b587767777c80cae4021081437df",
+  "image_id": "sha256:8c836993fd97c8d488c734a0c380af65b8fa22119be4bbde1b9eb6c90e221b98",
+  "qualification_sha256": "f2a227350d95c9ce6f45eb64acfd38b891e76fa144b139e2c77438cc590b7b29",
+  "zero_inventory_review_migration": {
+    "path": "backend/supabase/migrations/20261108223554_legacy_zero_inventory_review_recovery.sql",
+    "sha256": "7763153400d9b7420004917b3ec197a7f4d393943da586e3a273f214e7f3a3e8"
+  },
+  "registry_identity": {
+    "verification": "immutable_manifest_and_qualified_config_digest",
+    "metadata_only": true,
+    "reference": "registry.digitalocean.com/tenderdesk-a6093a76/runtime@sha256:4470a2fecd8d0695a51295255fbc73cfc167b587767777c80cae4021081437df",
+    "root_manifest_bytes": 5124,
+    "selected_manifest_bytes": 5124,
+    "selected_manifest_digest": "sha256:4470a2fecd8d0695a51295255fbc73cfc167b587767777c80cae4021081437df",
+    "config_digest": "sha256:8c836993fd97c8d488c734a0c380af65b8fa22119be4bbde1b9eb6c90e221b98",
+    "config_bytes": 10341,
+    "layer_count": 23,
+    "compressed_layer_bytes": 86482299,
+    "image_layers_downloaded": false
+  },
+  "schema": {
+    "applied": true,
+    "release": "proposal-legacy-whole-review-v1-20261108",
+    "replayed": false,
+    "read_only": false,
+    "row_guard": "transaction_activity_and_storage_v1",
+    "sql_sha256": "7763153400d9b7420004917b3ec197a7f4d393943da586e3a273f214e7f3a3e8",
+    "catalog_sha256": "a062387962217baed211acdcd518de64186429a650fe035e0c4da4d4bc5f03c8",
+    "parent_release": "proposal-checkpoint-report-ref-v1-20261108",
+    "structure_sha256": "28a53b0f1ae697790478b3947d885263265312794dc2473ff8c61409b0abea3a",
+    "parent_sql_sha256": "6bf6a506c53bf5113a17dfbb9c12ec09fc4ee0090599931776c34ed8e2614e53",
+    "processing_requested": false,
+    "business_rows_changed": 0,
+    "predecessor_receipts_preserved": true
+  },
+  "schema_readback": {
+    "applied": true,
+    "release": "proposal-legacy-whole-review-v1-20261108",
+    "replayed": true,
+    "read_only": true,
+    "row_guard": "transaction_activity_and_storage_v1",
+    "sql_sha256": "7763153400d9b7420004917b3ec197a7f4d393943da586e3a273f214e7f3a3e8",
+    "catalog_sha256": "a062387962217baed211acdcd518de64186429a650fe035e0c4da4d4bc5f03c8",
+    "parent_release": "proposal-checkpoint-report-ref-v1-20261108",
+    "structure_sha256": "28a53b0f1ae697790478b3947d885263265312794dc2473ff8c61409b0abea3a",
+    "parent_sql_sha256": "6bf6a506c53bf5113a17dfbb9c12ec09fc4ee0090599931776c34ed8e2614e53",
+    "processing_requested": false,
+    "business_rows_changed": 0,
+    "predecessor_receipts_preserved": true
+  },
+  "readiness": [
+    {
+      "component": "worker",
+      "ready": true,
+      "unauthorized_maintenance_status": 401
+    },
+    {
+      "rpc": "prepare_accepted_model_poll",
+      "service_route_visible": true,
+      "null_identity_rejected": true,
+      "business_mutations": 0,
+      "provider_calls": 0
+    },
+    {
+      "worker_executor": 7,
+      "service_routes_visible": 4,
+      "read_only": true,
+      "business_mutations": 0,
+      "provider_calls": 0
+    },
+    {
+      "component": "scheduler",
+      "ready": true,
+      "unauthorized_maintenance_status": null
+    }
+  ],
+  "deployment_targets": [
+    "worker",
+    "scheduler"
+  ],
+  "retained_images": {
+    "source-browser": "registry.digitalocean.com/tenderdesk-a6093a76/runtime@sha256:077b06edd81eb58296ef755e7baa8af32a73dd931c6f06097acc513d3f684e3e",
+    "api": "registry.digitalocean.com/tenderdesk-a6093a76/runtime@sha256:f573e991e622c982e82a4a3b4e6dc6f144e87586ba0f5dd0b3d05381b30dbd6a",
+    "frontend": "registry.digitalocean.com/tenderdesk-a6093a76/frontend@sha256:522ad1b7258f1842bafd94f7f1b8c4c3a4642c098063dea848248f49b3c8e0f3"
+  },
+  "observed_before_images": {
+    "worker": "registry.digitalocean.com/tenderdesk-a6093a76/runtime@sha256:de4312a0bea6170bcd0697bf7e209900295732add424239466bb2cfededc47f1",
+    "scheduler": "registry.digitalocean.com/tenderdesk-a6093a76/runtime@sha256:de4312a0bea6170bcd0697bf7e209900295732add424239466bb2cfededc47f1",
+    "source-browser": "registry.digitalocean.com/tenderdesk-a6093a76/runtime@sha256:077b06edd81eb58296ef755e7baa8af32a73dd931c6f06097acc513d3f684e3e",
+    "api": "registry.digitalocean.com/tenderdesk-a6093a76/runtime@sha256:f573e991e622c982e82a4a3b4e6dc6f144e87586ba0f5dd0b3d05381b30dbd6a",
+    "frontend": "registry.digitalocean.com/tenderdesk-a6093a76/frontend@sha256:522ad1b7258f1842bafd94f7f1b8c4c3a4642c098063dea848248f49b3c8e0f3"
+  },
+  "worker_resource_envelope": {
+    "limits": {
+      "cpu": "1",
+      "memory": "640Mi"
+    },
+    "requests": {
+      "cpu": "25m",
+      "memory": "192Mi"
+    },
+    "desired_replicas": 1,
+    "cpu_millicores": 1000,
+    "memory_bytes": 671088640,
+    "minimum_cpu_millicores": 1000,
+    "minimum_memory_bytes": 671088640,
+    "hosted_load_qualified": false
+  },
+  "scheduler_quiesced": true,
+  "activation_commit_point_reached": true,
+  "observed_before_scheduler_replicas": 1,
+  "configuration_preserved": true,
+  "worker_executor": 7,
+  "marked_review_minimum_worker_executor": 7,
+  "customer_processing_requested": false,
+  "providers_activated": false,
+  "business_commands_sent": 0,
+  "customer_completion_verified": false,
+  "cleanup_verified": true,
+  "workflow": {
+    "run_id": 42534028969,
+    "job_id": 128894241134,
+    "observed_completion_seconds_including_queue": 66,
+    "url": "https://github.com/salahassi/tenders/actions/runs/42534028969"
+  },
+  "integration": {
+    "pr": 57,
+    "merge_sha": "36f0b020c0727ffe499c27a597292c78913d9abc",
+    "pages_run": 42534000639,
+    "pages_status": "success",
+    "credential_sync_push_run": 42534000344,
+    "credential_sync_status": "cancelled_during_setup_before_provider_steps"
+  }
+}

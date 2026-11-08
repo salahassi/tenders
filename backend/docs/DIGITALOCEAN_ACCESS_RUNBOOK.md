@@ -5,15 +5,18 @@ The repository-root [AGENTS.md](../../AGENTS.md) points here so the established
 route is available in every checkout, without relying on conversation history.
 Last reviewed: November 8, 2026.
 
-## Legacy whole-proposal review release (November 8, prepared)
+## Legacy whole-proposal review release (November 8, deployed)
 
 `deploy-proposal-review.yml` is the bounded eighth-child and executor-seven
 release. Read its complete workflow, coordinator and schema guard before use.
 The exact frozen SQL is `77631534`; its parent is checkpoint SQL `6bf6a506`,
 catalog `37e48b5e`, structure `5dfdc428`, retaining all22 prior ledger rows.
 Candidate worker/scheduler `4470a2fe` is image `8c836993`, artifact source
-`7c93e7e`, qualification `f2a22735`. The deployed pair remains `de4312a0` until
-an actual passed release receipt is recorded. API, source-browser, frontend,
+`7c93e7e`, qualification `f2a22735`. [Run42534028969](https://github.com/salahassi/tenders/actions/runs/42534028969)
+from `fc81119` passed in66seconds including queue and cleanup. Worker/scheduler
+now run `4470a2fe`. Catalog is `a0623879`, structure `28a53b0f`; all22 predecessor
+rows remain intact (25 total). See the
+[passed receipt](evidence/proposal-review-passed-20261108-42534028969.json). API, source-browser, frontend,
 private settings and resource envelopes are retained.
 
 The 170-second creation-time deadline includes queue/setup and cleanup. SQL is

@@ -1,5 +1,24 @@
 # Implementation status and continuation plan
 
+## November 8 — whole-review capability deployed successfully
+
+[Run42534028969](https://github.com/salahassi/tenders/actions/runs/42534028969)
+from `fc81119` passed in66seconds including queue. Worker/scheduler now run
+`4470a2fe` / image `8c836993`, artifact `7c93e7e`, qualification `f2a22735`.
+SQL `77631534` is applied with catalog `a0623879` and structure `28a53b0f`;
+all22 predecessors remain intact (25 ledger rows). Atomic apply, independent
+readback, drain, worker-first rollout, four executor-seven service routes,
+retained poll rejection, scheduler activation and owned cleanup all pass.
+All other images, private settings and resource limits are unchanged. See the
+[exact receipt](evidence/proposal-review-passed-20261108-42534028969.json).
+
+PR57 merged as `36f0b020`. Pages42534000639 passed; the unrelated credential-sync
+push run42534000344 was canceled during setup before any provider steps.
+No business command or provider activation occurred in deployment. The selected
+canonical recovery trial is separately authorized; its admission, genuine review
+and complete files remain pending. The release previous-image guard now rejects
+unchanged apply; inspect and repair forward after scheduler activation.
+
 ## November 8 — final integrated release controls ready
 
 After integrating native proof and freezing both qualification and schema,
