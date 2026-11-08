@@ -1,0 +1,135 @@
+{
+  "version": 1,
+  "workflow_run_id": 42527251795,
+  "workflow_job_id": 128873490845,
+  "url": "https://github.com/salahassi/tenders/actions/runs/42527251795",
+  "created_at": "2026-11-08T21:51:09Z",
+  "completed_at": "2026-11-08T21:52:04Z",
+  "elapsed_seconds_including_queue": 55,
+  "receipt": {
+    "release": "proposal-commercial-successor-v1",
+    "status": "passed",
+    "mode": "apply",
+    "source_revision": "9cfe60196b4ead425eaa7bd31e15bb65395c93e2",
+    "artifact_source_revision": "6b3eddc0bddae840570af9315efbb148e5f61a42",
+    "image": "registry.digitalocean.com/tenderdesk-a6093a76/runtime@sha256:de4312a0bea6170bcd0697bf7e209900295732add424239466bb2cfededc47f1",
+    "image_id": "sha256:3cc6c7cb3a2b63e3dc6187d0411cc9efe176dc0a098fa8aa171cb21aae598cf6",
+    "qualification_sha256": "a5e636e87f125c9f02e838a913b0e1ed05a6691681fd132a34d8e70a9b8d7b41",
+    "successor_migration": {
+      "path": "backend/supabase/migrations/20261108212048_commercial_uuid_colon_successor.sql",
+      "sha256": "1cab7a1a875b1f7180d9c1ed3faf927bb981183874bdda7463b89b779ab67935"
+    },
+    "registry_identity": {
+      "verification": "immutable_manifest_and_qualified_config_digest",
+      "metadata_only": true,
+      "reference": "registry.digitalocean.com/tenderdesk-a6093a76/runtime@sha256:de4312a0bea6170bcd0697bf7e209900295732add424239466bb2cfededc47f1",
+      "root_manifest_bytes": 5124,
+      "selected_manifest_bytes": 5124,
+      "selected_manifest_digest": "sha256:de4312a0bea6170bcd0697bf7e209900295732add424239466bb2cfededc47f1",
+      "config_digest": "sha256:3cc6c7cb3a2b63e3dc6187d0411cc9efe176dc0a098fa8aa171cb21aae598cf6",
+      "config_bytes": 10342,
+      "layer_count": 23,
+      "compressed_layer_bytes": 86479652,
+      "image_layers_downloaded": false
+    },
+    "schema": {
+      "applied": true,
+      "release": "proposal-commercial-successor-v1-20261108",
+      "replayed": false,
+      "read_only": false,
+      "row_guard": "transaction_activity_and_storage_v1",
+      "sql_sha256": "1cab7a1a875b1f7180d9c1ed3faf927bb981183874bdda7463b89b779ab67935",
+      "catalog_sha256": "8654608be86c0c177d3bdbdf2b67633181989e4f76e54166571586d73a9aa8e2",
+      "parent_release": "proposal-pending-poll-v1-20261108",
+      "structure_sha256": "c75f318758476ce7a296ef36712878505a2883c575dae5c422da7280051e270a",
+      "parent_sql_sha256": "8d089d8d5237fa96e4903ddc54724318afeaeb457737341e88d7e872f49341af",
+      "processing_requested": false,
+      "business_rows_changed": 0,
+      "predecessor_receipts_preserved": true
+    },
+    "schema_readback": {
+      "applied": true,
+      "release": "proposal-commercial-successor-v1-20261108",
+      "replayed": true,
+      "read_only": true,
+      "row_guard": "transaction_activity_and_storage_v1",
+      "sql_sha256": "1cab7a1a875b1f7180d9c1ed3faf927bb981183874bdda7463b89b779ab67935",
+      "catalog_sha256": "8654608be86c0c177d3bdbdf2b67633181989e4f76e54166571586d73a9aa8e2",
+      "parent_release": "proposal-pending-poll-v1-20261108",
+      "structure_sha256": "c75f318758476ce7a296ef36712878505a2883c575dae5c422da7280051e270a",
+      "parent_sql_sha256": "8d089d8d5237fa96e4903ddc54724318afeaeb457737341e88d7e872f49341af",
+      "processing_requested": false,
+      "business_rows_changed": 0,
+      "predecessor_receipts_preserved": true
+    },
+    "readiness": [
+      {
+        "component": "worker",
+        "ready": true,
+        "unauthorized_maintenance_status": 401
+      },
+      {
+        "rpc": "prepare_accepted_model_poll",
+        "service_route_visible": true,
+        "null_identity_rejected": true,
+        "business_mutations": 0,
+        "provider_calls": 0
+      },
+      {
+        "worker_executor": 6,
+        "service_routes_visible": 4,
+        "read_only": true,
+        "business_mutations": 0,
+        "provider_calls": 0
+      },
+      {
+        "component": "scheduler",
+        "ready": true,
+        "unauthorized_maintenance_status": null
+      }
+    ],
+    "deployment_targets": [
+      "worker",
+      "scheduler"
+    ],
+    "retained_images": {
+      "source-browser": "registry.digitalocean.com/tenderdesk-a6093a76/runtime@sha256:077b06edd81eb58296ef755e7baa8af32a73dd931c6f06097acc513d3f684e3e",
+      "api": "registry.digitalocean.com/tenderdesk-a6093a76/runtime@sha256:f573e991e622c982e82a4a3b4e6dc6f144e87586ba0f5dd0b3d05381b30dbd6a",
+      "frontend": "registry.digitalocean.com/tenderdesk-a6093a76/frontend@sha256:522ad1b7258f1842bafd94f7f1b8c4c3a4642c098063dea848248f49b3c8e0f3"
+    },
+    "observed_before_images": {
+      "worker": "registry.digitalocean.com/tenderdesk-a6093a76/runtime@sha256:2097a0798d2f0e3fd908c45db669cc767f32d8ef279adb95b8dff07453e23769",
+      "scheduler": "registry.digitalocean.com/tenderdesk-a6093a76/runtime@sha256:2097a0798d2f0e3fd908c45db669cc767f32d8ef279adb95b8dff07453e23769",
+      "source-browser": "registry.digitalocean.com/tenderdesk-a6093a76/runtime@sha256:077b06edd81eb58296ef755e7baa8af32a73dd931c6f06097acc513d3f684e3e",
+      "api": "registry.digitalocean.com/tenderdesk-a6093a76/runtime@sha256:f573e991e622c982e82a4a3b4e6dc6f144e87586ba0f5dd0b3d05381b30dbd6a",
+      "frontend": "registry.digitalocean.com/tenderdesk-a6093a76/frontend@sha256:522ad1b7258f1842bafd94f7f1b8c4c3a4642c098063dea848248f49b3c8e0f3"
+    },
+    "worker_resource_envelope": {
+      "limits": {
+        "cpu": "1",
+        "memory": "640Mi"
+      },
+      "requests": {
+        "cpu": "25m",
+        "memory": "192Mi"
+      },
+      "desired_replicas": 1,
+      "cpu_millicores": 1000,
+      "memory_bytes": 671088640,
+      "minimum_cpu_millicores": 1000,
+      "minimum_memory_bytes": 671088640,
+      "hosted_load_qualified": false
+    },
+    "scheduler_quiesced": true,
+    "activation_commit_point_reached": true,
+    "observed_before_scheduler_replicas": 1,
+    "configuration_preserved": true,
+    "worker_executor": 6,
+    "version_2_minimum_worker_executor": 6,
+    "customer_processing_requested": false,
+    "providers_activated": false,
+    "business_commands_sent": 0,
+    "customer_completion_verified": false,
+    "cleanup_verified": true
+  }
+}

@@ -1,5 +1,26 @@
 # Implementation status and continuation plan
 
+## November 8 — commercial successor capability deployed
+
+PR55 merged as `7b509dfb`; Pages42527133564 passed. Release42527251795 from
+`9cfe601` passed in55 seconds including queue, applying exact SQL `1cab7a1a`
+and deploying worker/scheduler `de4312a0` (image `3cc6c7cb`, artifact `6b3eddc`,
+qualification `a5e636e8`). Production catalog is `8654608b`, structure `c75f3187`;
+all predecessor receipts remain intact. Original API/source-browser/frontend
+images and private configuration are retained. Scheduler drain, all four v6
+service routes, null-identity rejection, activation, readiness and cleanup pass.
+See the [deployment receipt](evidence/proposal-successor-passed-20261108-42527251795.json).
+
+The merge also automatically started credential-sync verification42527133597
+because the shared Backend claim caller changed. It was canceled within65seconds,
+while still in package verification: discover/bind/reload/recovery had zero
+executed steps. Its long unrelated verification was not replayed; scoped package
+and release proof are recorded above. No credential changes resulted.
+
+Deployment issued no customer command and changed no existing business rows.
+The next authorized canonical retry will be the actual commercial recovery and
+file-generation trial; completion remains unproved until that trial succeeds.
+
 ## November 8 — successor immutable registry publication verified
 
 Qualified image `3cc6c7cb` from artifact source `6b3eddc` is published as

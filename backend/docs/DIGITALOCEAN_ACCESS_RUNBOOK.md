@@ -5,7 +5,24 @@ The repository-root [AGENTS.md](../../AGENTS.md) points here so the established
 route is available in every checkout, without relying on conversation history.
 Last reviewed: November 8, 2026.
 
-## Reference UUID punctuation (November 8, current runtime)
+## Commercial successor capability (November 8, current runtime and schema)
+
+[Run42527251795](https://github.com/salahassi/tenders/actions/runs/42527251795)
+from `9cfe601` passed in55seconds including queue and cleanup. Worker/scheduler
+now use `de4312a0`, image `3cc6c7cb`, artifact `6b3eddc`, qualification `a5e636e8`.
+The sixth child is SQL `1cab7a1a`, catalog `8654608b`, structure `c75f3187`.
+All parent ledgers, API `f573e991`, source-browser `077b06ed`, frontend `522ad1b7`
+and private configuration remain unchanged. See the
+[receipt](evidence/proposal-successor-passed-20261108-42527251795.json).
+
+All four executor-six service routes, retained pending-poll rejection, scheduler
+drain, rollout, activation and cleanup passed. The trial runner requires this
+exact image and sixth-child ledger. The previous-image guard rejects unchanged
+apply; after activation use inspection and explicit forward recovery. Old
+executor-five workers cannot process new version-two commercial jobs. Actual
+successor admission and complete customer files remain separate trial evidence.
+
+## Reference UUID punctuation (November 8, prior runtime)
 
 [Run42523959464](https://github.com/salahassi/tenders/actions/runs/42523959464)
 from `d62904e` passed in 44 seconds including queue and cleanup. Worker/scheduler
