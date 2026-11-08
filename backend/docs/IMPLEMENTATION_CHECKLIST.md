@@ -1,5 +1,29 @@
 # Implementation status and continuation plan
 
+## November 8 — bounded ordinary draft-copy runner prepared
+
+The existing private trial workflow now has separate draft-copy preparation,
+observation and download modes. Preparation requires explicit activation and
+permits one canonical `export.package.prepare` command with `mode=draft`.
+The exact request is persisted before transmission; an uncertain response is
+retained and later reconciled read-only against its immutable package target.
+Observation and download cannot resend. Existing generated-issuance reports
+cannot be relabelled as draft-copy reports, and final export mode is refused.
+
+The original170-second run-created deadline, exact deployed `4470a2fe` runtime
+and `77631534` schema checks, genuine Owner authentication, scoped cleanup and
+encrypted private reporting are retained. Downloaded copies use the dedicated
+`draft_copy_download` field. Public status explicitly states draft-copy only,
+no generated issuance success and no approval. Accepted review findings and
+failed issuance remain retained; no validator or content is changed.
+
+All27 focused runner tests pass, including12 new activation, exact-command,
+durable-intent, lost-acknowledgment, target-binding, cleanup and ordinary-download
+boundaries. The actual workflow's validation code is exercised. Helper/native
+integration, hosted preparation, authentic file downloads and visual review
+remain separate gates. This operations-only change performs no live call,
+product/schema change, image build or paid model request.
+
 ## November 8 — actual whole review succeeds; content findings stop issuance
 
 One canonical continuation in run42534155723 was accepted at23:14:37Z. The real

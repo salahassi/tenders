@@ -46,6 +46,7 @@ BUCKET = auth.BUCKET
 STAGE = 'initial'
 PRIVATE_VALUES = set()
 PUBLIC_STATE = {}
+DRAFT_COPY_MODES = {'draft-copy-prepare', 'draft-copy-observe', 'draft-copy-download'}
 
 
 class InspectionComplete(Exception):
@@ -184,20 +185,121 @@ def private_input(name, digest):
     return value
 
 
+
+def run_draft_copy(helper, database, incoming, args, report):
+    """One ordinary draft command; observation never resends an uncertain intent."""
+    global STAGE
+    report['draft_copy_only'] = True
+    if args.mode == 'draft-copy-prepare':
+        request.validate_selection(incoming)
+        STAGE = 'draft_copy_read_only_selection'
+        proof = helper.inspect(database, incoming, request)
+        require(proof.get('selection') == incoming, 'DRAFT_COPY_SELECTION_CHANGED')
+        prepared = helper.prepare(proof)
+        helper.validate_prepared(prepared)
+        require(prepared.get('mode') in {'send', 'observe_existing'}, 'DRAFT_COPY_PREPARED_MODE')
+        report.update(selection=incoming, proof=proof, prepared=prepared)
+        if prepared['mode'] == 'observe_existing':
+            target = prepared['target']
+        else:
+            body = prepared.get('body')
+            commands = body.get('commands') if isinstance(body, dict) else None
+            require(prepared.get('operation') == 'export.package.prepare'
+                and isinstance(commands, list) and len(commands) == 1 and isinstance(commands[0], dict)
+                and commands[0].get('operation') == 'export.package.prepare'
+                and isinstance(commands[0].get('input'), dict) and commands[0]['input'].get('mode') == 'draft',
+                'DRAFT_COPY_COMMAND_REQUIRED')
+            STAGE = 'genuine_draft_copy_owner_session'
+            client, config, session = open_session(proof['actor_id'], incoming['workspace_id'])
+
+            def persist(value):
+                global STAGE
+                STAGE = 'persist_exact_draft_copy_request'
+                helper.recheck(database, incoming, value)
+                verify_runtime(database)
+                digest = history.upload_once(os.environ['DIGITALOCEAN_ACCESS_TOKEN'],
+                    value['prepared_object'], encoded(value))
+                report['intent_persisted'] = True
+                return digest
+
+            def before_send():
+                global STAGE
+                helper.recheck(database, incoming, prepared)
+                STAGE = 'single_authenticated_draft_copy_send'
+                report['send_attempted'] = True
+                report['request_sent'] = None
+
+            try:
+                acknowledgement = helper.send(client, session, prepared, persist, before_send=before_send)
+                report.update(request_sent=acknowledgement['sent'], acknowledgement=acknowledgement)
+            except Exception as error:
+                if not report['send_attempted']:
+                    raise
+                report['acknowledgement'] = {'sent': None, 'unknown': True, 'error_code': fixed_code(error)}
+            STAGE = 'authoritative_draft_copy_binding'
+            target = helper.verify_result(database, prepared)
+    else:
+        require(incoming.get('version') == 1 and incoming.get('kind') == 'proposal_trial_report'
+            and incoming.get('mode') in DRAFT_COPY_MODES and incoming.get('draft_copy_only') is True,
+            'DRAFT_COPY_REPORT_INPUT')
+        selection = incoming.get('selection')
+        request.validate_selection(selection)
+        prepared = incoming.get('prepared')
+        helper.validate_prepared(prepared)
+        require(prepared.get('proof', {}).get('selection') == selection, 'DRAFT_COPY_SELECTION_CHANGED')
+        report.update(selection=selection, prepared=prepared)
+        STAGE = 'read_only_draft_copy_reconciliation'
+        if prepared['mode'] == 'send':
+            require(incoming.get('intent_persisted') is True, 'DRAFT_COPY_INTENT_MISSING')
+            target = helper.verify_result(database, prepared)
+            # Carry the durable intent so another observer needs no command.
+            report['intent_persisted'] = True
+        else:
+            require(prepared['mode'] == 'observe_existing', 'DRAFT_COPY_PREPARED_MODE')
+            target = prepared['target']
+        require(incoming.get('target') in (None, target), 'DRAFT_COPY_TARGET_CHANGED')
+    selection = report['selection']
+    require(isinstance(target, dict) and target.get('workspace_id') == selection['workspace_id']
+        and target.get('opportunity_id') == selection['opportunity_id']
+        and target.get('actor_id') == prepared['proof']['actor_id'], 'DRAFT_COPY_TARGET_CHANGED')
+    report['target'] = target
+    STAGE = 'read_only_draft_copy_observation'
+    previous = incoming.get('observation') if args.mode != 'draft-copy-prepare' else None
+    samples = []
+    end = time.monotonic() + (55 if args.mode == 'draft-copy-observe' else 0)
+    while True:
+        sample = helper.sample(database, target, previous)
+        samples.append(sample)
+        report.update(observation=sample, samples=samples)
+        previous = sample
+        if sample['outcome'] != 'preparing' or time.monotonic() + 15 > end:
+            break
+        time.sleep(15)
+    if args.mode == 'draft-copy-download':
+        require(sample['outcome'] == 'ready', 'DRAFT_COPY_NOT_READY')
+        STAGE = 'genuine_draft_copy_download_session'
+        client, config, session = open_session(target['actor_id'], target['workspace_id'])
+        STAGE = 'authenticated_ordinary_draft_files'
+        report['draft_copy_download'] = helper.download(client, config, session, sample)
+
+
 def run(args):
     global STAGE
     os.environ['TENDERDESK_TRANSFER_HTTP_TIMEOUT_SECONDS'] = '10'
     expected_operation = getattr(args, 'expected_operation', 'any')
-    require(expected_operation in {'any', 'generation.retry', 'proposal.generate'}
-            and (expected_operation == 'any' or args.mode == 'start'), 'EXPECTED_OPERATION_INVALID')
+    require(expected_operation == 'any'
+            or args.mode == 'start' and expected_operation in {'generation.retry', 'proposal.generate'}
+            or args.mode == 'draft-copy-prepare' and expected_operation == 'export.package.prepare',
+            'EXPECTED_OPERATION_INVALID')
     report = {'version': 1, 'kind': 'proposal_trial_report', 'mode': args.mode,
               'source_revision': os.environ['GITHUB_SHA'], 'request_sent': False, 'send_attempted': False,
               'intent_persisted': False, 'cleanup_verified': False, 'expected_operation': expected_operation}
-    require(args.mode not in {'start', 'settings-apply'}
+    require(args.mode not in {'start', 'settings-apply', 'draft-copy-prepare'}
             or (args.activate and os.environ.get('RUN_PROPOSAL_TRIAL') == 'true'),
             'ACTIVATION_REQUIRED')
     require(os.environ.get('GITHUB_RUN_ATTEMPT') == '1', 'WORKFLOW_REPLAY_REFUSED')
     signal.alarm(work_budget())
+    draft_helper = None
     try:
         STAGE = 'runtime_preflight'
         verify_runtime()
@@ -209,6 +311,10 @@ def run(args):
         release.base.save_client(database)
         database.prepare()
         verify_runtime(database)
+        if args.mode in DRAFT_COPY_MODES:
+            draft_helper = module('trial_ordinary_draft_copy', 'proposal-draft-copy.py')
+            run_draft_copy(draft_helper, database, incoming, args, report)
+            raise InspectionComplete()
         if args.mode == 'settings-plan':
             STAGE = 'read_only_settings_plan'
             prepared = settings_repair.plan(database, incoming)
@@ -383,9 +489,14 @@ def run(args):
                'send_attempted': report['send_attempted'],
                'intent_persisted': report['intent_persisted'], 'cleanup_verified': report['cleanup_verified']}
     if 'observation' in report:
-        summary['observation'] = observe.public_receipt(report['observation'])
+        summary['observation'] = (draft_helper.public_receipt(report['observation'])
+            if draft_helper is not None else observe.public_receipt(report['observation']))
+    if args.mode in DRAFT_COPY_MODES:
+        summary.update(draft_copy_only=True, generated_issuance_issued=False, approval_granted=False)
     if 'download' in report:
         summary['files_downloaded'] = len(report['download']['artifacts'])
+    if 'draft_copy_download' in report:
+        summary['draft_copy_files_downloaded'] = len(report['draft_copy_download']['artifacts'])
     for field in ('failure_code', 'failure_stage', 'cleanup_failure'):
         if field in report:
             summary[field] = report[field]
@@ -405,11 +516,12 @@ def main():
         return 0
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--mode', required=True, choices=('start', 'inspect', 'observe', 'download',
-        'settings-plan', 'settings-apply', 'settings-observe'))
+        'settings-plan', 'settings-apply', 'settings-observe',
+        'draft-copy-prepare', 'draft-copy-observe', 'draft-copy-download'))
     parser.add_argument('--input-object', required=True)
     parser.add_argument('--input-sha256', required=True)
     parser.add_argument('--activate', action='store_true')
-    parser.add_argument('--expected-operation', choices=('any', 'generation.retry', 'proposal.generate'), default='any')
+    parser.add_argument('--expected-operation', choices=('any', 'generation.retry', 'proposal.generate', 'export.package.prepare'), default='any')
     args = parser.parse_args()
     try:
         with redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
