@@ -1,5 +1,30 @@
 # Implementation status and continuation plan
 
+## November 8 — exact reference-boundary image qualification prepared
+
+The reference correction has separate build, native, qualification and
+publication receipts. Its immutable baseline is deployed worker/scheduler
+`b5e14c0e`, image `492d0716`, qualification `1557117f`. Only the copied
+`modelGrounding.ts` source may differ; every other runtime/supplementary input
+and both existing SQL policy hashes must match that baseline. Historical
+dispatch, latency and accepted-poll receipts remain unchanged.
+
+Qualification retains all nine dispatch, twelve prompt and ten accepted-poll
+native controls. A fourth actual-image receipt must prove the exact 44-case
+reference-boundary map: the previous image rejects 24 valid colon-delimited
+references, the candidate accepts those, and all 20 existing outcomes remain
+unchanged. Candidate/baseline fixture input hashes, source and image identities,
+eight completion checks, harness bytes, offline operation and cleanup are bound.
+
+Eleven focused qualification tests pass, including broadened-source and SQL
+change rejection, every required boundary result, all inherited receipt gates
+and unfrozen publication rejection. The real copied-source comparison against
+the frozen deployed receipt confirms the sole validator delta. Python syntax
+and diff checks pass. Actual candidate build/native execution, capture, hash
+freeze, publication, runtime rollout and customer acceptance remain separate
+pending gates. No image build, publication, database or provider action was
+performed for this wrapper preparation.
+
 ## November 8 — distinguish known reference UUID punctuation from factual numbers
 
 Private commercial evidence established that rejected numeric literals were
