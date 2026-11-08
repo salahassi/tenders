@@ -1,5 +1,48 @@
 # Implementation status and continuation plan
 
+## November 8 — fourth trial accelerated drafting but timed out in commercial repair
+
+Canonical saved-work trial 42519236607 ran from `bcbd9ae` against deployment
+42519090178 and worker `b5e14c0e`. It was accepted at 20:16:42.372135 UTC and failed
+at its unchanged 20:26:42.372135 deadline. Terminal observation 42520149573 confirms
+`PROPOSAL_ISSUANCE_TIMEOUT`: 23 of 24 current-issuance jobs succeeded, comprising
+11 draft sections, 11 partial renders and one stage advance. The commercial job
+failed; no complete customer package or authenticated download was verified.
+The [fourth-trial receipt](evidence/proposal-poll-trial-timeout-20261108-42520149573.json)
+binds the exact source, deployment and seven private-report hashes using only
+public-safe aggregate metadata.
+
+Measured processing improved. The first model attempt began after 3.154 seconds
+and the first fresh writer after 9.056 seconds, versus 56.397 and 137.127 seconds in
+the preceding trial. The fourth section completed after 105.299 seconds, versus
+515.135 seconds previously. The early snapshot directly shows four distinct
+accepted requests still reserved. Nine unfinished polling attempts took
+0.188–0.390 seconds; the comparable prior observation contained only one such
+attempt at 1.218 seconds. All 11 remaining sections finished after 372.261 seconds
+(6 minutes 12.261 seconds), preserving the earlier saved work.
+
+The commercial writer succeeded. Its first verification was rejected with
+`EVIDENCE_REFERENCE_INVALID`; inspection 42520244758 retained four
+`numeric_evidence_mismatch` diagnostics. The second verifier report passed
+validation at 20:26:14.974020, leaving 27.398 seconds, and the saved graph proceeded
+to `repair_result`. That repair attempt was skipped at the issuance deadline
+without a generation request. Successful verifier-report validation did not mean
+the commercial content was accepted. Terminal inspection found zero reserved
+requests and retained the saved commercial repair state.
+
+These observations combine the corrected admission wake and accepted-poll
+processing; they do not isolate either change or measure individual database
+calls. This continuation began with 11 remaining sections, compared with 16 in the
+prior trial, and the observation windows differ. Faster drafting is established;
+fresh end-to-end completion and delivery of this package remain open.
+
+## November 8 — separate fifth continuation pending
+
+Canonical saved-work continuation 42520365005 has started from the same
+`bcbd9ae` source with one incomplete commercial job. It uses the retained work
+without an application change or data reset. Its outcome is separate from the
+fourth-trial timeout above and remains pending.
+
 ## November 8 — accepted-poll correction deployed
 
 PR53 merged as `d5f69a31`; redirect-only Pages42519063111 passed within the
