@@ -1,5 +1,28 @@
 # Implementation status and continuation plan
 
+## November 8 — separate latency runtime qualification preparation
+
+The latency candidate has its own build, qualification and publication paths;
+the deployed `c6f7cce5` dispatch receipts remain immutable historical evidence.
+The wrapper reuses source/image/registry validation without overriding historical
+module constants. Qualification requires all nine actual worker/scheduler native
+controls and a separate offline image-bound prompt fixture that compares legacy
+wire bytes and phase pins against the exact deployed image, then exercises the
+new revision-6 contracts. Product files are read from each image, never mounted
+over. The build uses only committed copied roots and supplementary inputs, with
+the verified cached base and no network during dependency compilation.
+
+Eleven focused qualification controls, eight native-fixture guard controls and
+all 23 reused dispatch release controls pass. Backend typecheck passes. Native
+fixture review, actual image build, native execution,
+receipt capture/freezing, publication and rollout remain pending. Verification
+and publication fail closed while the new qualification hash is unfrozen. This
+runtime proof binds the adaptive-poll migration's exact committed bytes but does
+not qualify SQL behavior; that migration requires its separate database tests
+and child schema ledger. No build, image execution,
+registry publication, live deployment or provider request has been performed for
+this qualification preparation.
+
 ## November 8 — reduce measured proposal analysis overhead
 
 The actual proposal trial still progressed too slowly after the dispatch fix.
