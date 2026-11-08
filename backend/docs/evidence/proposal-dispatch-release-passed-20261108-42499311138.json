@@ -1,0 +1,106 @@
+{
+  "version": 1,
+  "run_id": 42499311138,
+  "run_url": "https://github.com/salahassi/tenders/actions/runs/42499311138",
+  "source_revision": "40c0cd15f9e05dca7b6b17b3795483385dbdfee9",
+  "started_at": "2026-11-08T16:19:37Z",
+  "completed_at": "2026-11-08T16:20:46Z",
+  "elapsed_seconds_including_queue": 69,
+  "job_conclusion": "success",
+  "receipt": {
+    "release": "proposal-dispatch-v2",
+    "status": "passed",
+    "source_revision": "40c0cd15f9e05dca7b6b17b3795483385dbdfee9",
+    "artifact_source_revision": "e2e209d5ec0098e67774b5c2d77def7e5bf74b8a",
+    "image": "registry.digitalocean.com/tenderdesk-a6093a76/runtime@sha256:c6f7cce500dbec1b6028668ca7677d3026dc41a927f2972fb84dc0330e94a606",
+    "image_id": "sha256:4b04acaa20d627581cdeb9669d603653633ae5b6d435e673232ff943f983b431",
+    "qualification_sha256": "d7a13be2d06e265206c5da8180e91e56f01c28e5a00e8b5f72313cf344930b91",
+    "registry_identity": {
+      "verification": "immutable_manifest_and_qualified_config_digest",
+      "metadata_only": true,
+      "reference": "registry.digitalocean.com/tenderdesk-a6093a76/runtime@sha256:c6f7cce500dbec1b6028668ca7677d3026dc41a927f2972fb84dc0330e94a606",
+      "root_manifest_bytes": 5123,
+      "selected_manifest_bytes": 5123,
+      "selected_manifest_digest": "sha256:c6f7cce500dbec1b6028668ca7677d3026dc41a927f2972fb84dc0330e94a606",
+      "config_digest": "sha256:4b04acaa20d627581cdeb9669d603653633ae5b6d435e673232ff943f983b431",
+      "config_bytes": 10342,
+      "layer_count": 23,
+      "compressed_layer_bytes": 86213844,
+      "image_layers_downloaded": false
+    },
+    "deployment_targets": [
+      "worker",
+      "scheduler"
+    ],
+    "retained_images": {
+      "source-browser": "registry.digitalocean.com/tenderdesk-a6093a76/runtime@sha256:077b06edd81eb58296ef755e7baa8af32a73dd931c6f06097acc513d3f684e3e",
+      "api": "registry.digitalocean.com/tenderdesk-a6093a76/runtime@sha256:f573e991e622c982e82a4a3b4e6dc6f144e87586ba0f5dd0b3d05381b30dbd6a",
+      "frontend": "registry.digitalocean.com/tenderdesk-a6093a76/frontend@sha256:522ad1b7258f1842bafd94f7f1b8c4c3a4642c098063dea848248f49b3c8e0f3"
+    },
+    "schema": {
+      "release": "proposal-dispatch-v2-20261108",
+      "replayed": false,
+      "read_only": false,
+      "sql_sha256": "0888f615c8ef705d5495a81c6f6afb756bda149dc636d4bfe0d90e1b8af64c4c",
+      "catalog_sha256": "abe81b431bf33d6a75cf5e40d74d27a8e00858a6da125b3f8fb0d70a571b6992",
+      "structure_sha256": "1857408e09aafebb5c826558f7abb0686431ba8454636db664e83fc2780016ce",
+      "processing_requested": false,
+      "business_rows_changed": 0,
+      "legacy_finish_retained": true
+    },
+    "schema_readback": {
+      "release": "proposal-dispatch-v2-20261108",
+      "replayed": true,
+      "read_only": true,
+      "sql_sha256": "0888f615c8ef705d5495a81c6f6afb756bda149dc636d4bfe0d90e1b8af64c4c",
+      "catalog_sha256": "abe81b431bf33d6a75cf5e40d74d27a8e00858a6da125b3f8fb0d70a571b6992",
+      "structure_sha256": "1857408e09aafebb5c826558f7abb0686431ba8454636db664e83fc2780016ce",
+      "processing_requested": false,
+      "business_rows_changed": 0,
+      "legacy_finish_retained": true
+    },
+    "readiness": [
+      {
+        "component": "worker",
+        "ready": true,
+        "unauthorized_maintenance_status": 401
+      },
+      {
+        "component": "scheduler",
+        "ready": true,
+        "unauthorized_maintenance_status": null
+      }
+    ],
+    "worker_resource_envelope": {
+      "limits": {
+        "cpu": "1",
+        "memory": "640Mi"
+      },
+      "requests": {
+        "cpu": "25m",
+        "memory": "192Mi"
+      },
+      "desired_replicas": 1,
+      "cpu_millicores": 1000,
+      "memory_bytes": 671088640,
+      "minimum_cpu_millicores": 1000,
+      "minimum_memory_bytes": 671088640,
+      "hosted_load_qualified": false
+    },
+    "configuration_preserved": true,
+    "customer_processing_retried": false,
+    "providers_activated": false,
+    "native_scope": "worker_and_scheduler_only",
+    "customer_completion_verified": false
+  },
+  "cleanup": {
+    "owned_client": true,
+    "private_runner_credentials": true
+  },
+  "prior_failed_run": 42498570824,
+  "evidence_limits": [
+    "Native dispatch behavior uses synthetic RPC fixtures in the exact image.",
+    "Hosted acceptance proves target image readiness, maintenance authentication, schema readback and retained configuration.",
+    "No new customer proposal request was started; end-to-end completion time is not established."
+  ]
+}

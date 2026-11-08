@@ -5,7 +5,7 @@ The repository-root [AGENTS.md](../../AGENTS.md) points here so the established
 route is available in every checkout, without relying on conversation history.
 Last reviewed: November 8, 2026.
 
-## Proposal dispatch correction (November 8, prepared)
+## Proposal dispatch correction (November 8, deployed)
 
 `deploy-proposal-dispatch.yml` and `proposal-dispatch-release.py` apply the
 additive durable-timer/maintenance outbox SQL, then replace worker before
@@ -21,8 +21,20 @@ checksum/catalog/structure ledger without changing existing business records or
 the original release manifest. Rollback drains scheduler before worker and
 retains the compatible additive schema; it does not claim a schema rollback.
 Native dispatch behavior and hosted readiness/authority checks are separate
-from actual proposal completion. This entry is preparation, not deployment
-evidence; reconcile it with the final release receipt after rollout.
+from actual proposal completion. [Run42499311138](https://github.com/salahassi/tenders/actions/runs/42499311138)
+at `40c0cd15` passed in 69 seconds including queue. Worker and scheduler now run
+`c6f7cce5`; retained images and configuration match their baseline. Exact registry
+metadata verification avoids a redundant runner download, while the committed
+publication retains full pulled-image/source verification. The first attempt
+failed before mutation at its full-image pull bound; both attempts cleaned up.
+
+The additional runtime schema ledger has SQL checksum `0888f615`, routine catalog
+`abe81b43` and structure `1857408e`. The original `ada21f57` application ledger is
+retained, but the former `8f82c881` routine catalog is historical. Existing strict
+workflows that require the former catalog or old worker/scheduler images must be
+updated against this evidence before reuse. This release's own previous-image
+guard deliberately rejects unchanged redispatch after success. See the
+[final receipt](evidence/proposal-dispatch-release-passed-20261108-42499311138.json).
 
 ## Model settings refresh correction (November 8)
 
@@ -111,9 +123,10 @@ config/layer/label guards remain enforced. Inspection `42370741371` passed.
 
 ## Current images and original release baseline
 
-The November 8 model-settings receipt above is the current image authority: API
-`f573e991`, three retained runtime targets `077b06ed`, frontend `522ad1b7`.
-The schema ledger/catalog and original release baseline below remain unchanged.
+The November 8 dispatch receipt above is the current image authority: API
+`f573e991`, worker/scheduler `c6f7cce5`, source-browser `077b06ed`, frontend
+`522ad1b7`. The original application baseline ledger remains, with the additional
+dispatch SQL ledger and current routine catalog `abe81b43` recorded above.
 Startup acceptance does not close the separate proposal issuance, provider or
 export acceptance gates. The following November 5 release is historical.
 

@@ -105,8 +105,11 @@ def docker(*args, timeout=45, binary=False, env=None):
     environment = dict(os.environ if env is None else env)
     for key in ('DOCKER_HOST', 'DOCKER_CONTEXT', 'DOCKER_TLS', 'DOCKER_TLS_VERIFY', 'DOCKER_CERT_PATH'):
         environment.pop(key, None)
-    result = subprocess.run(['docker', '--host=unix:///var/run/docker.sock', *args],
-                            env=environment, capture_output=True, text=not binary, timeout=timeout)
+    try:
+        result = subprocess.run(['docker', '--host=unix:///var/run/docker.sock', *args],
+                                env=environment, capture_output=True, text=not binary, timeout=timeout)
+    except subprocess.TimeoutExpired:
+        raise QualificationError('DISPATCH_QUALIFICATION_DOCKER_TIMEOUT') from None
     require(result.returncode == 0, 'DOCKER_FAILED')
     return result.stdout
 
@@ -211,6 +214,89 @@ def verify_image(value, receipt, reference=None):
     if reference is not None:
         require(re.fullmatch(re.escape(REGISTRY) + r'@sha256:[a-f0-9]{64}', reference) is not None
                 and reference in value.get('RepoDigests', []), 'PUBLISHED_DIGEST')
+
+
+def registry_identity(reference, receipt, *, fetch=None):
+    """Bind the immutable remote manifest to the locally qualified config ID.
+
+    Publication already pulled this exact digest and rechecked its full /app
+    source, config and layers. The rollout verifies the SHA-256 of raw registry
+    manifest bytes, then its config descriptor against that same native-tested
+    image ID. That digest binds all config and uncompressed layer hashes; no
+    second full layer download or new source qualification is implied here.
+    Docker's existing private registry credentials/auth/TLS handling is retained.
+    """
+    require(re.fullmatch(re.escape(REGISTRY) + r'@sha256:[a-f0-9]{64}', reference) is not None,
+            'REGISTRY_REFERENCE')
+    image = receipt['image']
+    manifests = ('application/vnd.oci.image.manifest.v1+json',
+                 'application/vnd.docker.distribution.manifest.v2+json')
+    indexes = ('application/vnd.oci.image.index.v1+json',
+               'application/vnd.docker.distribution.manifest.list.v2+json')
+    configs = ('application/vnd.oci.image.config.v1+json',
+               'application/vnd.docker.container.image.v1+json')
+    layers = ('application/vnd.oci.image.layer.v1.tar', 'application/vnd.oci.image.layer.v1.tar+gzip',
+              'application/vnd.oci.image.layer.v1.tar+zstd', 'application/vnd.docker.image.rootfs.diff.tar.gzip')
+    if fetch is None:
+        def fetch(selected):
+            try:
+                return docker('buildx', 'imagetools', 'inspect', '--raw', selected, timeout=12, binary=True)
+            except QualificationError as error:
+                if str(error) == 'DISPATCH_QUALIFICATION_DOCKER_TIMEOUT':
+                    raise QualificationError('DISPATCH_QUALIFICATION_REGISTRY_TIMEOUT') from None
+                raise
+
+    def descriptor(value, media_types, max_size):
+        require(isinstance(value, dict) and value.get('mediaType') in media_types
+                and re.fullmatch(r'sha256:[a-f0-9]{64}', str(value.get('digest', ''))) is not None
+                and type(value.get('size')) is int and 0 < value['size'] <= max_size
+                and not value.get('urls') and not value.get('data'), 'REGISTRY_DESCRIPTOR')
+
+    def document(digest, size=None):
+        raw = fetch(REGISTRY + '@' + digest)
+        # Imagetools returns the exact server bytes. Do not reserialize JSON or
+        # strip whitespace: even an appended newline changes the identity.
+        require(isinstance(raw, bytes) and 0 < len(raw) <= 1048576
+                and (size is None or len(raw) == size), 'REGISTRY_DOCUMENT_SIZE')
+        require('sha256:' + hashlib.sha256(raw).hexdigest() == digest, 'REGISTRY_DOCUMENT_DIGEST')
+        try:
+            value = json.loads(raw)
+        except (ValueError, UnicodeDecodeError):
+            raise QualificationError('DISPATCH_QUALIFICATION_REGISTRY_DOCUMENT_JSON') from None
+        require(isinstance(value, dict) and value.get('schemaVersion') == 2, 'REGISTRY_DOCUMENT_SCHEMA')
+        return value, len(raw)
+
+    root_digest = reference.split('@', 1)[1]
+    selected_digest = root_digest
+    manifest, root_size = document(root_digest)
+    manifest_size = root_size
+    if manifest.get('mediaType') in indexes:
+        choices = manifest.get('manifests')
+        require(isinstance(choices, list) and 1 <= len(choices) <= 16, 'REGISTRY_INDEX')
+        matches = [entry for entry in choices if isinstance(entry, dict) and isinstance(entry.get('platform'), dict)
+                   and entry['platform'].get('os') == image['Os']
+                   and entry['platform'].get('architecture') == image['Architecture']
+                   and entry['platform'].get('variant', '') == image['Variant']]
+        require(len(matches) == 1, 'REGISTRY_PLATFORM_SELECTION')
+        selected = matches[0]
+        descriptor(selected, manifests, 1048576)
+        selected_digest = selected['digest']
+        manifest, manifest_size = document(selected_digest, selected['size'])
+        require(manifest.get('mediaType') == selected['mediaType'], 'REGISTRY_MEDIA_TYPE')
+    require(manifest.get('mediaType') in manifests and 'manifests' not in manifest, 'REGISTRY_MANIFEST')
+    config = manifest.get('config')
+    descriptor(config, configs, 1048576)
+    require(config['digest'] == image['Id'], 'REGISTRY_QUALIFIED_CONFIG')
+    actual_layers = manifest.get('layers')
+    require(isinstance(actual_layers, list) and 1 <= len(actual_layers) <= 128
+            and len(actual_layers) == len(image['RootFS']['Layers']), 'REGISTRY_LAYER_COUNT')
+    for layer in actual_layers:
+        descriptor(layer, layers, 2**31)
+    return {'verification': 'immutable_manifest_and_qualified_config_digest', 'metadata_only': True,
+            'reference': reference, 'root_manifest_bytes': root_size, 'selected_manifest_bytes': manifest_size,
+            'selected_manifest_digest': selected_digest, 'config_digest': config['digest'], 'config_bytes': config['size'],
+            'layer_count': len(actual_layers), 'compressed_layer_bytes': sum(layer['size'] for layer in actual_layers),
+            'image_layers_downloaded': False}
 
 
 def publication(root=ROOT):

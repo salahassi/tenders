@@ -234,8 +234,9 @@ def release():
                  schema_applied=False, schema_retained_on_rollback=False)
     revision = verify_checkout()
     receipt, candidate = qualification.publication()
-    qualification.docker('pull', candidate, timeout=40)
-    qualification.verify_image(qualification.image_metadata(candidate), receipt, candidate)
+    STATE['stage'] = 'registry_identity'
+    registry = qualification.registry_identity(candidate, receipt)
+    STATE['stage'] = 'cluster_preflight'
     d.probe.validate_cluster()
     original = {name: u.deployment(name) for name in BASELINES}
     require(all(base.image_of(value) == BASELINES[name] for name, value in original.items()), 'IMAGE_BASELINE_CHANGED')
@@ -271,6 +272,7 @@ def release():
         return {'release': 'proposal-dispatch-v2', 'status': 'passed', 'source_revision': revision,
                 'artifact_source_revision': receipt['source_revision'], 'image': candidate,
                 'image_id': receipt['image']['Id'], 'qualification_sha256': qualification.RECEIPT_SHA256,
+                'registry_identity': registry,
                 'deployment_targets': list(TARGETS), 'retained_images': {k: v for k, v in BASELINES.items() if k not in TARGETS},
                 'schema': schema_receipt, 'schema_readback': schema_after, 'readiness': observed,
                 'worker_resource_envelope': resources, 'configuration_preserved': True,

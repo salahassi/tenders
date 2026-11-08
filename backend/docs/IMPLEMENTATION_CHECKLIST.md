@@ -2,6 +2,37 @@
 
 ## November 8 — remove synchronous proposal dispatch waits
 
+**Deployed:** [42499311138](https://github.com/salahassi/tenders/actions/runs/42499311138)
+at `40c0cd15` passed in **69 seconds including queue time**. Worker and scheduler
+now run immutable `c6f7cce5` (artifact source `e2e209d`, native image `4b04acaa`).
+Both report ready; the unauthenticated maintenance probe returns 401. The exact
+registry manifest/configuration binding, additive SQL transaction and subsequent
+read-only schema verification pass. New runtime SQL checksum `0888f615`, routine
+catalog `abe81b43` and structure `1857408e` are recorded in their own release
+ledger; the original `ada21f57` baseline ledger remains. Existing business rows,
+private configuration and API/frontend/source-browser images are preserved.
+Owned observer removal and private runner cleanup pass. The
+[release receipt](evidence/proposal-dispatch-release-passed-20261108-42499311138.json)
+retains the exact evidence. Full customer proposal completion remains unverified;
+this release did not start a new request, retry customer work or enable providers.
+
+The first rollout [42498570824](https://github.com/salahassi/tenders/actions/runs/42498570824)
+at merged source `a22fc8f` stopped in preflight after 52 seconds including queue
+time. It reached no schema or image mutation; both cleanup stages passed. The
+release step consumed 40.25 seconds against its initial full-image pull's
+40-second subprocess bound. The failure receipt preserves the generic error
+and identifies this as the probable cause, not a confirmed network diagnosis.
+The corrected runner will verify immutable registry manifest/configuration
+metadata against the already pull-verified publication, avoiding another full
+image download before the actual cluster rollout. The successful run above
+closes this deployment failure.
+The corrected helper's actual registry check passes in 0.817 seconds, binding the
+exact 5,123-byte manifest to native-qualified config `4b04acaa` and 23 layers.
+All 26 focused release/schema controls pass, including digest corruption,
+wrong configuration, ambiguous platforms, external URLs and timeout rejection.
+Independent review confirms that the original full publication/source proof is
+retained; the hosted preflight now downloads metadata only.
+
 Implementation separates persistent worker foreground processing from awaited
 housekeeping. The foreground returns a validated future-poll hint without
 sleeping; the scheduler records that hint in a durable outbox, immediately
@@ -28,7 +59,7 @@ backend suite passes 3,513/3,514 tests; one existing delivery integration exceed
 its unchanged five-second timeout under the complete suite. Its unchanged file
 passes all 18 tests in isolation. This retains the full-suite limitation rather
 than claiming a green full backend run. All new worker regressions pass in the
-complete run. Production rollout remains pending. Schema application must precede
+complete run. Production readiness passes in the run above. Schema application must precede
 worker readiness and scheduler replacement; rollback restores scheduler first.
 The schema change is additive and legacy dispatch acknowledgement is retained.
 All 21 focused release/schema controls pass. Independent review closed findings
