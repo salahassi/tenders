@@ -97,7 +97,7 @@ class RuntimeGuards(unittest.TestCase):
         self.assertEqual(m.sha(m.ROOT / m.dispatch.PUBLICATION), m.BASELINE_PUBLICATION_SHA256)
 
     def test_unfrozen_preparation_cannot_verify_or_publish(self):
-        with patch.object(m, 'RECEIPT_SHA256', None), patch.object(m, 'docker') as docker:
+        with patch.object(m, 'ROOT', self.root), patch.object(m, 'RECEIPT_SHA256', None), patch.object(m, 'docker') as docker:
             with self.assertRaisesRegex(m.QualificationError, 'NOT_FROZEN'): m.load()
             with self.assertRaisesRegex(m.QualificationError, 'NOT_FROZEN'): m.publish()
             docker.assert_not_called()

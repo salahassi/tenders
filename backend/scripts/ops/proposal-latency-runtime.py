@@ -41,7 +41,7 @@ RECEIPT = 'backend/docs/evidence/proposal-latency-runtime-20261108.json'
 PUBLICATION = 'backend/docs/evidence/proposal-latency-publication-20261108.json'
 POLL_MIGRATION = 'backend/supabase/migrations/20261108180821_healthy_model_poll_backoff.sql'
 # Freeze only after actual native evidence is captured. Preparation is not proof.
-RECEIPT_SHA256 = None
+RECEIPT_SHA256 = '12e8e13ce4f1c3e05f0a4554036a7cc5ae7ac11ddd259d192cf510b4c150e19e'
 BASELINE_REFERENCE = REGISTRY + '@sha256:c6f7cce500dbec1b6028668ca7677d3026dc41a927f2972fb84dc0330e94a606'
 BASELINE_IMAGE = 'sha256:4b04acaa20d627581cdeb9669d603653633ae5b6d435e673232ff943f983b431'
 BASELINE_PUBLICATION_SHA256 = '6f08994d80d1e052c5ce33be24172fa02e823a49e9b73f55e296c3f3d70fb59c'

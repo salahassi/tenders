@@ -1,0 +1,12 @@
+{
+  "image_id": "sha256:228d71a4da16f553af08a795d677801735d65b23a0fbd84a2dc5201b66d9a193",
+  "qualification_sha256": "12e8e13ce4f1c3e05f0a4554036a7cc5ae7ac11ddd259d192cf510b4c150e19e",
+  "reference": "registry.digitalocean.com/tenderdesk-a6093a76/runtime@sha256:03c68b58ebe05d2d35ee5345df3bad8d9c7a2bc2989bdf78a83d322e1b145a3d",
+  "scope": [
+    "worker",
+    "scheduler"
+  ],
+  "source_revision": "3ea8899b99bb397b672125ca3a909af427aec7bc",
+  "temporary_credentials_removed": true,
+  "version": 1
+}

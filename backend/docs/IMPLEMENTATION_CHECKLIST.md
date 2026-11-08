@@ -1,5 +1,21 @@
 # Implementation status and continuation plan
 
+## November 8 — latency runtime qualified and published
+
+The frozen source `3ea8899` built offline and passed all nine actual dispatch
+controls and all twelve prompt controls. The latter compares 84 historical
+wire payloads and eleven saved pins against the immutable deployed baseline.
+Both receipts verify owned cleanup and zero external/provider calls. The new
+qualification hash is `12e8e13c`; publication binds image `03c68b58` (configuration
+`228d71a4`) to the exact copied source, original entrypoint and polling migration.
+Registry push/pull and image/source readback passed; temporary credentials were
+removed. The initial build and native dispatch receipt remain preliminary
+history; the final qualification binds the `-v2` receipts. The unfrozen guard's
+test now uses its isolated fixture root so the real publication cannot mask that
+negative test. Full backend 3,582/frontend 389 tests and both typechecks/builds
+passed before publication. SQL rollout and actual saved-work issuance remain
+pending; image qualification does not claim customer completion.
+
 ## November 8 — restrict the saved-work trial to canonical retry
 
 The trial workflow accepts an optional expected operation. A start constrained
