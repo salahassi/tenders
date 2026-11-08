@@ -1,5 +1,21 @@
 # Implementation status and continuation plan
 
+## November 8 — ordinary draft-download boundaries verified locally
+
+Eleven focused tests exercise the actual new download helper against synthetic
+HTTP responses and real DOCX ZIP/XML bytes. Both volumes retain all eight review
+findings and a visible DRAFT label in each file; a missing label in one volume
+was caught and corrected in the helper. Exact Owner/session/package identities
+are checked before and after transfer. Redirects, HTML, incorrect hash/size,
+extra or incomplete artifacts, duplicate identities, unsafe names, malformed
+ZIP/XML and exhausted total time are rejected. Every recorded request is an
+authenticated canonical GET, with no command POST.
+
+The tests pass against helper `826cf6cb` in0.042seconds. This is local operations
+verification, separate from graph's canonical SQL proof and any hosted artifact
+or visual review. No helper/product/schema edit, model request or live download
+is part of this test-only commit.
+
 ## November 8 — bounded ordinary draft-copy runner prepared
 
 The existing private trial workflow now has separate draft-copy preparation,
