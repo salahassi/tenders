@@ -64,6 +64,35 @@ was performed for this change. Actual image proof requires the frozen product
 with all executor-6 RPC paths; SQL authority and hosted customer issuance remain
 separate acceptance gates.
 
+## November 8 — separate native commercial-input V2 and DOCX proof prepared
+
+The new `commercial_v2_native.py/.ts` harness invokes actual image exports for
+commercial context construction, prompt serialization, schema validation,
+Word rendering and archive/content verification. Its 11 controls bind a synthetic
+fixture to the currently deployed `c74fd450` image and qualification `7e351bc3`.
+It compares four legacy context/input hashes and 24 prompt wires covering absent
+and version-1 inputs, both languages, writer/repair/verifier phases and legacy
+plus current pinned policies. Twelve version-2 wires must differ while preserving
+evidence, accepted sections, manifests and required IDs. Failed candidates,
+paid history and predecessor identifiers must remain outside the prompt.
+
+Both actual images render synthetic English and Arabic DOCX archives using their
+own copied fonts and renderer, then validate each archive against the exact
+render model. Missing tax categories retain the existing localized input-required
+label; nullable business inputs remain nullable and malformed schema alternatives
+remain rejected. Receipts retain each archive's byte length/hash separately,
+while model and visible-content hashes must match the baseline. This establishes
+archive/content behavior, not visual review or customer-file issuance.
+
+Thirteen focused Python isolation/negative-receipt controls and backend typecheck
+pass. The actual deployed baseline passed all 24 legacy wire cases and both
+DOCX checks with verified cleanup. A separate source smoke against `8fe889f`
+passes the 12 new wires, identical legacy bytes and render-content comparison.
+No product file was mounted over an image; every copied source and harness is
+hashed, network access is disabled and no provider was called. Existing native
+fixtures and receipts remain unchanged. Candidate-image qualification, SQL
+authority qualification, publication, deployment and actual issuance are pending.
+
 ## November 8 — reference UUID punctuation correction deployed
 
 PR54 merged as `0d0de308`; Pages42523934582 passed within the three-minute bound.
