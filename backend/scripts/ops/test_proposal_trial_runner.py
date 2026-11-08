@@ -230,20 +230,25 @@ class TrialRunnerBoundaryTests(unittest.TestCase):
     def test_runtime_verification_requires_qualified_worker_but_preserves_other_baselines(self):
         candidate = 'registry/synthetic-runtime@sha256:' + 'b' * 64
         expected = m.release.BASELINES | {'worker': candidate, 'scheduler': candidate}
-        schema = Mock(PARENT_SQL='c' * 64)
-        receipt = {'source': {'source_entries': {'backend/scripts/runtime/dispatcher.sql': {'sha256': 'c' * 64}}}}
+        schema = Mock(ROOT=Path('/synthetic'), SOURCE=Path('/synthetic/backend/supabase/migrations/poll.sql'))
+        schema.source_sha256.return_value = 'c' * 64
+        schema.parent.PARENT_SQL = 'e' * 64
+        receipt = {'poll_migration': {'path': 'backend/supabase/migrations/poll.sql', 'sha256': 'c' * 64},
+            'source': {'source_entries': {'backend/scripts/runtime/dispatcher.sql': {'sha256': 'e' * 64}}}}
+        qualification = Mock()
+        qualification.publication.return_value = (receipt, candidate)
         with patch.object(m.release, 'verify_checkout'), patch.object(m.d.probe, 'validate_cluster'), \
-             patch.object(m.release.qualification, 'publication', return_value=(receipt, candidate)), \
              patch.object(m.release.u, 'deployment', side_effect=lambda name: {'image': expected[name]}), \
              patch.object(m.release.base, 'image_of', side_effect=lambda value: value['image']), \
-             patch.object(m.release, 'verify_runtime_contract'), patch.object(m, 'module', return_value=schema):
+             patch.object(m.release, 'verify_runtime_contract'), patch.object(m, 'module',
+                side_effect=lambda name, filename: qualification if filename == 'proposal-latency-runtime.py' else schema):
             database = object()
             m.verify_runtime(database)
-            schema.verify.assert_called_once_with(database, allow_parent=True)
-            schema.PARENT_SQL = 'd' * 64
-            with self.assertRaisesRegex(RuntimeError, 'DISPATCH_SOURCE_CHANGED'):
+            schema.verify.assert_called_once_with(database)
+            schema.source_sha256.return_value = 'd' * 64
+            with self.assertRaisesRegex(RuntimeError, 'POLL_SOURCE_CHANGED'):
                 m.verify_runtime(database)
-            schema.PARENT_SQL = 'c' * 64
+            schema.source_sha256.return_value = 'c' * 64
             expected['api'] = candidate
             with self.assertRaisesRegex(RuntimeError, 'RUNTIME_CHANGED'):
                 m.verify_runtime()

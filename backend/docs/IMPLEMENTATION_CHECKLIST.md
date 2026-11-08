@@ -47,6 +47,43 @@ must be repeated after committing the harness fix at the frozen release source.
 No registry publication, production action or provider call was made by this
 fixture correction.
 
+## November 8 — bounded latency release controls prepared
+
+The latency coordinator adds one atomic schema child receipt to the exact
+deployed retry catalog `249d2fe6` and structure `3fea5eec`. The adaptive-poll
+migration may change only the existing deferral routine body. Original ledger
+rows, complete business-row digests, routine attributes, authority and all other
+schema objects must remain identical. The new qualification binds both the
+polling SQL and the original durable-outbox source; inspection is read-only.
+
+Apply requires the original single scheduler replica, pauses that owned
+Deployment using UID/resource-version/full-spec preconditions, and proves its
+pods have drained before replacing the worker. The scheduler template changes
+while replicas remain zero. Worker readiness/authentication, exact schema,
+images and retained configuration must pass before the final scheduler resume.
+Before resume, bounded recovery restores both previous images while paused,
+then restores the original replica count. Any resume attempt is a commitment:
+revision-6 phases may now exist, so failures retain the candidate pair, perform
+a bounded actual-state readback and require forward repair. Read-only inspection
+can inspect a paused mixed pair without enabling it. No provider configuration,
+saved phase pin, business row or persistent scheduler setting is reset.
+
+The workflow binds its deadline to run creation including queue time: at most
+100 seconds of work, with 45 seconds reserved for recovery, 15 for owned-client
+cleanup and five for exit within the 170-second total. Worker resources must
+meet the inherited qualified floor before any database client or mutation.
+Actual customer trials now require the separate latency image proof and exact
+applied child ledger; the required business operation remains separately guarded.
+
+Focused local evidence passes 37 latency operational/qualification tests and
+12 trial-runner tests. This includes actual isolated PostgreSQL execution of
+the dispatch/retry/poll ledger chain and nine mutation fault cases, plus pause,
+ambiguous activation, pre-commit rollback and forward-only recovery cases.
+Python compilation, workflow YAML/shell syntax and diff checks pass. Independent
+review found no remaining pause/rollback blocker. These controls do not change
+application source; native publication, deployment and actual customer issuance
+are separate gates and are not claimed by this implementation entry.
+
 ## November 8 — separate latency runtime qualification preparation
 
 The latency candidate has its own build, qualification and publication paths;
