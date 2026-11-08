@@ -1,5 +1,58 @@
 # Implementation status and continuation plan
 
+## November 8 — read-only diagnosis of the ten-minute proposal failure
+
+The follow-up diagnostic adds a timing history bound to the exact selected plan,
+so a later user request cannot redirect the investigation. Attempts, usage and
+queue-wake arrays each have a 2,048-row serialization limit, exact totals and
+explicit truncation flags. Five inspection controls pass against the complete
+synthetic migration set, including exact-plan isolation, chronological ordering,
+private-field exclusion, cap behavior and unchanged records. This is a read-only
+diagnostic change; application runtime and schema are unchanged.
+
+Static tracing identifies synchronous dispatch coupling: the persistent scheduler
+awaits the worker response; that response awaits a future accepted-model poll wake
+and then maintenance. A controlled composition of the actual scheduler and wake
+helper reproduces a 30,000 ms dispatch hold with zero model/network delay. This
+reproduction establishes the blocking path, not its exact historical duration.
+The composed parallel-request migration permits other jobs' known reservations
+during a poll wake; the original pre-migration single-reservation guard must not
+be mistaken for the currently deployed logic. Historical attempt timings are
+required to separate provider processing from delayed observation and dispatch.
+
+[Inspection42468242137](https://github.com/salahassi/tenders/actions/runs/42468242137)
+at `6abffe096398af83bc5e4cdb468736427151733c` passed in **85 seconds including
+queue time**. All five read-only inspection controls, original cluster certificate
+authority access, temporary observer removal and private runner cleanup passed.
+The encrypted report was downloaded privately and its plaintext SHA-256 verified.
+The sanitized [receipt](evidence/proposal-timeout-diagnosis-20261108.json) retains
+the observation, source and evidence limits without customer identifiers or text.
+
+The selected opportunity's newest request was accepted at 08:45:28.039854 UTC
+and durably failed at its original 08:55:28.039854 deadline. Of twelve analysis
+jobs, one succeeded, two began but did not complete, and nine had zero attempts.
+The first chunk committed after approximately 275 seconds. Seven accepted model
+requests have settled usage totaling 517,372 input and 21,259 output tokens.
+The last retained operations include grounding verification and result repair;
+repair was admitted with approximately ten seconds remaining. There are zero
+proposal versions. This is actual processing throughput failing the issuance
+deadline, separate from the earlier November 5 no-agent failure.
+
+The current execution setting permits two parallel requests; the read does not
+establish its value during the failed request. Large input counts warrant prompt
+and verification profiling, but do not prove that complete source documents were
+repeated for each chunk. The retained projection cannot separate provider latency,
+polling delay and processing time for every call. Scheduler metadata is fresh at
+observation; it does not by itself reconstruct historical dispatch timing.
+
+No model request, business retry, configuration change or deployment was made by
+this diagnosis. Proposal issuance/export acceptance remains failed. Further
+implementation should measure and improve per-chunk analysis, verification,
+repair and scheduling within the existing deadline, then obtain separately
+authorized actual-request evidence. The old graph inspector expects identical
+API and worker images and must not be dispatched unchanged against the current
+intentionally mixed image baseline.
+
 ## November 8 — model settings saves and repeated workspace reads
 
 **Deployed and accepted:** [run42465497658](https://github.com/salahassi/tenders/actions/runs/42465497658)

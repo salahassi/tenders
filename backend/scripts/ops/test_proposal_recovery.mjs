@@ -39,7 +39,7 @@ await db.query(`insert into app_private.model_graph_budgets(workspace_id,thread_
 await db.query(`insert into app_private.model_graph_results(workspace_id,thread_id,result_key,value,content_hash) values($1,repeat('c',64),'semantic-instructions-fixture','{"version":2,"instructions":"PRIVATE HISTORICAL PROMPT"}',repeat('d',64))`,[workspace]);
 const state=async()=>{
  const value={};
- for(const table of ['public.generation_plans','public.proposal_issuance_requests','public.jobs','public.provider_usage','public.model_attempts','public.model_execution_settings','public.operations','app_private.dispatcher_settings','app_private.k8s_dispatch_queue','app_private.queue_dispatch_state','app_private.queue_owner_service','app_private.model_graph_threads','app_private.model_graph_budgets','app_private.model_graph_results','public.content_authorizations','app_private.proposal_workflow_admission'])
+ for(const table of ['public.generation_plans','public.proposal_issuance_requests','public.jobs','public.provider_usage','public.model_attempts','public.model_execution_settings','public.operations','app_private.dispatcher_settings','app_private.k8s_dispatch_queue','app_private.worker_queue_wakes','app_private.queue_dispatch_state','app_private.queue_owner_service','app_private.model_graph_threads','app_private.model_graph_budgets','app_private.model_graph_results','public.content_authorizations','app_private.proposal_workflow_admission'])
   if((await db.query('select to_regclass($1) relation',[table])).rows[0].relation)
    value[table]=(await db.query(`select to_jsonb(t) value from ${table} t order by to_jsonb(t)::text`)).rows;
  return value;
@@ -51,6 +51,11 @@ const report=results.flatMap(r=>r.rows||[]).find(r=>r.jsonb_build_object)?.jsonb
 assert.equal(report.mode,'read_only_inspection');assert.match(report.prospective_draft_snapshot_sha256,/^[a-f0-9]{64}$/);assert.equal(report.plan.id,selection.plan_id);assert.equal(report.plan.frozen_blocks,1);assert.equal(report.plan.source_reference_count,2);
 assert.equal(report.jobs.length,1);assert.equal(report.threads[0].status,'needs_review');assert.equal(report.budgets[0].candidates,3);assert.equal(report.phase_pins[0].version,2);
 assert.equal(report.usage[0].state,'unknown');assert.equal(report.usage[0].actual_input,null);assert.equal(report.workspace_usage_guards.unknown,1);
+assert.deepEqual(report.selected_plan_timeline,{plan_id:selection.plan_id,attempt_total:0,attempts_truncated:false,attempts:[],usage_total:1,usage_truncated:false,usage:report.selected_plan_timeline.usage,queue_wake_total:0,queue_wakes_truncated:false,queue_wakes:[]});
+assert.equal(report.selected_plan_timeline.usage[0].job_id,job);
+assert.ok(report.selected_plan_timeline.usage[0].created_at);
+assert.ok(report.selected_plan_timeline.usage[0].updated_at);
+assert.ok(report.jobs[0].created_at);
 assert.equal(report.workflow_admission.enabled,false);assert.equal(report.workflow_admission.selected_target_admitted,false);
 assert.deepEqual(report.scheduler.outbox,{available:false,state:null});
 assert.equal(report.workspace_execution.effective_max_parallel_requests,1);
@@ -138,4 +143,68 @@ assert.equal(new Date(withIssuance.latest_issuance.deadline_at)-new Date(withIss
 assert.equal(withIssuance.latest_issuance.completed_at,withIssuance.latest_issuance.effective_completed_at);
 assert.doesNotMatch(JSON.stringify(withIssuance),/PRIVATE ISSUANCE KEY/);
 assert.deepEqual(await state(),issuanceBefore);
+
+// A newer proposal must not move the selected predecessor's timing scope.
+// A separate exact selection can inspect it without leaking private payload.
+const newestPlan=(await db.query(`insert into public.generation_plans(workspace_id,opportunity_id,proposal_id,kind,status,evidence_revision,input_hash,frozen_context,created_by,created_at)
+ values($1,$2,$3,'proposal','failed',1,repeat('f',64),'{}',$4,now()+interval '1 minute') returning id`,[workspace,selection.opportunity_id,proposal,owner])).rows[0].id;
+const newestJob=(await db.query(`insert into public.jobs(workspace_id,type,entity_id,status,input_hash,created_by)
+ values($1,'analyze_chunk',$2,'blocked',repeat('f',64),$3) returning id`,[workspace,newestPlan,owner])).rows[0].id;
+const latestUsage=(await db.query(`insert into public.provider_usage(workspace_id,job_id,lease_token,call_key,provider,model,input_hash,application_day,settings_revision,reserved_input,reserved_output,state,
+ remote_request_id,remote_deadline,execution_metadata,created_by,created_at,updated_at)
+ values($1,$2,gen_random_uuid(),'PRIVATE TIMELINE CALL KEY','openai','synthetic-timeline',repeat('f',64),current_date,1,100,100,'settled',
+ 'resp_PRIVATE_TIMELINE_REMOTE_ID',now()+interval '1 day','{"private":"PRIVATE TIMELINE USAGE"}',$3,'2026-01-01T00:00:00Z','2026-01-01T00:03:00Z') returning id`,[workspace,newestJob,owner])).rows[0].id;
+const laterAttempt=(await db.query(`insert into public.model_attempts(workspace_id,job_id,lease_token,provider,model,project_ref,operation,round_number,worker_attempt,status,sent,result_code,http_status,request_phase,usage_id,started_at,finished_at,execution_metadata,request_id,response_id)
+ values($1,$2,gen_random_uuid(),'openai','synthetic-timeline','PRIVATE PROJECT','verify_grounding',2,3,'succeeded',false,'SUCCEEDED',200,'poll',$3,
+ '2026-01-01T00:02:00Z','2026-01-01T00:02:01Z','{"private":"PRIVATE TIMELINE ATTEMPT"}','PRIVATE REQUEST ID','PRIVATE RESPONSE ID') returning id`,[workspace,newestJob,latestUsage])).rows[0].id;
+const earlierAttempt=(await db.query(`insert into public.model_attempts(workspace_id,job_id,lease_token,provider,model,project_ref,operation,round_number,worker_attempt,status,sent,result_code,http_status,request_phase,usage_id,started_at,finished_at,execution_metadata)
+ values($1,$2,gen_random_uuid(),'openai','synthetic-timeline','PRIVATE PROJECT','analyze_chunk',1,1,'waiting',true,'MODEL_IN_PROGRESS',200,'generation',$3,
+ '2026-01-01T00:00:00Z','2026-01-01T00:00:01Z','{"private":"PRIVATE EARLIER ATTEMPT"}') returning id`,[workspace,newestJob,latestUsage])).rows[0].id;
+await db.query(`insert into app_private.worker_queue_wakes(job_id,workspace_id,job_revision,dispatched_at)
+ values($1,$3,3,'2026-01-01T00:01:00Z'),($2,$3,9,'2026-01-01T00:02:00Z')`,[newestJob,job,workspace]);
+const timelineBefore=await state();
+const predecessor=(await db.exec(sql)).flatMap(r=>r.rows||[]).find(r=>r.jsonb_build_object).jsonb_build_object;
+assert.equal(predecessor.plan.id,selection.plan_id);
+assert.equal(predecessor.latest_plan.id,newestPlan);
+assert.equal(predecessor.selected_plan_timeline.plan_id,selection.plan_id);
+assert.equal(predecessor.selected_plan_timeline.attempt_total,1);
+assert.equal(predecessor.selected_plan_timeline.attempts[0].job_id,job);
+assert.equal(predecessor.selected_plan_timeline.usage_total,1);
+assert.equal(predecessor.selected_plan_timeline.usage[0].job_id,job);
+assert.deepEqual(predecessor.selected_plan_timeline.queue_wakes.map(q=>[q.job_id,q.job_revision]),[[job,9]]);
+const newestSql=sql.replaceAll(selection.plan_id,newestPlan);
+const newest=(await db.exec(newestSql)).flatMap(r=>r.rows||[]).find(r=>r.jsonb_build_object).jsonb_build_object;
+assert.equal(newest.plan.id,newestPlan);
+assert.equal(newest.selected_plan_timeline.plan_id,newestPlan);
+assert.equal(newest.latest_plan.id,newestPlan);
+assert.equal(newest.selected_plan_timeline.attempt_total,2);
+assert.equal(newest.selected_plan_timeline.attempts_truncated,false);
+assert.deepEqual(newest.selected_plan_timeline.attempts.map(a=>a.id),[earlierAttempt,laterAttempt]);
+assert.deepEqual(newest.selected_plan_timeline.attempts.map(a=>a.request_phase),['generation','poll']);
+assert.deepEqual(newest.selected_plan_timeline.attempts.map(a=>a.worker_attempt),[1,3]);
+assert.ok(newest.selected_plan_timeline.attempts.every(a=>a.job_id===newestJob&&a.usage_id===latestUsage));
+assert.ok(newest.selected_plan_timeline.attempts.every(a=>new Date(a.finished_at)-new Date(a.started_at)===1000));
+assert.equal(newest.selected_plan_timeline.usage_total,1);
+assert.equal(newest.selected_plan_timeline.usage_truncated,false);
+assert.equal(newest.selected_plan_timeline.usage[0].id,latestUsage);
+assert.equal(new Date(newest.selected_plan_timeline.usage[0].updated_at)-new Date(newest.selected_plan_timeline.usage[0].created_at),180000);
+assert.equal(newest.selected_plan_timeline.queue_wake_total,1);
+assert.equal(newest.selected_plan_timeline.queue_wakes_truncated,false);
+assert.deepEqual(newest.selected_plan_timeline.queue_wakes.map(q=>[q.job_id,q.job_revision]),[[newestJob,3]]);
+assert.doesNotMatch(JSON.stringify(newest.selected_plan_timeline),/PRIVATE|execution_metadata|project_ref|request_id|response_id/);
+assert.deepEqual(await state(),timelineBefore);
+
+// Exceed the report cap with genuine schema records: total remains exact while
+// only the first 2,048 chronological attempts are serialized.
+await db.query(`insert into public.model_attempts(workspace_id,job_id,lease_token,provider,model,operation,round_number,worker_attempt,status,sent,result_code,started_at)
+ select $1,$2,gen_random_uuid(),'openai','synthetic-timeline','verify_grounding',1,1,'waiting',false,'MODEL_IN_PROGRESS',
+ '2026-01-01T00:03:00Z'::timestamptz+g*interval '1 second' from generate_series(1,2047) g`,[workspace,newestJob]);
+const boundedBefore=await state();
+const bounded=(await db.exec(newestSql)).flatMap(r=>r.rows||[]).find(r=>r.jsonb_build_object).jsonb_build_object;
+assert.equal(bounded.selected_plan_timeline.attempt_total,2049);
+assert.equal(bounded.selected_plan_timeline.attempts_truncated,true);
+assert.equal(bounded.selected_plan_timeline.attempts.length,2048);
+assert.equal(bounded.selected_plan_timeline.attempts[0].id,earlierAttempt);
+assert.equal(new Date(bounded.selected_plan_timeline.attempts.at(-1).started_at)-Date.parse('2026-01-01T00:03:00Z'),2046000);
+assert.deepEqual(await state(),boundedBefore);
 await db.close();

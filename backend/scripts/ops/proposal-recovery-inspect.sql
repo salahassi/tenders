@@ -41,6 +41,19 @@ WITH target AS (
  SELECT app_private.draft_generation_snapshot(t.workspace_id,t.opportunity_id,t.proposal_id,t.package_id) value FROM target t
 ), latest AS (
  SELECT * FROM plans ORDER BY created_at DESC,id DESC LIMIT 1
+), timeline_jobs AS (
+ SELECT j.* FROM public.jobs j JOIN target p ON p.workspace_id=j.workspace_id AND p.id=j.entity_id
+), selected_attempt_history AS (
+ SELECT a.job_id,a.id,a.provider,a.model,a.operation,a.round_number,a.worker_attempt,a.status,a.result_code,a.sent,a.usage_id,
+  a.http_status,a.request_phase,a.provider_error_code,a.provider_error_type,a.provider_error_reason,a.started_at,a.finished_at,a.retry_after
+ FROM public.model_attempts a JOIN timeline_jobs j ON j.id=a.job_id AND j.workspace_id=a.workspace_id
+), selected_usage_history AS (
+ SELECT u.id,u.job_id,u.provider,u.model,u.state,u.error_code,u.actual_input,u.actual_output,
+  u.remote_request_id IS NOT NULL accepted_remote,u.remote_deadline,u.created_at,u.updated_at
+ FROM public.provider_usage u JOIN timeline_jobs j ON j.id=u.job_id AND j.workspace_id=u.workspace_id
+), selected_queue_wakes AS (
+ SELECT q.job_id,q.job_revision,q.dispatched_at FROM app_private.worker_queue_wakes q
+ JOIN timeline_jobs j ON j.id=q.job_id AND j.workspace_id=q.workspace_id
 ), workspace_reserved AS (
  SELECT * FROM public.provider_usage WHERE workspace_id='__WORKSPACE__' AND state='reserved'
 ), workspace_running AS (
@@ -84,7 +97,7 @@ SELECT jsonb_build_object(
  'jobs',(SELECT coalesce(jsonb_agg(jsonb_build_object('id',id,'plan_id',entity_id,'type',type,'status',status,'revision',revision,
    'error_code',error_code,'attempts',attempts,'failure_count',failure_count,'input_hash',input_hash,
    'cancel_requested',cancel_requested,'lease_active',lease_until>now(),'lease_until',lease_until,'lease_present',lease_token IS NOT NULL,
-   'next_attempt_at',next_attempt_at,'updated_at',updated_at,
+   'next_attempt_at',next_attempt_at,'created_at',created_at,'updated_at',updated_at,
    'checkpoint',jsonb_build_object('model_executor',checkpoint->'model_executor','graph_thread',checkpoint->'graph_thread',
     'model_round_present',checkpoint ? 'model_round','round_input_hash',checkpoint#>'{model_round,input_hash}',
     'round_version',checkpoint#>'{model_round,version}','round_attempts',checkpoint#>'{model_routing,round_attempts}')) ORDER BY entity_id,id),'[]') FROM selected_jobs),
@@ -92,6 +105,22 @@ SELECT jsonb_build_object(
    SELECT DISTINCT ON (a.job_id) a.job_id,a.id,a.provider,a.model,a.operation,a.status,a.result_code,a.sent,a.usage_id,
     a.http_status,a.request_phase,a.provider_error_code,a.provider_error_type,a.provider_error_reason,a.started_at,a.finished_at,a.retry_after
    FROM public.model_attempts a JOIN selected_jobs j ON j.id=a.job_id AND j.workspace_id=a.workspace_id ORDER BY a.job_id,a.id DESC) safe),
+ -- Keep exact timing history for the selected plan without expanding customer
+ -- prompts, remote IDs or execution metadata. LIMIT applies before JSON aggregation.
+ 'selected_plan_timeline',jsonb_build_object(
+   'plan_id',(SELECT id FROM target),
+   'attempt_total',(SELECT count(*) FROM selected_attempt_history),
+   'attempts_truncated',(SELECT count(*) FROM selected_attempt_history)>2048,
+   'attempts',(SELECT coalesce(jsonb_agg(to_jsonb(safe) ORDER BY safe.started_at,safe.id),'[]') FROM (
+    SELECT * FROM selected_attempt_history ORDER BY started_at,id LIMIT 2048) safe),
+   'usage_total',(SELECT count(*) FROM selected_usage_history),
+   'usage_truncated',(SELECT count(*) FROM selected_usage_history)>2048,
+   'usage',(SELECT coalesce(jsonb_agg(to_jsonb(safe) ORDER BY safe.created_at,safe.id),'[]') FROM (
+    SELECT * FROM selected_usage_history ORDER BY created_at,id LIMIT 2048) safe),
+   'queue_wake_total',(SELECT count(*) FROM selected_queue_wakes),
+   'queue_wakes_truncated',(SELECT count(*) FROM selected_queue_wakes)>2048,
+   'queue_wakes',(SELECT coalesce(jsonb_agg(to_jsonb(safe) ORDER BY safe.dispatched_at,safe.job_id),'[]') FROM (
+    SELECT * FROM selected_queue_wakes ORDER BY dispatched_at,job_id LIMIT 2048) safe)),
  'steps',(SELECT coalesce(jsonb_agg(to_jsonb(safe) ORDER BY safe.plan_id,safe.ordinal),'[]') FROM (
    SELECT s.id,s.revision,s.plan_id,s.job_id,s.task,s.stage,s.status,s.ordinal,s.repair_count FROM public.generation_steps s JOIN plans p ON p.id=s.plan_id AND p.workspace_id=s.workspace_id) safe),
  'threads',(SELECT coalesce(jsonb_agg(jsonb_build_object('id',id,'job_id',job_id,'status',status,'task',task,'result_id',result_id,

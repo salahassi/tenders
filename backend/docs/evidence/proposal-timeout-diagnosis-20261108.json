@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "kind": "read_only_proposal_timeout_diagnosis",
+  "run": "https://github.com/salahassi/tenders/actions/runs/42468242137",
+  "source": "6abffe096398af83bc5e4cdb468736427151733c",
+  "conclusion": "success",
+  "elapsed_seconds_including_queue": 85,
+  "inspection_controls_passed": 5,
+  "original_cluster_ca_verified": true,
+  "observer_cleanup_confirmed": true,
+  "runner_cleanup_confirmed": true,
+  "private_report_sha256": "af6e92d3c1cdab6e7b26c64429eed965aa1d63089f08dbda8348529d8316c8ca",
+  "private_download_hash_verified": true,
+  "observed_at": "2026-11-08T09:42:03.557128+00:00",
+  "issuance": {
+    "accepted_at": "2026-11-08T08:45:28.039854+00:00",
+    "deadline_at": "2026-11-08T08:55:28.039854+00:00",
+    "completed_at": "2026-11-08T08:55:28.039854+00:00",
+    "persisted_outcome": "failed",
+    "effective_outcome": "failed",
+    "error_code": "PROPOSAL_ISSUANCE_TIMEOUT",
+    "analysis_jobs": 12,
+    "completed_analysis_jobs": 1,
+    "incomplete_jobs_with_attempts": 2,
+    "jobs_with_zero_attempts": 9,
+    "first_analysis_commit_seconds_after_acceptance": 275.457962,
+    "settled_provider_calls": 7,
+    "actual_input_tokens": 517372,
+    "actual_output_tokens": 21259,
+    "latest_retained_operations": ["verify_grounding", "repair_result"],
+    "proposal_versions": 0
+  },
+  "runtime_images": {
+    "api": "registry.digitalocean.com/tenderdesk-a6093a76/runtime@sha256:f573e991e622c982e82a4a3b4e6dc6f144e87586ba0f5dd0b3d05381b30dbd6a",
+    "worker": "registry.digitalocean.com/tenderdesk-a6093a76/runtime@sha256:077b06edd81eb58296ef755e7baa8af32a73dd931c6f06097acc513d3f684e3e"
+  },
+  "business_mutations": 0,
+  "provider_calls_by_diagnosis": 0,
+  "request_retried": false,
+  "deployed_changes": false,
+  "limits": [
+    "Current parallel-request setting is two; its historical value is not established by this read.",
+    "The projection retains only the latest attempt per job and cannot attribute every elapsed second to provider latency, polling or processing.",
+    "Large provider-reported input counts do not establish complete-document repetition per chunk.",
+    "Successful inspection is not successful proposal issuance or export acceptance."
+  ]
+}
