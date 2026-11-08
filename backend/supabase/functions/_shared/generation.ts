@@ -474,6 +474,16 @@ export function taskInput(ctx: PlanContext) {
       evidence.push(...relevant(frozen.rates || [], query, 6));
       context.instruction =
         "Propose an auditable effort/rate breakdown and delivery dependency graph. Use only supplied verified rate IDs. Missing quantity, rate, period, tax or resource availability remains null and a finalization question. Do not calculate totals or infer availability.";
+      if (input.commercial_input_version === 2) {
+        context.commercial_input_version = 2;
+        context.instruction =
+          "Propose an auditable effort/rate breakdown and delivery dependency graph. Use only supplied verified rate IDs. " +
+          "For unknown business inputs, keep quantity, rate_id, period_count, effort_days, allocation and duration_days null; do not infer resource availability, prices or tax rules. " +
+          "Internal value rule (do not explain it in output text): when the approved tax category is unknown, return tax_category as the empty string (\"\"). The application renders its localized missing-input label. " +
+          "Ask concise finalization questions for the approved tax category and applicable rate, quantities, periods, effort and resource availability when they are not supplied. Never substitute a zero amount, an invented category or an approved commitment for a missing input. Do not calculate totals. " +
+          "Keep descriptions, deliverables, task titles, bases and questions about the proposed work and unresolved business inputs. Never put JSON, schema constraints, field types, validators, serialization or other application implementation commentary in those user-facing fields. " +
+          "Preserve supplied terminology and acronym wording. Do not add unnecessary acronym expansions or infer definitions from general knowledge; retain a supplied definition when relevant. If an unsupplied definition is necessary to understand the business scope, keep the original term and ask an advisory clarification question instead of asserting a guessed expansion as a business fact.";
+      }
     }
     if (task === "review_proposal") {
       const sections = draftedSections(ctx).filter((s) =>

@@ -1,5 +1,27 @@
 # Implementation status and continuation plan
 
+## November 8 — versioned commercial business-input instructions
+
+Only fresh `plan_commercial` steps carrying numeric `commercial_input_version: 2`
+receive the corrected instruction context. Missing tax category uses the existing
+empty-string contract and localized missing-input rendering; nullable quantities,
+rate IDs, periods, effort, allocation and duration remain null. Questions ask for
+approved business tax inputs and needed terminology clarification. Output prose
+must omit application/schema/type commentary and unsourced acronym expansions.
+Only version-2 commercial writer/repair/verification envelopes receive matching
+source-bound acronym writing guidance; legacy and other-task guides stay exact.
+No output schema, model enum, acceptance rule or correction budget is changed.
+
+Synthetic frozen hashes prove absent/version-1 context, complete task input and
+model prompt bytes remain exact. Version-2 tests retain identical source evidence,
+manifest and completed-section scope while excluding predecessor candidates,
+usage and lineage bodies from the prompt. Existing schema tests reject a null
+tax category and new enum values, and actual English/Arabic rendering preserves
+the localized missing-tax label. All 83 focused checks, backend typecheck and
+backend build pass; the separate SQL
+successor/rollout capability fence, native qualification, deployment and real
+issuance remain independent gates. No live call or customer command ran here.
+
 ## November 8 — reference UUID punctuation correction deployed
 
 PR54 merged as `0d0de308`; Pages42523934582 passed within the three-minute bound.
