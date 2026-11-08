@@ -5,6 +5,23 @@ The repository-root [AGENTS.md](../../AGENTS.md) points here so the established
 route is available in every checkout, without relying on conversation history.
 Last reviewed: November 8, 2026.
 
+## Proposal admission wake (November 8, current schema)
+
+[Run42515903670](https://github.com/salahassi/tenders/actions/runs/42515903670)
+from `573c8fb` passed in 28 seconds including queue. The additive admission child
+is SQL `fcde6425`, catalog `28dc9a60`, structure `4ede33bb`; all preceding ledgers
+remain intact. Exact payload preservation uses transaction-local activity and
+storage identities. Independent readback and owned cleanup passed. All images
+remain unchanged: worker/scheduler `03c68b58`, API `f573e991`, source-browser
+`077b06ed`, frontend `522ad1b7`. See the
+[receipt](evidence/proposal-admission-passed-20261108-42515903670.json).
+
+The earlier apply42514254147 timed out and proved the unchanged latency parent;
+that failed history is retained separately. Current diagnostics must accept the
+exact admission child, not silently reuse the earlier catalog fingerprint.
+Actual proposal completion remains open after another 600-second timeout; this
+deployment does not establish file-generation success or measured startup gain.
+
 ## Proposal latency correction (November 8, deployed)
 
 [Run 42511889721](https://github.com/salahassi/tenders/actions/runs/42511889721)

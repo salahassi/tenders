@@ -12,6 +12,7 @@ import hashlib
 import hmac
 import importlib.util
 import json
+import math
 from pathlib import Path
 import re
 import sys
@@ -235,7 +236,27 @@ latest AS MATERIALIZED (
  SELECT a.id,a.job_id,a.model,a.model_config_id,a.result_code FROM public.model_attempts a JOIN selected_jobs j ON j.id=a.job_id
  WHERE a.workspace_id='{w}' AND a.operation='verify_grounding' AND a.result_code IN
  ('EVIDENCE_REFERENCE_INVALID','MODEL_COVERAGE_INCOMPLETE','UNSUPPORTED_COMPANY_CLAIM','SUCCEEDED')
-), attempts AS (SELECT * FROM verifier_attempts ORDER BY id DESC LIMIT 32)
+), attempts AS (SELECT * FROM verifier_attempts ORDER BY id DESC LIMIT 32), queue_jobs AS MATERIALIZED (
+ SELECT j.id,j.type,j.status,j.error_code,j.attempts,j.updated_at,j.next_attempt_at,j.lease_until,
+  j.lease_token IS NOT NULL AS has_lease,coalesce(j.next_attempt_at<=now(),false) AS due_now,
+  app_private.queue_work_class(j) AS work_class,coalesce(j.checkpoint ? 'graph_thread',false) AS has_graph_thread,
+  coalesce(j.checkpoint ? 'model_catalog_snapshot',false) AS has_catalog,
+  j.checkpoint#>>'{{model_operation,task}}' AS model_task,
+  j.checkpoint#>'{{model_operation,route_revision}}' AS route_revision,
+  coalesce(pg_column_size(j.checkpoint),0) AS checkpoint_bytes
+ FROM public.jobs j JOIN selected_jobs selected ON selected.id=j.id WHERE j.workspace_id='{w}'
+ ORDER BY (j.status IN ('running','retry_wait','queued','quota_wait')) DESC,j.updated_at DESC,j.id LIMIT 100
+), graph_times AS (
+ SELECT q.id AS job_id,
+  (SELECT count(*) FROM app_private.model_graph_threads t WHERE t.workspace_id='{w}' AND t.job_id=q.id) AS threads,
+  (SELECT jsonb_build_object('count',count(*),'first_at',min(c.created_at),'last_at',max(c.created_at))
+   FROM app_private.model_graph_threads t JOIN app_private.model_graph_checkpoints c ON c.thread_id=t.id
+   WHERE t.workspace_id='{w}' AND t.job_id=q.id) AS checkpoints,
+  (SELECT jsonb_build_object('count',count(*),'first_at',min(r.created_at),'last_at',max(r.created_at))
+   FROM app_private.model_graph_threads t JOIN app_private.model_graph_results r ON r.thread_id=t.id AND r.workspace_id=t.workspace_id
+   WHERE t.workspace_id='{w}' AND t.job_id=q.id) AS results
+ FROM queue_jobs q
+)
 SELECT jsonb_build_object('version',1,'kind','proposal_trial_usage_diagnostic','observed_at',now(),
  'selection',jsonb_build_object('version',1,'workspace_id','{w}','opportunity_id','{o}'),
  'total',(SELECT count(*) FROM pending),'truncated',(SELECT count(*) FROM pending)>100,
@@ -251,6 +272,24 @@ SELECT jsonb_build_object('version',1,'kind','proposal_trial_usage_diagnostic','
    ON n.workspace_id=c.workspace_id AND n.id=c.connection_id WHERE c.workspace_id='{w}' AND c.enabled AND n.enabled),
  'task_route_count',(SELECT count(*) FROM public.model_task_routes WHERE workspace_id='{w}'),
  'selected_latest_plan_created_at',(SELECT max(created_at) FROM public.generation_plans WHERE workspace_id='{w}' AND opportunity_id='{o}' AND kind='proposal'),
+ 'queue_diagnostics',jsonb_build_object('plan_id',(SELECT id FROM latest),
+  'job_count',(SELECT count(*) FROM selected_jobs),'jobs_truncated',(SELECT count(*) FROM selected_jobs)>100,
+  'reserved_workspace',(SELECT count(*) FROM pending WHERE state='reserved'),
+  'reserved_selected',(SELECT count(*) FROM pending WHERE state='reserved' AND job_id IN (SELECT id FROM selected_jobs)),
+  'reserved_other',(SELECT count(*) FROM pending WHERE state='reserved' AND NOT EXISTS(SELECT 1 FROM selected_jobs j WHERE j.id=pending.job_id)),
+  'jobs',coalesce((SELECT jsonb_agg(jsonb_build_object('job_id',q.id,'type',q.type,'status',q.status,
+    'error_code',q.error_code,'attempts',q.attempts,'updated_at',q.updated_at,'next_attempt_at',q.next_attempt_at,
+    'lease_until',q.lease_until,'has_lease',q.has_lease,'due_now',q.due_now,'work_class',q.work_class,
+    'has_graph_thread',q.has_graph_thread,'has_catalog',q.has_catalog,'model_task',q.model_task,
+    'route_revision',q.route_revision,'checkpoint_bytes',q.checkpoint_bytes,
+    'graph',jsonb_build_object('threads',g.threads,'checkpoints',g.checkpoints,'results',g.results))
+    ORDER BY (q.status IN ('running','retry_wait','queued','quota_wait')) DESC,q.updated_at DESC,q.id)
+    FROM queue_jobs q JOIN graph_times g ON g.job_id=q.id),'[]'::jsonb),
+  'dispatch',(SELECT jsonb_build_object('generation',generation,'acknowledged_generation',acknowledged_generation,
+    'lease_generation',lease_generation,'lease_until',lease_until,'next_attempt_at',next_attempt_at,
+    'last_periodic_at',last_periodic_at,'failures',failures) FROM app_private.k8s_dispatch_queue WHERE singleton),
+  'timers',(SELECT jsonb_build_object('count',count(*),'due_count',count(*) FILTER(WHERE due_at<=now()),
+    'first_at',min(due_at),'last_at',max(due_at)) FROM app_private.k8s_dispatch_timers)),
  'verifier_diagnostics',jsonb_build_object('plan_id',(SELECT id FROM latest),
   'report_count',(SELECT count(*) FROM invalid_reports),'reports_truncated',(SELECT count(*) FROM invalid_reports)>8,
   'attempt_count',(SELECT count(*) FROM verifier_attempts),'attempts_truncated',(SELECT count(*) FROM verifier_attempts)>32,
@@ -292,7 +331,139 @@ def diagnostic(database, selection):
             and type(value.get('truncated')) is bool and type(value.get('routing_enabled')) is bool,
             'PROPOSAL_TRIAL_USAGE_DIAGNOSTIC_INVALID')
     validate_verifier_diagnostic(value)
+    validate_queue_diagnostic(value)
+    value['performance_snapshot'] = performance_snapshot(database, selection)
     return value
+
+
+PERFORMANCE_ROUTINES = ('model_graph_store', 'model_job', 'generation_context', 'generation_context_before_issuance',
+    'claim_backend_job', 'claim_backend_job_v5', 'maintenance_tick', 'prepare_task_model_route',
+    'task_model_preflight', 'load_model_round', 'resume_model_request', 'resume_task_model_request',
+    'resume_task_model_request_phase', 'record_model_request_metadata', 'record_task_model_attempt',
+    'import_model_catalog', 'task_model_retry_windows', 'checkpoint_model_request', 'save_task_model_round',
+    'start_task_model_attempt', 'finish_model_attempt', 'reserve_task_model_call', 'defer_pending_model_request',
+    'settle_model_call', 'complete_generation_graph', 'assert_issuance_job', 'schedule_assessment_refresh')
+PERFORMANCE_TABLES = ('public.workspaces', 'public.jobs', 'public.generation_plans', 'public.generation_steps',
+    'public.provider_usage', 'public.audit_events', 'public.proposal_issuance_requests',
+    'app_private.model_graph_threads', 'app_private.model_graph_checkpoints', 'app_private.model_graph_writes',
+    'app_private.model_graph_results', 'app_private.model_graph_budgets')
+
+
+def performance_sql(selection):
+    """Bounded counters/sizes only; optional extension SQL is catalog-gated."""
+    validate_selection(selection)
+    names = ','.join("'" + name + "'" for name in PERFORMANCE_ROUTINES)
+    tables = ','.join("'" + name + "'" for name in PERFORMANCE_TABLES)
+    w, o = selection['workspace_id'], selection['opportunity_id']
+    return PREFIX.replace("statement_timeout='20s'", "statement_timeout='5s'").replace(
+        "lock_timeout='5s'", "lock_timeout='1s'") + f"""
+/* proposal_performance_snapshot: never return query text or customer values. */
+DO $performance$
+DECLARE stats_schema text;statement_rows jsonb:='[]';status text:='unavailable';
+BEGIN
+ SELECT n.nspname INTO stats_schema FROM pg_extension e JOIN pg_namespace n ON n.oid=e.extnamespace
+ WHERE e.extname='pg_stat_statements' AND EXISTS(SELECT 1 FROM pg_class c
+  WHERE c.relnamespace=n.oid AND c.relname='pg_stat_statements' AND c.relkind='v');
+ IF stats_schema IS NOT NULL THEN
+  BEGIN
+   EXECUTE format($stats$
+    SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY x.routine),'[]') FROM (
+     SELECT name AS routine,sum(s.calls)::bigint AS calls,sum(s.total_exec_time) AS total_exec_ms,
+      sum(s.total_exec_time)/nullif(sum(s.calls),0) AS mean_exec_ms,max(s.max_exec_time) AS max_exec_ms,
+      sum(s.shared_blks_hit)::bigint AS shared_blks_hit,sum(s.shared_blks_read)::bigint AS shared_blks_read,
+      sum(s.temp_blks_written)::bigint AS temp_blks_written
+     FROM %I.pg_stat_statements s CROSS JOIN unnest(ARRAY[{names}]) name
+     WHERE s.dbid=(SELECT oid FROM pg_database WHERE datname=current_database())
+      AND s.calls>0 AND s.query ~* '^[[:space:]]*(select|with)[[:space:]]'
+      AND s.query ~ ('(^|[^a-zA-Z0-9_])'||name||'([^a-zA-Z0-9_]|$)')
+      AND position('pg_stat_statements' in s.query)=0
+     GROUP BY name ORDER BY name) x$stats$,stats_schema) INTO statement_rows;
+   status:='available';
+  EXCEPTION WHEN insufficient_privilege THEN status:='permission_denied';
+   WHEN undefined_table OR undefined_column OR undefined_function OR object_not_in_prerequisite_state
+    THEN status:='unavailable';
+  END;
+ END IF;
+ PERFORM set_config('tenderdesk.performance_statements',jsonb_build_object('status',status,'rows',statement_rows)::text,true);
+END $performance$;
+WITH selected AS MATERIALIZED (
+ SELECT id,frozen_context FROM public.generation_plans WHERE workspace_id='{w}' AND opportunity_id='{o}' AND kind='proposal'
+ ORDER BY created_at DESC,id DESC LIMIT 1
+), activity AS (
+ SELECT coalesce((SELECT name FROM unnest(ARRAY[{names}]) name
+  WHERE a.query ~ ('(^|[^a-zA-Z0-9_])'||name||'([^a-zA-Z0-9_]|$)') LIMIT 1),'other') AS routine,
+  a.state,a.wait_event_type,a.wait_event,cardinality(pg_blocking_pids(a.pid)) AS blocker_count
+ FROM pg_stat_activity a WHERE a.datid=(SELECT oid FROM pg_database WHERE datname=current_database()) AND a.pid<>pg_backend_pid()
+), grouped_activity AS (
+ SELECT routine,state,wait_event_type,wait_event,count(*) AS sessions,sum(blocker_count)::bigint AS blockers
+ FROM activity GROUP BY routine,state,wait_event_type,wait_event ORDER BY routine,state,wait_event_type,wait_event LIMIT 32
+)
+SELECT jsonb_build_object('version',1,'kind','proposal_performance_snapshot','selection',
+ jsonb_build_object('version',1,'workspace_id','{w}','opportunity_id','{o}'),
+ 'settings',jsonb_build_object('track_functions',current_setting('track_functions'),
+  'track_io_timing',current_setting('track_io_timing'),'statements_track',current_setting('pg_stat_statements.track',true),
+  'full_stats_visibility',pg_has_role(current_user,'pg_read_all_stats','USAGE')
+   OR (SELECT rolsuper FROM pg_roles WHERE rolname=current_user)),
+ 'statements',current_setting('tenderdesk.performance_statements')::jsonb,
+ 'functions',coalesce((SELECT jsonb_agg(to_jsonb(f) ORDER BY f.routine) FROM (
+  SELECT s.funcname AS routine,sum(s.calls)::bigint AS calls,sum(s.total_time) AS total_exec_ms,sum(s.self_time) AS self_exec_ms
+  FROM pg_stat_user_functions s WHERE s.schemaname IN ('public','app_private') AND s.funcname=ANY(ARRAY[{names}])
+  GROUP BY s.funcname) f),'[]'::jsonb),
+ 'tables',coalesce((SELECT jsonb_agg(jsonb_build_object('relation',n.nspname||'.'||c.relname,
+  'estimated_rows',greatest(c.reltuples,0)::bigint,'live_rows',coalesce(s.n_live_tup,0),
+  'dead_rows',coalesce(s.n_dead_tup,0),'total_bytes',pg_total_relation_size(c.oid)) ORDER BY n.nspname,c.relname)
+  FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace LEFT JOIN pg_stat_user_tables s ON s.relid=c.oid
+  WHERE n.nspname||'.'||c.relname=ANY(ARRAY[{tables}]) AND c.relkind IN ('r','p')),'[]'::jsonb),
+ 'selected_context',(SELECT jsonb_build_object('plan_id',id,'stored_bytes',pg_column_size(frozen_context),
+  'logical_bytes',octet_length(frozen_context::text)) FROM selected),
+ 'activity',coalesce((SELECT jsonb_agg(to_jsonb(a)) FROM grouped_activity a),'[]'::jsonb));
+ROLLBACK;
+"""
+
+
+def validate_performance_snapshot(value, selection):
+    code = 'PROPOSAL_TRIAL_PERFORMANCE_INVALID'
+    require(isinstance(value, dict) and set(value) == {'version', 'kind', 'selection', 'settings', 'statements',
+        'functions', 'tables', 'selected_context', 'activity'} and type(value['version']) is int and value['version'] == 1
+        and value['kind'] == 'proposal_performance_snapshot' and value['selection'] == selection, code)
+    number = lambda v: type(v) in (int, float) and math.isfinite(v) and 0 <= v <= 1e18
+    settings = value['settings']
+    require(isinstance(settings, dict) and set(settings) == {'track_functions', 'track_io_timing', 'statements_track', 'full_stats_visibility'}
+        and settings['track_functions'] in ('none', 'pl', 'all') and settings['track_io_timing'] in ('on', 'off')
+        and settings['statements_track'] in (None, 'none', 'top', 'all') and type(settings['full_stats_visibility']) is bool, code)
+    statements = value['statements']
+    require(isinstance(statements, dict) and set(statements) == {'status', 'rows'}
+        and statements['status'] in ('available', 'unavailable', 'permission_denied')
+        and isinstance(statements['rows'], list) and len(statements['rows']) <= len(PERFORMANCE_ROUTINES)
+        and (statements['status'] == 'available' or statements['rows'] == []), code)
+    for rows, fields in [(statements['rows'], {'routine', 'calls', 'total_exec_ms', 'mean_exec_ms', 'max_exec_ms',
+            'shared_blks_hit', 'shared_blks_read', 'temp_blks_written'}),
+            (value['functions'], {'routine', 'calls', 'total_exec_ms', 'self_exec_ms'})]:
+        require(isinstance(rows, list) and len(rows) <= len(PERFORMANCE_ROUTINES)
+            and len({r.get('routine') for r in rows if isinstance(r, dict)}) == len(rows), code)
+        for row in rows:
+            require(isinstance(row, dict) and set(row) == fields and row['routine'] in PERFORMANCE_ROUTINES
+                and all(number(row[k]) for k in fields - {'routine'}), code)
+    require(isinstance(value['tables'], list) and len(value['tables']) <= len(PERFORMANCE_TABLES)
+        and len({r.get('relation') for r in value['tables'] if isinstance(r, dict)}) == len(value['tables']), code)
+    for row in value['tables']:
+        require(isinstance(row, dict) and set(row) == {'relation', 'estimated_rows', 'live_rows', 'dead_rows', 'total_bytes'}
+            and row['relation'] in PERFORMANCE_TABLES and all(revision(row[k]) for k in set(row) - {'relation'}), code)
+    context = value['selected_context']
+    require(context is None or isinstance(context, dict) and set(context) == {'plan_id', 'stored_bytes', 'logical_bytes'}
+        and uuid_value(context['plan_id']) and revision(context['stored_bytes']) and revision(context['logical_bytes']), code)
+    require(isinstance(value['activity'], list) and len(value['activity']) <= 32, code)
+    for row in value['activity']:
+        require(isinstance(row, dict) and set(row) == {'routine', 'state', 'wait_event_type', 'wait_event', 'sessions', 'blockers'}
+            and row['routine'] in (*PERFORMANCE_ROUTINES, 'other') and row['state'] in (None, 'active', 'idle',
+                'idle in transaction', 'idle in transaction (aborted)', 'fastpath function call', 'disabled')
+            and all(row[k] is None or isinstance(row[k], str) and re.fullmatch('[A-Za-z][A-Za-z0-9_]{0,99}', row[k])
+                for k in ('wait_event_type', 'wait_event')) and revision(row['sessions']) and revision(row['blockers']), code)
+    return value
+
+
+def performance_snapshot(database, selection):
+    return validate_performance_snapshot(read(database, performance_sql(selection), max_bytes=32 * 1024), selection)
 
 
 def validate_verifier_diagnostic(value):
@@ -354,6 +525,63 @@ def validate_verifier_diagnostic(value):
         and revision(settings['revision']) and type(settings['max_parallel_requests']) is int
         and 1 <= settings['max_parallel_requests'] <= 4
         and (settings['admitted_after'] is None or isinstance(settings['admitted_after'], str)), code)
+
+
+def validate_queue_diagnostic(value):
+    """Only bounded queue metadata; never graph/checkpoint payloads or lease tokens."""
+    code = 'PROPOSAL_TRIAL_QUEUE_DIAGNOSTIC_INVALID'
+    q = value.get('queue_diagnostics')
+    require(isinstance(q, dict) and set(q) == {'plan_id', 'job_count', 'jobs_truncated', 'jobs',
+        'reserved_workspace', 'reserved_selected', 'reserved_other', 'dispatch', 'timers'}, code)
+    require(q['plan_id'] is None or uuid_value(q['plan_id']), code)
+    require(all(revision(q[k]) for k in ('job_count', 'reserved_workspace', 'reserved_selected', 'reserved_other'))
+        and q['reserved_workspace'] == q['reserved_selected'] + q['reserved_other']
+        and isinstance(q['jobs'], list) and len(q['jobs']) == min(q['job_count'], 100)
+        and type(q['jobs_truncated']) is bool and q['jobs_truncated'] == (q['job_count'] > 100), code)
+    def timestamp(v):
+        if v is None or v in ('infinity', '-infinity'):
+            return True
+        if not isinstance(v, str) or len(v) > 40:
+            return False
+        try:
+            return datetime.fromisoformat(v.replace('Z', '+00:00')).tzinfo is not None
+        except ValueError:
+            return False
+    def aggregate(v, timers=False):
+        require(isinstance(v, dict) and set(v) == ({'count', 'due_count', 'first_at', 'last_at'} if timers
+            else {'count', 'first_at', 'last_at'}) and revision(v['count'])
+            and timestamp(v['first_at']) and timestamp(v['last_at'])
+            and ((v['first_at'] is None and v['last_at'] is None) == (v['count'] == 0)), code)
+        if timers:
+            require(revision(v['due_count']) and v['due_count'] <= v['count'], code)
+    fields = {'job_id', 'type', 'status', 'error_code', 'attempts', 'updated_at', 'next_attempt_at',
+        'lease_until', 'has_lease', 'due_now', 'work_class', 'has_graph_thread', 'has_catalog',
+        'model_task', 'route_revision', 'checkpoint_bytes', 'graph'}
+    for row in q['jobs']:
+        require(isinstance(row, dict) and set(row) == fields and uuid_value(row['job_id'])
+            and isinstance(row['type'], str) and re.fullmatch('[a-z][a-z0-9_]{0,79}', row['type'])
+            and row['status'] in {'queued', 'running', 'retry_wait', 'quota_wait', 'succeeded', 'blocked', 'failed', 'canceled'}
+            and (row['error_code'] is None or isinstance(row['error_code'], str)
+                and re.fullmatch('[A-Z][A-Z0-9_]{0,119}', row['error_code']))
+            and revision(row['attempts']) and revision(row['checkpoint_bytes'])
+            and all(timestamp(row[k]) for k in ('updated_at', 'next_attempt_at', 'lease_until'))
+            and all(type(row[k]) is bool for k in ('has_lease', 'due_now', 'has_graph_thread', 'has_catalog'))
+            and row['work_class'] in {'local', 'poll', 'proposal', 'background'}
+            and (row['model_task'] is None or isinstance(row['model_task'], str)
+                and re.fullmatch('[a-z][a-z0-9_]{0,79}', row['model_task']))
+            and (row['route_revision'] is None or revision(row['route_revision'])), code)
+        graph = row['graph']
+        require(isinstance(graph, dict) and set(graph) == {'threads', 'checkpoints', 'results'}
+            and revision(graph['threads']), code)
+        aggregate(graph['checkpoints']); aggregate(graph['results'])
+    dispatch = q['dispatch']
+    require(isinstance(dispatch, dict) and set(dispatch) == {'generation', 'acknowledged_generation',
+        'lease_generation', 'lease_until', 'next_attempt_at', 'last_periodic_at', 'failures'}
+        and all(revision(dispatch[k]) for k in ('generation', 'acknowledged_generation', 'failures'))
+        and dispatch['acknowledged_generation'] <= dispatch['generation']
+        and (dispatch['lease_generation'] is None or revision(dispatch['lease_generation']))
+        and all(timestamp(dispatch[k]) for k in ('lease_until', 'next_attempt_at', 'last_periodic_at')), code)
+    aggregate(q['timers'], True)
 
 
 def existing_target(proof):

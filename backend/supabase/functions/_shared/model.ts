@@ -490,6 +490,8 @@ export type ModelRoundProgress = {
   retry_windows: (string | null)[];
 };
 export interface Ledger {
+  requestPrefix?: string;
+  jobIdentity?: { id: string; lease_token: string };
   invocationStartedAt?: number;
   invocationBudgetMs?: number;
   requestPrepared?(request: StructuredRequest): Promise<void>;
@@ -523,6 +525,7 @@ export interface Ledger {
     project: string,
     task: ModelTask,
     config?: ModelConfiguration,
+    reuseAttemptId?: string,
   ): Promise<string>;
   endAttempt?(
     id: string,
@@ -1439,6 +1442,7 @@ export async function executeModel(
     semanticRevision?: SemanticRevision;
     repairContentValidation?: boolean;
     splitOnTruncation?: boolean;
+    acceptedPoll?: import("./modelAcceptedPoll.ts").AcceptedPollReceipt | null;
   } = {},
 ) {
   const invocationStarted = ledger.invocationStartedAt ?? Date.now();
@@ -1575,7 +1579,16 @@ export async function executeModel(
     for (const [index, config] of providers.entries()) {
       assertIssuanceOpen();
       const env = ledger.environment?.(config) ?? environments[config.provider];
-      if (
+      const resumable = Boolean(
+        modelAdapters[config.provider].poll &&
+        ledger.resume &&
+        ledger.checkpoint &&
+        ledger.defer,
+      );
+      const acceptedPoll = options.acceptedPoll?.available
+        ? options.acceptedPoll
+        : null;
+      const freshBudgetExhausted =
         automatic &&
         ledger.saveRound &&
         env &&
@@ -1583,18 +1596,51 @@ export async function executeModel(
         !(config.retry_after && Date.parse(config.retry_after) > Date.now()) &&
         // Preserve at least 90s for a fresh attempt and time for settlement.
         Date.now() - invocationStarted >=
-          (ledger.invocationBudgetMs ?? 110000) - 90000
-      ) {
+          (ledger.invocationBudgetMs ?? 110000) - 90000;
+      let pending:
+        Awaited<ReturnType<NonNullable<Ledger["resume"]>>> | undefined;
+      let resumeError: unknown;
+      // Resolve the exact accepted phase before a fresh-send-only yield. Carry
+      // resume failures into the original provider catch/accounting path.
+      if (freshBudgetExhausted && resumable) {
+        try {
+          pending = await ledger.resume!(
+            config.provider,
+            inputHash,
+            manifest,
+            config,
+          );
+        } catch (error) {
+          resumeError = error;
+        }
+      }
+      if (freshBudgetExhausted && !pending && !resumeError && !acceptedPoll) {
         await checkpointRound(index, true);
         throw new ModelDeferred();
       }
-      const attemptId = await ledger.beginAttempt?.(
-        config.provider,
-        config.model,
-        config.project_ref,
+      const reuseAttemptId = acceptedPoll?.attempt({
+        job: ledger.jobIdentity,
+        requestPrefix: ledger.requestPrefix,
         task,
-        config,
-      );
+        inputHash,
+        configuration: config,
+      });
+      const attemptId = reuseAttemptId
+        ? await ledger.beginAttempt?.(
+            config.provider,
+            config.model,
+            config.project_ref,
+            task,
+            config,
+            reuseAttemptId,
+          )
+        : await ledger.beginAttempt?.(
+            config.provider,
+            config.model,
+            config.project_ref,
+            task,
+            config,
+          );
       if (!env || !tryAvailable(config, env)) {
         lastError = new ModelError("MODEL_NOT_CONFIGURED");
         if (attemptId)
@@ -1661,16 +1707,14 @@ export async function executeModel(
               max_output_tokens: caps[task],
               reasoning: "none" as const,
             };
-        const resumable = Boolean(
-          modelAdapters[config.provider].poll &&
-          ledger.resume &&
-          ledger.checkpoint &&
-          ledger.defer,
-        );
         // An accepted remote request outlives overrides and capability observations.
-        const pending = resumable
-          ? await ledger.resume!(config.provider, inputHash, manifest, config)
-          : null;
+        if (resumeError) throw resumeError;
+        if (pending === undefined)
+          pending = resumable
+            ? await ledger.resume!(config.provider, inputHash, manifest, config)
+            : null;
+        if (acceptedPoll && !pending)
+          throw new ModelError("MODEL_IDENTITY_CHANGED");
         const background =
           Boolean(pending) ||
           Boolean(
@@ -1823,9 +1867,15 @@ export async function executeModel(
           let interaction: any;
           if (pending) {
             try {
-              interaction = await provider.pollBackground(
-                pending.remote_request_id,
-              );
+              if (acceptedPoll) {
+                const received = acceptedPoll.consume(request, pending);
+                provider.telemetry = { ...received.telemetry };
+                if (received.error) throw received.error;
+                interaction = received.interaction;
+              } else
+                interaction = await provider.pollBackground(
+                  pending.remote_request_id,
+                );
             } catch (error) {
               if (
                 error instanceof ModelError &&

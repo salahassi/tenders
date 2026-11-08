@@ -211,7 +211,7 @@ CREATE TABLE opportunities(id uuid,workspace_id uuid,revision int,archived boole
 CREATE TABLE proposals(id uuid,workspace_id uuid,opportunity_id uuid,revision int,active_version_id uuid);
 CREATE TABLE generation_plans(id uuid,workspace_id uuid,opportunity_id uuid,proposal_id uuid,revision int,status text,stage text,input_hash text,evidence_revision bigint,base_version_id uuid,issuance_request_id uuid,frozen_context jsonb,kind text,created_at timestamptz);
 CREATE TABLE proposal_issuance_requests(id uuid,workspace_id uuid,plan_id uuid,requested_by uuid,operation text,idempotency_key text,outcome text,accepted_at timestamptz,deadline_at timestamptz);
-CREATE TABLE jobs(id uuid,workspace_id uuid,entity_id uuid,status text,lease_token uuid,lease_until timestamptz,checkpoint jsonb,type text,error_code text,cancel_requested boolean,next_attempt_at timestamptz);
+CREATE TABLE jobs(id uuid,workspace_id uuid,entity_id uuid,status text,lease_token uuid,lease_until timestamptz,checkpoint jsonb,type text,error_code text,cancel_requested boolean,next_attempt_at timestamptz,attempts int NOT NULL DEFAULT 0,updated_at timestamptz DEFAULT now());
 CREATE TABLE provider_usage(workspace_id uuid,state text,id uuid DEFAULT gen_random_uuid(),job_id uuid,error_code text,created_at timestamptz DEFAULT now(),updated_at timestamptz DEFAULT now(),remote_deadline timestamptz,reconciliation_after timestamptz,remote_request_id text,provider text,model text,connection_id uuid,model_config_id uuid);
 CREATE TABLE generation_steps(workspace_id uuid,job_id uuid,plan_id uuid,status text);
 CREATE TABLE model_attempts(id bigserial,operation text,workspace_id uuid,job_id uuid,usage_id uuid,provider text,model text,connection_id uuid,model_config_id uuid,status text,result_code text,response_id text,finish_reason text);
@@ -223,6 +223,23 @@ CREATE TABLE model_task_routes(workspace_id uuid,task text,revision int DEFAULT 
 CREATE TABLE restore_sessions(workspace_id uuid,state text);
 CREATE TABLE app_private.model_graph_threads(id uuid,workspace_id uuid,job_id uuid);
 CREATE TABLE app_private.model_graph_results(id uuid,workspace_id uuid,thread_id uuid,result_key text,value jsonb,created_at timestamptz DEFAULT now());
+CREATE TABLE app_private.model_graph_checkpoints(thread_id uuid,created_at timestamptz DEFAULT now(),checkpoint jsonb);
+CREATE TABLE app_private.k8s_dispatch_queue(singleton boolean,generation bigint,acknowledged_generation bigint,
+ lease_generation bigint,lease_until timestamptz,next_attempt_at timestamptz,last_periodic_at timestamptz,failures int);
+CREATE TABLE app_private.k8s_dispatch_timers(due_at timestamptz);
+CREATE VIEW public.pg_stat_statements AS SELECT d.oid AS dbid,x.* FROM pg_database d CROSS JOIN (VALUES
+ ('select public.model_graph_store(private_customer_value)',3::bigint,9::float8,5::float8,6::bigint,1::bigint,0::bigint),
+ ('select public.model_graph_store_extra(private_customer_value)',1,99,99,0,0,0),
+ ('CREATE FUNCTION public.model_graph_store(private_customer_value)',1,999,999,0,0,0),
+ ('DO $$ BEGIN PERFORM public.model_graph_store(private_customer_value); END $$',1,999,999,0,0,0),
+ ('select public.model_graph_store(private_plan_only)',0,0,0,0,0,0),
+ ('select public.model_graph_store from pg_stat_statements',7,100,100,0,0,0)
+) x(query,calls,total_exec_time,max_exec_time,shared_blks_hit,shared_blks_read,temp_blks_written)
+WHERE d.datname=current_database();
+INSERT INTO app_private.k8s_dispatch_queue VALUES(true,7,6,null,null,'-infinity',now(),0);
+INSERT INTO app_private.k8s_dispatch_timers VALUES(now()-interval '1 second'),(now()+interval '5 seconds');
+INSERT INTO app_private.model_graph_checkpoints VALUES('00000000-0000-4000-8000-000000000901',now(),'{{"body":"private-checkpoint-payload"}}');
+
 INSERT INTO workspaces VALUES('{W}',8);
 INSERT INTO memberships VALUES('{W}','{A}',true,'Owner');
 INSERT INTO identity_allowlist VALUES('{W}','{A}','active','Owner');
@@ -260,6 +277,8 @@ let input=''; for await(const chunk of process.stdin) input+=chunk;
 const x=JSON.parse(input), db=new PGlite(); await db.exec(x.schema); await db.exec(x.helpers);
 async function read(sql){const r=await db.exec(sql);return r.flatMap(v=>v.rows??[]).find(v=>v.jsonb_build_object)?.jsonb_build_object;}
 const normal=await read(x.inspect), accepted=await read(x.acceptance);
+const performance=await read(x.performance);
+const performanceAvailable=await read(x.performanceAvailable);
 await db.exec(`UPDATE identity_allowlist SET status='disabled'`); const disabled=await read(x.inspect);
 await db.exec(`UPDATE identity_allowlist SET status='active'; INSERT INTO provider_usage(workspace_id,state) VALUES('${x.w}','reserved')`); const reserved=await read(x.inspect);
 await db.exec(`UPDATE provider_usage SET state='unknown'`); const unknown=await read(x.inspect);
@@ -290,14 +309,53 @@ await db.exec(`UPDATE model_execution_settings SET enabled=true,admitted_after=n
 const childLocalAllowed=await read(x.inspect);
 await db.exec(`UPDATE provider_usage SET state='reserved' WHERE id=(SELECT id FROM provider_usage LIMIT 1)`);
 const childReserved=await read(x.inspect);
-console.log(JSON.stringify({normal,accepted,disabled,reserved,unknown,routed,mismatch,diagnostic,bounded,
- parentModern,childUntouched,childFrozen,childRecent,childAged,childManual,childLocalDenied,childLocalAllowed,childReserved})); await db.close();
+await db.exec(`INSERT INTO jobs(id,workspace_id,entity_id,status,type,next_attempt_at) SELECT gen_random_uuid(),'${x.w}','${x.g}','queued','draft_section',now()+interval '1 hour' FROM generate_series(1,101)`);
+const queueBounded=await read(x.diagnostic);
+console.log(JSON.stringify({normal,accepted,performance,performanceAvailable,disabled,reserved,unknown,routed,mismatch,diagnostic,bounded,
+ parentModern,childUntouched,childFrozen,childRecent,childAged,childManual,childLocalDenied,childLocalAllowed,childReserved,queueBounded})); await db.close();
 """
         result = subprocess.run(['node', '--input-type=module', '-e', script], input=json.dumps({
-            'schema': schema, 'inspect': inspect_sql, 'acceptance': m.acceptance_sql(prepared), 'diagnostic': m.diagnostic_sql(proof['selection']), 'w': W, 'j': J, 'g': G, 'helpers': helpers, 'child': child}),
+            'schema': schema, 'inspect': inspect_sql, 'acceptance': m.acceptance_sql(prepared),
+            'performance': m.performance_sql(proof['selection']),
+            # Isolated availability shim exercises the dynamic query over the
+            # synthetic stats view; operational SQL still requires the extension.
+            'performanceAvailable': m.performance_sql(proof['selection']).replace('IF stats_schema IS NOT NULL THEN',
+                "stats_schema:='public'; IF stats_schema IS NOT NULL THEN", 1),
+            'diagnostic': m.diagnostic_sql(proof['selection']), 'w': W, 'j': J, 'g': G, 'helpers': helpers, 'child': child}),
             text=True, capture_output=True, cwd=HERE.parent.parent, timeout=35)
         self.assertEqual(result.returncode, 0, result.stderr)
         data = json.loads(result.stdout)
+        performance = m.validate_performance_snapshot(data['performance'], proof['selection'])
+        self.assertEqual(performance['statements'], {'status': 'unavailable', 'rows': []})
+        self.assertEqual(performance['selected_context']['plan_id'], G)
+        self.assertGreater(performance['selected_context']['logical_bytes'], 0)
+        self.assertTrue(any(row['relation'] == 'public.jobs' for row in performance['tables']))
+        available_stats = m.validate_performance_snapshot(data['performanceAvailable'], proof['selection'])
+        self.assertEqual(available_stats['statements'], {'status': 'available', 'rows': [{
+            'routine': 'model_graph_store', 'calls': 3, 'total_exec_ms': 9, 'mean_exec_ms': 3,
+            'max_exec_ms': 5, 'shared_blks_hit': 6, 'shared_blks_read': 1, 'temp_blks_written': 0}]})
+        self.assertNotIn('private_customer_value', json.dumps(available_stats))
+        for key, value in [('query', 'private customer SQL'), ('remote_request_id', 'private-remote-id')]:
+            changed = copy.deepcopy(performance); changed[key] = value
+            with self.assertRaisesRegex(m.TrialRequestError, 'PERFORMANCE_INVALID'):
+                m.validate_performance_snapshot(changed, proof['selection'])
+        for row in [{'routine': 'model_graph_store', 'calls': 3, 'total_exec_ms': 9.0, 'mean_exec_ms': 3.0,
+                'max_exec_ms': 5.0, 'shared_blks_hit': 6, 'shared_blks_read': 1, 'temp_blks_written': 0}]:
+            available = copy.deepcopy(performance)
+            available['statements'] = {'status': 'available', 'rows': [row]}
+            m.validate_performance_snapshot(available, proof['selection'])
+            for mutation in ('query', 'routine', 'mean_exec_ms'):
+                changed = copy.deepcopy(available)
+                changed['statements']['rows'][0][mutation] = {'query': 'private SQL', 'routine': 'private_routine',
+                    'mean_exec_ms': float('nan')}[mutation]
+                with self.assertRaisesRegex(m.TrialRequestError, 'PERFORMANCE_INVALID'):
+                    m.validate_performance_snapshot(changed, proof['selection'])
+        snapshot_sql = m.performance_sql(proof['selection'])
+        self.assertIn("statement_timeout='5s'", snapshot_sql)
+        self.assertIn("lock_timeout='1s'", snapshot_sql)
+        self.assertIn("e.extname='pg_stat_statements'", snapshot_sql)
+        self.assertNotRegex(snapshot_sql, r'(?i)\b(insert|update|delete|truncate|grant|revoke)\b|for update')
+        self.assertNotIn('query', {key for row in performance['activity'] for key in row})
         self.assertEqual(m.prepare(data['normal'])['operation'], 'generation.retry')
         self.assertFalse(data['disabled']['guards']['unique_active_owner'])
         self.assertFalse(data['reserved']['guards']['usage_ready'])
@@ -309,6 +367,26 @@ console.log(JSON.stringify({normal,accepted,disabled,reserved,unknown,routed,mis
         self.assertEqual(data['diagnostic']['unknown_count'], 1)
         self.assertTrue(data['diagnostic']['routing_enabled'])
         m.validate_verifier_diagnostic(data['diagnostic'])
+        m.validate_queue_diagnostic(data['diagnostic'])
+        queue = data['diagnostic']['queue_diagnostics']
+        self.assertEqual(queue['job_count'], 1)
+        self.assertEqual(queue['jobs'][0]['graph']['checkpoints']['count'], 1)
+        self.assertEqual(queue['jobs'][0]['graph']['results']['count'], 1)
+        self.assertEqual(queue['dispatch']['generation'], 7)
+        self.assertEqual(queue['timers']['count'], 2)
+        self.assertEqual(queue['timers']['due_count'], 1)
+        m.validate_queue_diagnostic(data['queueBounded'])
+        self.assertEqual(data['queueBounded']['queue_diagnostics']['job_count'], 103)
+        self.assertEqual(len(data['queueBounded']['queue_diagnostics']['jobs']), 100)
+        self.assertTrue(data['queueBounded']['queue_diagnostics']['jobs_truncated'])
+        for mutation in ('payload', 'timestamp', 'count'):
+            changed = copy.deepcopy(data['diagnostic'])
+            if mutation == 'payload': changed['queue_diagnostics']['jobs'][0]['checkpoint'] = {'private': True}
+            elif mutation == 'timestamp': changed['queue_diagnostics']['dispatch']['last_periodic_at'] = 'customer text'
+            else: changed['queue_diagnostics']['reserved_workspace'] += 1
+            with self.subTest(mutation=mutation), self.assertRaises(m.TrialRequestError):
+                m.validate_queue_diagnostic(changed)
+
         projected = data['diagnostic']['verifier_diagnostics']
         self.assertEqual(projected['plan_id'], G)
         self.assertEqual(projected['report_count'], 1)
@@ -318,7 +396,7 @@ console.log(JSON.stringify({normal,accepted,disabled,reserved,unknown,routed,mis
         self.assertEqual(projected['attempts'][0]['model_config_id'], '00000000-0000-4000-8000-000000000903')
         route = data['diagnostic']['verifier_routes'][0]
         self.assertEqual((route['revision'], route['models'][0]['revision'], route['models'][0]['connection_revision']), (7, 5, 3))
-        for private in ['private-project', 'private-customer-content', '99999', 'numeric_literals']:
+        for private in ['private-project', 'private-customer-content', 'private-checkpoint-payload', '99999', 'numeric_literals']:
             self.assertNotIn(private, json.dumps(data['diagnostic']))
         self.assertEqual(data['bounded']['total'], 102)
         self.assertTrue(data['bounded']['truncated'])

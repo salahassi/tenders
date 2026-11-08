@@ -1,5 +1,230 @@
 # Implementation status and continuation plan
 
+## November 8 — integrated poll package gates reconciled
+
+The full backend run exercised 3,626 tests in 215 files: 3,624 passed and two
+existing DOCX integration cases exceeded their unchanged five-second local test
+limit while other work was concurrent. Both complete export files then passed
+all 44 tests with one worker and the same timeout, with no product/test changes.
+Backend typecheck and build pass. The [package receipt](evidence/proposal-poll-package-gates-20261108.json)
+retains both complete logs and their distinct outcomes rather than rewriting the
+initial run as green. Frontend files are byte-unchanged from the prior fresh
+389-test/typecheck/build verification at `47cdca4`; that evidence is reused.
+All 31 actual-image controls pass. The final release boundary has 24 passing
+coordinator tests and an independent review confirming null-identity rejection
+before mutation, fixed response handling and unchanged recovery budgets.
+Registry publication and immutable pull/readback now pass for `b5e14c0e`, image
+`492d0716`, with temporary push credentials removed. The publication binds
+artifact source `82d42820` and qualification `1557117f`. Deployment and actual
+customer completion remain separate gates.
+
+## November 8 — verify the new HTTP RPC boundary before activation
+
+The poll release additionally probes the new RPC from the candidate worker's
+actual gateway path before resuming the scheduler. Null job/lease identities must
+produce the exact existing `STALE_LEASE` rejection before any writes; a missing
+PostgREST schema-cache entry or changed route prevents activation and triggers
+the existing bounded rollback. Credentials remain inside the worker process.
+The five-second HTTP/eight-second command bounds fit the existing release budget;
+no deadline is extended. A failure-path control confirms restored images and
+retained compatible SQL. Hosted acceptance remains pending.
+
+## November 8 — actual accepted-poll image qualification captured
+
+An offline build of source `82d42820` produced image `492d0716`. The actual image
+passed all nine dispatch, twelve prompt and ten accepted-poll native controls.
+The last fixture confirms pending GETs, full ready-response validation and
+settlement, exact compatibility of 28 revision-6 wire combinations and two saved
+phase pins, and no generation POST or new reservation. Historical prompt checks
+cover the older 84 combinations and eleven pins. Every harness confirms cleanup
+and zero external/provider calls. The separate qualification receipt is fixed to
+`1557117f`; the existing latency/dispatch receipts remain unchanged.
+
+Backend typecheck passes. The integrated full suite is still running and has
+reported two export integration failures; their detailed outcome and focused
+reconciliation remain open. Publication, deployment, actual elapsed-time
+improvement and completed customer files are not established by native proof.
+
+## November 8 — independent accepted-poll authority regressions
+
+A synthetic proposal plan and draft step now exercise the accepted-poll seam
+through the full PostgreSQL fixture and actual guarded model executor. The 29
+cases cover live source permission and requested-processing authority, later
+revocation, canceled/expired/stale leases, issuance and remote deadlines,
+unsupported or altered proof, browser-role denial and accepted disabled models.
+Writer and verifier pending polls each use one database round trip before the
+GET and three total, compared with the measured ordinary writer path's fourteen
+before GET and eighteen total. Ready responses still pass the original draft
+schema, record one candidate and one usage settlement, and await independent
+verification before acceptance; revocation after GET prevents consumption.
+Remote expiry before or immediately after preparation returns to the existing
+unknown-usage accounting path without a GET or another reservation.
+No provider network, production setting, reservation or deadline changed during
+these tests. The count is structural local-fixture evidence, not hosted latency
+or completed-package evidence.
+
+## November 8 — poll accepted model requests before graph reconstruction
+
+Accepted background requests now have a narrow preparation path before graph
+replay. One service-only `prepare_accepted_model_poll` transaction proves the
+existing lease, issuance, graph/phase/input identity, saved round, frozen model,
+versioned prompt pins and current content authorization; it resumes the original
+reservation and starts the ordinary attempt without creating a new generation.
+Incomplete proof falls back to the existing path. Healthy pending GETs finish the
+attempt and use the existing adaptive defer. Ready/error responses enter normal
+accounting and validation through an invocation-local, single-use receipt bound
+to the exact request and execution metadata. Remote expiry retains ordinary
+reconciliation; issuance expiry remains closed. No deadline, concurrency,
+provider selection, semantic validation or historical prompt bytes change.
+
+The 90-second fresh-generation budget now resolves an exact accepted phase before
+yielding, so preparation time cannot repeatedly prevent its GET. Resume errors
+retain the existing attempt/fallback bookkeeping. Five focused controls cover
+late accepted versus unaccepted work and identity, authorization and transient
+resume failures; all pass. The existing model, graph and catalog targeted suites
+passed 166 tests. Independent full-schema controls separately passed 29 cases,
+including real content revocation, ready-response validation/accounting, stale
+receipts, expiry and writer/verifier pending paths. Those fixtures measure one
+RPC before a healthy GET and three total, versus the previous fourteen and
+eighteen. These are local structural measurements; production elapsed-time
+improvement and complete file issuance remain unproven pending release and an
+actual continuation. The frozen integrated source still requires full package
+gates and image-bound qualification before deployment.
+
+## November 8 — bounded accepted-poll release controls prepared
+
+The next schema child is bound to the deployed admission catalog `28dc9a60`,
+structure `4ede33bb` and every historical ledger row. Its sole permitted addition
+is `public.prepare_accepted_model_poll(uuid,uuid,text,text,jsonb)`, owned by the
+application owner, with an empty search path and execute rights only for existing
+service roles. All preexisting routine bodies and attributes, schema authority,
+tables and data remain protected. The current reviewed SQL candidate is `8d089d8d`;
+its canonical payload uses the proved transaction-activity/storage guard, while
+noncanonical fault payloads also retain complete row digests.
+
+The additive SQL and exact child readback precede scheduler interruption. An
+uncertain commit is read back once without a second apply. A proved SQL-only
+result with insufficient rollout time leaves the original image pair intact
+for explicit forward continuation. Before image changes, the original single
+scheduler replica is paused and its owned pods drained. Worker readiness and
+authentication, scheduler template, exact schema and retained configuration must
+pass before final resume. Pre-activation rollback retains the additive SQL;
+after any resume attempt, actual-state readback precedes forward recovery.
+Inspection rejects a candidate image without its child RPC. The existing
+170-second total bound, queue-time accounting and recovery/cleanup reserves
+remain unchanged.
+
+Thirty-six focused polling controls pass, including 23 coordinator cases,
+eight qualification guards and an actual five-level PostgreSQL ledger chain
+with 15 row/authority/structure fault cases. Fifteen trial-runner controls,
+Python compilation and workflow YAML/shell checks pass. Independent review's
+inspection-consistency and pre-pause budget findings were corrected and tested.
+Actual trials now require the separate pending-poll image qualification and
+applied child ledger; frozen historical inspection sources remain separate.
+The migration/product commit, native qualification, publication, deployment and
+customer issuance are separate pending gates. No live action was performed for
+these controls, and the historical image/SQL receipts are unchanged.
+
+## November 8 — accepted-request poll runtime qualification preparation
+
+The new poll qualification wrapper has separate build, native, qualification and
+publication receipts. The deployed `03c68b58` latency image and prior `c6f7cce5`
+dispatch evidence remain immutable. It reuses their source, image, offline build
+and registry guards without changing historical constants. Acceptance requires
+the nine dispatch controls, the prior prompt fixture, and a new actual-image
+accepted-poll fixture proving pending resumes and ordinary completed-response
+validation without a duplicate generation request or reservation.
+
+The additional native proof must compare all 28 revision-6 wire combinations
+and both accepted revision-6 phase pins against the deployed latency image;
+the existing fixture separately covers 84 older wire combinations and eleven
+older pins. Both the existing adaptive-poll SQL and the new accepted-poll helper
+migration are bound to the build receipt. This binds source only; SQL behavior
+and the child schema ledger require separate database qualification.
+
+The new native fixture is prepared. It exercises pending queued/in-progress
+responses through the fused RPC, GET, attempt completion and deferred wake;
+completed responses rejoin the original model validation and usage settlement.
+Schema, coverage and quotation failures remain rejected. Identity/one-use
+receipts, closed issuance, remote expiry and legacy fallback are covered, with
+zero generation POSTs or new reservations and explicit successful cleanup.
+
+All 55 combined controls pass: thirteen new native-driver controls, eight new
+wrapper controls and 34 retained qualification/release controls. Backend
+typecheck passes. A separate source-only smoke passes the candidate behavior
+and compares all 28 revision-6 wire combinations/two accepted pins to baseline
+source; this is not native-image evidence. The qualification hash remains
+unset until the frozen release image is actually tested. No image build,
+native execution, registry publication, deployment or provider request has
+been performed for this qualification preparation.
+
+## November 8 — hosted read-only performance snapshot
+
+Inspection42517566064 from `531acaf` passed with owned cleanup and no command or
+provider request. The selected frozen context is 772,563 logical bytes and
+138,736 stored bytes. The available relation estimates do not demonstrate major
+bloat. Server function tracking is disabled, statement statistics are unavailable
+and the observer does not have full statistics visibility. This snapshot cannot
+attribute the internal handoff gaps to an individual query, exclude earlier lock
+waits or establish CPU/transport latency. Existing transaction-start timestamps
+span several RPCs between graph transitions and must not be labeled single-query
+timings. See the [bounded inspection receipt](evidence/proposal-performance-inspection-20261108-42517566064.json).
+
+The accepted-request optimization remains a separately tested reduction in
+serialized round trips. Actual production latency and file issuance still require
+a subsequent qualified deployment and authorized saved-work trial.
+
+## November 8 — bounded read-only database performance inspection
+
+The selected proposal inspector now records only named RPC execution aggregates,
+function counters, fixed relation sizes/live-dead estimates, selected frozen-context
+byte sizes, and grouped session wait/blocker metadata. Optional statement statistics
+are queried only after checking the extension/view catalog; unavailable or denied
+access is explicit. Tracking settings and full-statistics visibility are reported
+without enabling extensions, changing settings, or exposing SQL, process identities,
+customer values, graph payloads, or credentials. Exact identifier matching keeps
+modern RPC names and overlapping routine names separate.
+
+Each SQL statement has a five-second timeout and one-second lock timeout inside
+the existing 170-second runner bound. Local PGlite query execution covers absent
+statistics and a synthetic available-view branch, including zero-call rows,
+routine-name boundaries and private SQL exclusion. Request/privacy and trial-runner
+checks pass; hosted attribution remains pending. No live call, model request or
+business mutation was performed for this change. Historical aggregate execution
+times and a current wait snapshot cannot alone prove a past lock holder.
+
+The statement aggregate includes SELECT/WITH calls only, excluding migration
+definitions and anonymous blocks that merely contain a routine name. An actual
+PostgreSQL fixture checks those exclusions before hosted inspection.
+
+## November 8 — admission wake deployed; third real issuance still incomplete
+
+Admission apply [42515903670](https://github.com/salahassi/tenders/actions/runs/42515903670)
+from `573c8fb` passed in 28 seconds including queue and cleanup. Its atomic
+`fcde6425` child is confirmed by separate readback: catalog `28dc9a60`, structure
+`4ede33bb`. Every image, private configuration, prior ledger and business row is
+retained. No provider request or business command was sent by deployment. See the
+[exact receipt](evidence/proposal-admission-passed-20261108-42515903670.json).
+The new immediate admission wake has not yet been exercised by another issuance.
+
+Read-only queue inspection42516030063 confirms the third actual retry failed
+at its unchanged 19:33:56.598872 UTC deadline. The saved plan contains twelve
+successful analyses and six successful draft sections out of seventeen; eleven
+sections stopped, ten before starting. These are plan totals including historical
+successes, not current-issuance totals. New draft verifiers use route revision3
+and execution capacity is four, but observed occupancy remained low. No final
+active proposal version or whole package exists. See the
+[terminal receipt](evidence/proposal-capacity-trial-timeout-20261108-42516030063.json).
+
+A controlled full-schema scheduling experiment does not reproduce starvation:
+with one repeatedly due poll and fourteen fresh jobs, all six fairness cursors
+admit three fresh requests within seven to nine claims. A guarded writer fixture
+instead counts fourteen sequential RPCs before a healthy pending GET and
+21 before a fresh POST, excluding real proposal context/issuance overhead.
+Hosted graph timestamps also show much larger per-operation gaps during drafting
+than analysis. Reducing safe poll preparation and attributing these delays remain
+open; no further paid trial was submitted after this inspection.
+
 ## November 8 — canonical verifier/capacity repair applied
 
 The read-only settings plan42514420334 was reviewed against the selected failed
@@ -25,6 +250,21 @@ second read-only observation, six current-issuance jobs were complete but twelve
 were still queued with one pending remote request. Some saved catalogs retain
 the old verifier by design. Effective parallel occupancy and whole-package
 completion remain open; configuration acceptance alone does not close them.
+
+## November 8 — read-only proposal queue-capacity snapshot
+
+The existing encrypted trial inspection now projects at most 100 selected-plan
+jobs with due times, lease-presence flags, catalog/graph flags, work class and
+current task. It compares selected versus other workspace reservations, reads
+only dispatcher counters/deadlines and aggregates graph checkpoint/result counts
+and timestamp ranges. No checkpoint/result body, lease token, remote request ID
+or credential is added. Strict readback validation rejects extra payload fields,
+invalid timestamp/count metadata and inconsistent truncation. The original
+read-only transaction, selected workspace/plan scope and byte/time bounds remain.
+Actual PostgreSQL fixture coverage exercises this projection, 103-job truncation,
+private-body exclusion and malformed metadata rejection. This diagnostic changes
+no queue ordering, concurrency setting, routing, job or provider request; hosted
+inspection and any subsequent scheduling correction remain separate evidence.
 
 ## November 8 — bound admission migration proof without reading customer payloads
 

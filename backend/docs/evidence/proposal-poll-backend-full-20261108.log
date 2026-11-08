@@ -1,0 +1,50 @@
+
+> tenderdesk-backend@0.2.0 typecheck
+> tsc -b
+
+
+> tenderdesk-backend@0.2.0 test
+> vitest run tests/backend
+
+
+ RUN  v5.0.4 /workspace/work/tenders-diagnosis/backend
+
+ ❯ tests/backend/generatedDeliveryPipeline.integration.test.ts (18 tests | 1 failed) 44154ms
+   × projects actual accepted responses, renders verified DOCX, and keeps human approval pending 7896ms
+ ❯ tests/backend/ordinaryExportPipeline.integration.test.ts (26 tests | 1 failed) 47848ms
+   × retains the actual completion proof and approved two-volume download through aged maintenance while pruning an unrelated terminal job 5996ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/backend/generatedDeliveryPipeline.integration.test.ts > projects actual accepted responses, renders verified DOCX, and keeps human approval pending
+Error: Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+ ❯ tests/backend/generatedDeliveryPipeline.integration.test.ts:478:1
+    476|   return { backend: backend as unknown as Backend, objects };
+    477| }
+    478| it("projects actual accepted responses, renders verified DOCX, and kee…
+       | ^
+    479|   const { j, v, issuance } = await setup();
+    480|   expect(await rpc("claim_backend_local_job_v3")).toBeNull();
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  tests/backend/ordinaryExportPipeline.integration.test.ts > retains the actual completion proof and approved two-volume download through aged maintenance while pruning an unrelated terminal job
+Error: Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+ ❯ tests/backend/ordinaryExportPipeline.integration.test.ts:888:1
+    886|   ).toBe(0);
+    887| });
+    888| it("retains the actual completion proof and approved two-volume downlo…
+       | ^
+    889|   const d = await setup(true);
+    890|   const revision = await approve(d);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  2 failed | 213 passed (215)
+      Tests  2 failed | 3624 passed (3626)
+   Start at  20:04:07
+   Duration  383.35s (tests 94%, import 6%)
+

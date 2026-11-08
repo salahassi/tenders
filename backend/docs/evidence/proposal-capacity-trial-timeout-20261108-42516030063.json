@@ -1,0 +1,44 @@
+{
+  "workflow_run_id": 42516030063,
+  "workflow_url": "https://github.com/salahassi/tenders/actions/runs/42516030063",
+  "source_revision": "573c8fb9569c29559dcaeaaa7566bb9021e7487f",
+  "start_run_id": 42514772640,
+  "operation": "generation.retry",
+  "accepted_at": "2026-11-08T19:23:56.598872+00:00",
+  "deadline_at": "2026-11-08T19:33:56.598872+00:00",
+  "observed_at": "2026-11-08T19:38:48.167775+00:00",
+  "mode": "inspect",
+  "report_object": "diagnostics/proposal-trial-42516030063.bundle",
+  "report_sha256": "71e9a756fa504f9f0cee61f0eb3278fad54995dee7487b7318a95e2ffd197e34",
+  "request_sent": false,
+  "send_attempted": false,
+  "cleanup_verified": true,
+  "latest_issuance_outcome": "failed",
+  "plan_stage": "drafting",
+  "plan_status": "failed",
+  "plan_jobs_status_counts": {
+    "failed": 11,
+    "succeeded": 21
+  },
+  "draft_sections": {
+    "total": 17,
+    "succeeded": 6,
+    "failed": 11,
+    "never_started": 10,
+    "failure_codes": [
+      "PROPOSAL_ISSUANCE_TIMEOUT"
+    ]
+  },
+  "configuration": {
+    "enabled": true,
+    "max_parallel_requests": 4,
+    "execution_revision": 4,
+    "new_draft_verifier_route_revision": 3
+  },
+  "reserved_workspace": 0,
+  "customer_files_issued": false,
+  "authenticated_download_verified": false,
+  "metadata_only": true,
+  "business_mutations": 0,
+  "scope_note": "Plan job counts include historical saved successes and exclude separate delivery jobs; they are not issuance-only totals."
+}

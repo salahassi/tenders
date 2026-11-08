@@ -31,6 +31,7 @@ import {
   type VerificationPhase,
 } from "./modelVerificationFormat.ts";
 import { modelLedger } from "./modelLedger.ts";
+import { prepareAcceptedModelPoll } from "./modelAcceptedPoll.ts";
 import { ModelGraphStore } from "./modelGraphStore.ts";
 import {
   verificationBatches,
@@ -417,6 +418,17 @@ async function runGuardedModel(o: Options): Promise<{
   const threadId = await sha256(`${o.job.id}:${o.prefix}:${inputHash}`);
   if (recheck && recheck.input_hash !== inputHash)
     throw new ModelError("MODEL_IDENTITY_CHANGED");
+  const acceptedPoll = recheck
+    ? null
+    : await prepareAcceptedModelPoll({
+        backend: o.backend,
+        job: o.job,
+        threadId,
+        graphInputHash: inputHash,
+        manifest: o.manifest,
+        environments: o.environments,
+        fetcher: o.fetcher,
+      });
   const store = new ModelGraphStore(o.backend, o.job, threadId);
   const thread = await store.action("init", {
     input_hash: inputHash,
@@ -796,6 +808,7 @@ async function runGuardedModel(o: Options): Promise<{
         verificationRevision,
         {
           independentGrounding: true,
+          acceptedPoll,
           semanticRevision,
           splitOnTruncation:
             o.context?.execution_policy_version === 3 &&

@@ -31,6 +31,13 @@ def fixture():
         'modern_execution': {
             'enabled': True, 'revision': 2, 'max_parallel_requests': 2,
             'admitted_after': '2026-01-01T00:00:00+00:00'},
+        'queue_diagnostics': {
+            'plan_id': P, 'job_count': 0, 'jobs_truncated': False, 'jobs': [],
+            'reserved_workspace': 0, 'reserved_selected': 0, 'reserved_other': 0,
+            'dispatch': {'generation': 1, 'acknowledged_generation': 1,
+                'lease_generation': None, 'lease_until': None, 'next_attempt_at': '-infinity',
+                'last_periodic_at': '2026-01-01T00:00:00+00:00', 'failures': 0},
+            'timers': {'count': 0, 'due_count': 0, 'first_at': None, 'last_at': None}},
         'verifier_diagnostics': {
             'plan_id': P, 'report_count': 1, 'reports_truncated': False,
             'attempt_count': 1, 'attempts_truncated': False,
