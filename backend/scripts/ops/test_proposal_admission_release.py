@@ -173,10 +173,10 @@ class AdmissionReleaseTests(unittest.TestCase):
         self.cleanup.assert_called_once()
 
     def test_work_budget_includes_elapsed_queue_and_setup(self):
-        for remaining, expected in [(170, 110), (120, 85), (80, 45)]:
+        for remaining, expected in [(170, 110), (120, 75), (90, 45)]:
             self.remaining.return_value = remaining
             self.assertEqual(m.work_budget(), expected)
-        self.remaining.return_value = 79
+        self.remaining.return_value = 89
         with self.assertRaisesRegex(RuntimeError, 'WORK_BUDGET_EXHAUSTED'):
             m.work_budget()
 

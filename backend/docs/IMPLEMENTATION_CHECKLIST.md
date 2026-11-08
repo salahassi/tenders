@@ -13,7 +13,9 @@ Explicit read-only inspection accepts the exact latency parent or the exact
 admission child. Apply sends one transaction; an uncertain response permits only
 readback, never resubmission or DDL reversal. The workflow retains the 170-second
 deadline from run creation including queue time, with bounded reconciliation
-and owned-client cleanup. No image patch, scheduler pause, provider call or
+and owned-client cleanup. Independent review aligned the work timer's 45-second
+reserve with the 20-second commit-readback and 15-second cleanup bounds, so an
+interrupted apply still has time to reconcile. No image patch, scheduler pause, provider call or
 business command is part of this release. Trial verification explicitly accepts
 either bound schema state without changing historical latency verification.
 

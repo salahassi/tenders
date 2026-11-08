@@ -44,7 +44,9 @@ def fixed_code(error):
 
 
 def work_budget():
-    budget = min(110, dispatch.remaining_run_seconds() - 35)
+    # A work-alarm interruption must still enter the uncertain-commit readback:
+    # 20 seconds readback, 15 cleanup and 10 seconds for exit/runner overhead.
+    budget = min(110, dispatch.remaining_run_seconds() - 45)
     require(budget >= 45, 'WORK_BUDGET_EXHAUSTED')
     return budget
 

@@ -35,7 +35,7 @@ jobs:
           python3 - <<'PY'
           import os,subprocess,sys,time
           if os.environ['GITHUB_RUN_ATTEMPT']!='1':raise SystemExit('Workflow replay is refused')
-          available=int(os.environ['TENDERDESK_RUN_DEADLINE_EPOCH'])-time.time()-85
+          available=int(os.environ['TENDERDESK_RUN_DEADLINE_EPOCH'])-time.time()-95
           if available<5:raise SystemExit('Insufficient run budget before access preparation')
           try:
               result=subprocess.run([sys.executable,'backend/scripts/ops/digitalocean-runner.py'],
