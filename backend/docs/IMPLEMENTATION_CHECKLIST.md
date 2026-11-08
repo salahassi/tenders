@@ -2,6 +2,25 @@
 
 ## November 8 — bounded SQL-only retry compatibility release
 
+Hosted attempt [42508689969](https://github.com/salahassi/tenders/actions/runs/42508689969)
+at `9edb0bf` stopped after 56 seconds including queue. Both the apply transport and
+its read-only reconciliation returned the former generic Kubernetes command
+failure; owned cleanup succeeded. That evidence does not prove whether COMMIT
+occurred. No unchanged apply retry is authorized by this receipt.
+
+The follow-up adds an explicit inspect mode (the workflow default) which only
+verifies the exact predecessor or child schema receipt. Apply requires the
+explicit `apply` input. SQL transport now captures verbose PostgreSQL diagnostics
+privately and returns only an allowlisted fixed schema/migration error or the
+five-character SQLSTATE. Raw messages, SQL, paths, DETAIL/CONTEXT and customer
+values never reach public output. After schema readback, inspection can run the
+same full-row digest once in a separate read-only transaction with a 20-second
+SQL limit. It reports only completion, elapsed time and a sanitized error code;
+a probe timeout retains the already proven schema state. This checks the suspected
+cost without changing the migration's row-preservation proof. Insufficient time
+skips the probe and preserves cleanup. Read-only commit reconciliation is the
+next required hosted step before any further migration attempt.
+
 The new release workflow applies only the reviewed modern-routing retry migration;
 all five deployed images, workload definitions, private configuration and provider
 settings remain unchanged. The atomic schema wrapper starts from the exact

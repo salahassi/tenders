@@ -2,6 +2,7 @@
 import hashlib
 import importlib.util
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -48,16 +49,60 @@ class RetrySchemaTests(unittest.TestCase):
             'parent_sql_sha256': m.PARENT_SQL, 'catalog_sha256': 'a' * 64, 'structure_sha256': 'b' * 64,
             'applied': True, 'replayed': True, 'read_only': True, 'predecessor_receipts_preserved': True,
             'business_rows_changed': 0, 'processing_requested': False}
-        deploy = Mock(NAMESPACE='fixture', DATABASE='fixture')
-        deploy.command.return_value = json.dumps(valid)
-        with patch.object(m, 'module', return_value=deploy):
+        with patch.object(m, 'execute_sql', return_value=json.dumps(valid)) as transport:
             self.assertEqual(m.verify(Mock(pod='owned-client')), valid)
-            self.assertEqual(deploy.command.call_args.kwargs['timeout'], 30)
             for change in ({'sql_sha256': 'c' * 64}, {'applied': False}, {'business_rows_changed': 1},
                            {'processing_requested': True}, {'predecessor_receipts_preserved': False}):
-                deploy.command.return_value = json.dumps(valid | change)
+                transport.return_value = json.dumps(valid | change)
                 with self.assertRaises(m.RetrySchemaError):
                     m.verify(Mock(pod='owned-client'))
+
+    def test_verbose_sql_errors_are_strictly_sanitized(self):
+        cases = [
+            ('psql:<stdin>:5: ERROR:  P0001: RETRY_SCHEMA_PARENT_CATALOG\nCONTEXT: private SQL and customer data', 'RETRY_SCHEMA_PARENT_CATALOG'),
+            ('ERROR:  P0001: DISPATCH_SCHEMA_RPC_AUTHORITY\nDETAIL: private value', 'DISPATCH_SCHEMA_RPC_AUTHORITY'),
+            ('ERROR:  P0001: GENERATION_RETRY_USAGE_GUARD_CHANGED\nCONTEXT: private source', 'GENERATION_RETRY_USAGE_GUARD_CHANGED'),
+            ('ERROR:  57014: canceling statement due to statement timeout\nCONTEXT: private SQL', 'RETRY_SCHEMA_SQLSTATE_57014'),
+            ('ERROR:  42703: column "private customer value" does not exist', 'RETRY_SCHEMA_SQLSTATE_42703'),
+            ('ERROR:  P0001: RETRY_SCHEMA_INVENTED_CUSTOMER_VALUE', 'RETRY_SCHEMA_SQLSTATE_P0001'),
+            ('Error from server: private infrastructure value', 'RETRY_SCHEMA_SQL_TRANSPORT_FAILED'),
+        ]
+        for raw, expected in cases:
+            with self.subTest(expected=expected):
+                self.assertEqual(m.sql_error_code(raw), expected)
+
+    def test_transport_keeps_original_ca_and_bound_without_leaking_streams(self):
+        deploy = Mock(NAMESPACE='fixture', DATABASE='fixture')
+        with patch.dict(os.environ, {'KUBECTL': '/private/kubectl'}), patch.object(m, 'module', return_value=deploy), \
+             patch.object(m.subprocess, 'run', return_value=Mock(returncode=1,
+                stderr='ERROR:  57014: private customer details', stdout='private response')) as command:
+            with self.assertRaisesRegex(m.RetrySchemaError, '^RETRY_SCHEMA_SQLSTATE_57014$'):
+                m.execute_sql(Mock(pod='owned-client'), 'SELECT 1')
+            self.assertEqual(command.call_args.kwargs['timeout'], 30)
+            self.assertIn('--set=VERBOSITY=verbose', command.call_args.args[0])
+            self.assertNotIn('--insecure-skip-tls-verify', command.call_args.args[0])
+            command.side_effect = subprocess.TimeoutExpired(['private-command'], 30, output='private output')
+            with self.assertRaisesRegex(m.RetrySchemaError, '^RETRY_SCHEMA_SQL_TRANSPORT_TIMEOUT$'):
+                m.execute_sql(Mock(pod='owned-client'), 'SELECT 1')
+
+    def test_row_cost_probe_is_read_only_and_returns_no_customer_digests(self):
+        sql = m.row_digest_probe_sql()
+        self.assertIn('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY;', sql)
+        self.assertIn("statement_timeout='20s'", sql)
+        self.assertIn(m.parent.ROWS, sql)
+        self.assertTrue(sql.rstrip().endswith('ROLLBACK;'))
+        self.assertNotRegex(sql, r'(?i)\b(insert|update|delete|truncate|grant|revoke)\b')
+        with patch.object(m, 'execute_sql', return_value='{"completed":true}'):
+            result = m.row_digest_probe(Mock(pod='owned-client'))
+        self.assertTrue(result['completed'])
+        self.assertEqual(set(result), {'probe', 'completed', 'code', 'duration_seconds', 'read_only'})
+
+    def test_row_cost_timeout_preserves_read_only_probe_status(self):
+        with patch.object(m, 'execute_sql', side_effect=m.RetrySchemaError('RETRY_SCHEMA_SQLSTATE_57014')):
+            result = m.row_digest_probe(Mock(pod='owned-client'))
+        self.assertFalse(result['completed'])
+        self.assertEqual(result['code'], 'RETRY_SCHEMA_SQLSTATE_57014')
+        self.assertTrue(result['read_only'])
 
     def test_atomic_apply_replay_chain_authority_and_mutation_rejection(self):
         payload = m.source()
@@ -111,6 +156,7 @@ revoke all on function app_private.generation_command(text,jsonb,text) from publ
         data = {'setup': setup, 'old': fixture.LEGACY_DISPATCH_SQL.replace(':"service_role"', '"tdp_app_service"'),
             'manifest': m.parent.BASE_MANIFEST, 'dispatch': dispatch, 'old_catalog': m.parent.BASE_CATALOG,
             'catalog': m.parent.CATALOG.replace(' INTO catalog_hash', ''), 'release': sql(), 'verify': sql(read_only=True),
+            'probe': m.row_digest_probe_sql().replace("current_database()<>'tenderdesk_app'", "current_database()<>'postgres'"),
             'allow': sql(read_only=True, allow_parent=True), 'changed': sql(payload + '\n-- changed reviewed source\n'),
             'variants': [(sql(payload + '\n' + suffix), code) for suffix, code in variants],
             'parent_catalog': m.PARENT_CATALOG, 'parent_structure': m.PARENT_STRUCTURE, 'release_name': m.RELEASE}
@@ -127,6 +173,7 @@ const reject=async(s,code)=>{let got;try{await db.exec(bind(s));}catch(e){got=e.
 await db.exec(bind(x.allow));await reject(x.verify,'RETRY_SCHEMA_RELEASE_MISSING');
 for(const [s,code] of x.variants){await reject(s,code);if(await one(x.catalog)!==parentCatalog)throw Error('FAILED_RELEASE_CHANGED_CATALOG');if(await one('select attempts from public.preserved_job')!==7)throw Error('FAILED_RELEASE_CHANGED_ROWS');}
 await db.exec(bind(x.release));await db.exec(bind(x.release));await db.exec(bind(x.verify));await db.exec(bind(x.allow));
+await db.exec(x.probe);
 if(await one('select count(*)::int from app_private.application_release_history')!==7)throw Error('LEDGER_REPLAY');
 if(await one("select jsonb_agg(to_jsonb(h) order by release)::text from app_private.application_release_history h where release not like 'proposal-retry-modern-usage%'")!==baselineRows)throw Error('PARENT_LEDGER_CHANGED');
 await reject(x.changed,'RETRY_SCHEMA_SOURCE_CHANGED');

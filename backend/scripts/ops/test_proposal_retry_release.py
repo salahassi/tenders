@@ -43,6 +43,9 @@ class RetryReleaseTests(unittest.TestCase):
         self.readback = {'release': 'synthetic-retry', 'read_only': True}
         self.apply = self.stack.enter_context(patch.object(m.schema, 'apply', return_value=self.receipt))
         self.verify = self.stack.enter_context(patch.object(m.schema, 'verify', return_value=self.readback))
+        self.probe = self.stack.enter_context(patch.object(m.schema, 'row_digest_probe', return_value={
+            'probe': 'existing_full_row_digest', 'completed': False, 'code': 'RETRY_SCHEMA_SQLSTATE_57014',
+            'duration_seconds': 20.01, 'read_only': True}))
         self.patch_runtime = self.stack.enter_context(patch.object(m.dispatch.runtime, 'patch_runtime'))
         self.rollback = self.stack.enter_context(patch.object(m.dispatch, 'rollback'))
 
@@ -75,6 +78,37 @@ class RetryReleaseTests(unittest.TestCase):
         self.assertNotIn('private transport response', json.dumps(m.STATE))
         self.patch_runtime.assert_not_called()
         self.rollback.assert_not_called()
+
+    def test_inspect_only_verifies_exact_parent_or_child_without_apply(self):
+        self.readback['applied'] = False
+        result = m.release(inspect_only=True)
+        self.apply.assert_not_called()
+        self.verify.assert_called_once_with(self.database, allow_parent=True)
+        self.assertEqual(result['mode'], 'inspect')
+        self.assertFalse(result['apply_attempted'])
+        self.assertFalse(result['schema']['applied'])
+        self.assertTrue(result['cleanup_verified'])
+        self.assertEqual(result['row_digest_probe']['code'], 'RETRY_SCHEMA_SQLSTATE_57014')
+        self.assertTrue(m.STATE['schema_confirmed'])
+        self.probe.assert_called_once_with(self.database)
+        self.patch_runtime.assert_not_called()
+        self.rollback.assert_not_called()
+
+    def test_cli_requires_explicit_apply_or_inspect_mode(self):
+        with patch.object(m.sys, 'argv', ['proposal-retry-release.py']), patch.object(m, 'release') as action, \
+             patch('sys.stdout', new_callable=io.StringIO) as output:
+            self.assertEqual(m.main(), 1)
+        action.assert_not_called()
+        self.assertIn('EXPLICIT_MODE_REQUIRED', output.getvalue())
+
+    def test_inspection_keeps_schema_result_when_probe_budget_is_short(self):
+        self.remaining.return_value = 59
+        result = m.release(inspect_only=True)
+        self.probe.assert_not_called()
+        self.apply.assert_not_called()
+        self.assertTrue(m.STATE['schema_confirmed'])
+        self.assertEqual(result['row_digest_probe']['code'], 'PROPOSAL_RETRY_RELEASE_PROBE_BUDGET')
+        self.assertTrue(result['cleanup_verified'])
 
     def test_unproven_commit_stops_and_retains_original_failure(self):
         self.apply.side_effect = RuntimeError('PROPOSAL_RETRY_SCHEMA_APPLY_UNCERTAIN')
