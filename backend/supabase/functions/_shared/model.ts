@@ -1393,7 +1393,9 @@ export function modelPrompt(
       : {}),
     // Keep the semantic suffix recognized by the durable writer handoff. The
     // scope policy is separately versioned without changing older envelopes.
-    prompt_version: `${envelope.prompt_version}${semanticRevision === 3 ? "." + SCOPE_COMPARISON_PROMPT_V1 : ""}${[4, 6].includes(semanticRevision) ? "." + ANALYSIS_EVIDENCE_PROMPT_V1 : ""}${semanticRevision === 6 ? ".evidence-wire-v1" : ""}${semanticRevision === 5 ? "." + PLANNING_COVERAGE_PROMPT_V1 : ""}.${SEMANTIC_PROMPT_V1}${semanticRevision >= 2 ? ".economy-v1" : ""}`,
+    // ew1 identifies evidence-wire revision 1 within the durable metadata
+    // contract's 100-character limit. Historical revisions keep their labels.
+    prompt_version: `${envelope.prompt_version}${semanticRevision === 3 ? "." + SCOPE_COMPARISON_PROMPT_V1 : ""}${[4, 6].includes(semanticRevision) ? "." + ANALYSIS_EVIDENCE_PROMPT_V1 : ""}${semanticRevision === 6 ? ".ew1" : ""}${semanticRevision === 5 ? "." + PLANNING_COVERAGE_PROMPT_V1 : ""}.${SEMANTIC_PROMPT_V1}${semanticRevision >= 2 ? ".economy-v1" : ""}`,
     ...(semanticRevision >= 2
       ? { output_policy: OUTPUT_ECONOMY_INSTRUCTIONS }
       : {}),

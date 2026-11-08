@@ -82,6 +82,7 @@ it.each(cases)(
       compiled = await compileReserveRequest(adapter, config);
     expect(compiled.request.task).toBe(row.task);
     expect(compiled.request.target.model).toBe(config.model);
+    expect(compiled.request.promptVersion).toMatch(/^[a-zA-Z0-9._-]{1,100}$/);
     expect(compiled.request_pin.input_sha256).toBe(
       sha256(compiled.request.prompt),
     );
@@ -114,7 +115,7 @@ it.each(cases)(
       expect(
         compiled.request.schema.properties.requirements.items.required,
       ).toContain("source_semantics");
-      expect(adapter.semanticRevision).toBe(4);
+      expect(adapter.semanticRevision).toBe(6);
       const span = adapter.context.source_evidence.spans[0],
         original = row.documents[0];
       expect(span.quote).toBe(original.text);

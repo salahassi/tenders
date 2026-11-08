@@ -44,6 +44,18 @@ image qualification, deployment, full package checks and a new actual issuance
 trial remain separate pending gates. No provider setting or customer data was
 changed for these implementation tests.
 
+The first complete backend run on `dd2d489` finished with 3,568 passing tests
+and 13 failures across four files. Seven pipeline failures exposed new prompt
+version labels exceeding the existing 100-character database metadata contract;
+six qualification assertions still expected the older newly selected revisions.
+Only the undeployed revision-6 labels were shortened (`ew1` and
+`tenderdesk-grounding-v6-literal`); no SQL limit or historical prompt was changed.
+The five affected suites now pass 144 tests. Added checks cover the label bound
+for every verifier revision with the new evidence policy and actual SQL metadata
+persistence for both the revision-5 empty-inventory fallback and revision-6
+literal-proof path. A fresh complete backend run, frontend checks and native
+image qualification remain pending; the earlier failed full result is retained.
+
 ## November 8 — bounded SQL-only retry compatibility release
 
 **Deployed:** [42509645314](https://github.com/salahassi/tenders/actions/runs/42509645314)

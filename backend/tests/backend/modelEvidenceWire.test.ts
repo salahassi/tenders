@@ -9,6 +9,7 @@ import {
   materializeSourceCandidate,
   validateSourceCandidate,
 } from "../../supabase/functions/_shared/sourceEvidence";
+import { candidateContent } from "../../supabase/functions/_shared/modelGrounding";
 
 const entity = "00000000-0000-4000-8000-000000000001";
 const hash = "a".repeat(64);
@@ -136,13 +137,49 @@ it.each(["analyze_chunk", "verify_grounding", "repair_result"] as ModelTask[])(
         (e: any) => !("source_span" in e) && !("locator" in e),
       ),
     ).toBe(true);
-    expect(compact.prompt_version).toContain(".evidence-wire-v1.");
+    expect(compact.prompt_version).toContain(".ew1.");
     expect({ phaseContext, evidence }).toEqual(before);
     expect(JSON.stringify(compact).length).toBeLessThan(
       JSON.stringify(legacy).length - JSON.stringify(span).length,
     );
   },
 );
+
+it("keeps every compact verifier label inside the durable execution metadata contract", async () => {
+  const candidate = materializeSourceCandidate(
+    "analyze_chunk",
+    rawCandidate,
+    context,
+    evidence,
+    true,
+  );
+  const verificationContext = {
+    original_task: "analyze_chunk",
+    original_context: context,
+    candidate,
+    candidate_hash: await sha256(JSON.stringify(candidate)),
+    content_units: candidateContent(candidate),
+  };
+  for (const revision of [1, 2, 3, 4, 5, 6] as const) {
+    const prompt = JSON.parse(
+      modelPrompt(
+        "verify_grounding",
+        verificationContext,
+        evidence,
+        [entity],
+        "en",
+        false,
+        revision,
+        6,
+      ),
+    );
+    // Same predicate as public.record_model_request_metadata; the complete
+    // generation integration also executes that actual SQL boundary.
+    expect(prompt.prompt_version).toMatch(/^[a-zA-Z0-9._-]{1,100}$/);
+    expect(prompt.prompt_version).toContain(".ew1.");
+    expect(prompt.analysis_literal_coverage !== undefined).toBe(revision === 6);
+  }
+});
 
 it("retains every internal citation and source-authority validation result", () => {
   const candidate = materializeSourceCandidate(

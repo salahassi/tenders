@@ -30,7 +30,7 @@ it.each(rows)(
       .mockRejectedValue(Error("external forbidden"));
     const adapter = await buildReserveAdapter(row.id),
       input = fixture.cases.find((c) => c.case_id === row.id)!;
-    expect(adapter.verificationRevision).toBe(5);
+    expect(adapter.verificationRevision).toBe(6);
     expect(adapter.context.response_style).toBe("compact-verification-v3");
     expect(adapter.context.candidate_text).toBeUndefined();
     expect(adapter.context.original_task).toBe("analyze_chunk");
@@ -69,7 +69,7 @@ it.each(rows)(
       adapter.phasePins.some(
         (p) =>
           p.key.startsWith("verification-instructions-") &&
-          p.value.version === 5,
+          p.value.version === 6,
       ),
     ).toBe(true);
     expect(fetch).not.toHaveBeenCalled();

@@ -61,7 +61,7 @@ export const VERIFICATION_INSTRUCTIONS_V5 =
   "Report genuine narrative factual claims with exact evidence and retain every justified contradiction or missing-source defect. Keep every processed content ID and required source ID exactly; never invent IDs, silently add missing IDs or remove checks to make a report pass.";
 
 export const VERIFICATION_PROMPT_V6 =
-  "tenderdesk-grounding-v6-materialized-source-fidelity";
+  "tenderdesk-grounding-v6-literal";
 export const VERIFICATION_INSTRUCTIONS_V6 =
   VERIFICATION_INSTRUCTIONS_V5 +
   " " +

@@ -634,6 +634,24 @@ it.each([
       )
     ).rows[0];
     expect(saved).toEqual({ status: "completed", error_code: null });
+    const analysisVerifierMetadata = (
+      await f.db.query<{ prompt_version: string }>(
+        `select a.execution_metadata->>'prompt_version' prompt_version
+         from public.model_attempts a
+         join public.generation_steps s on s.job_id=a.job_id
+         where s.plan_id=$1 and s.task='analyze_chunk'
+           and a.operation='verify_grounding'`,
+        [plan.id],
+      )
+    ).rows;
+    expect(analysisVerifierMetadata.length).toBeGreaterThan(0);
+    for (const metadata of analysisVerifierMetadata)
+      expect(metadata.prompt_version).toMatch(/^[a-zA-Z0-9._-]{1,100}$/);
+    // Verify the actual SQL metadata write for both a proved literal source
+    // and a valid empty inventory that deliberately keeps verifier revision 5.
+    expect(analysisVerifierMetadata.map((row) => row.prompt_version)).toContain(
+      `${extractInventory ? "tenderdesk-grounding-v6-literal" : "tenderdesk-grounding-v5-analysis-metadata"}.evidence-v1.ew1.tenderdesk-semantic-fidelity-v1.economy-v1`,
+    );
     expect(creations).toBeGreaterThan(5);
     expect(verifications).toBeGreaterThanOrEqual(creations);
     expect(
