@@ -14,7 +14,7 @@ from pathlib import Path
 import subprocess
 import uuid
 
-from postgres_races import OWNER, PostgresFixture, literal as q
+from postgres_races import IMAGE, OWNER, PostgresFixture, docker, literal as q
 from commercial_successor_postgres import dispatcher_fixture, schema_fingerprints
 from legacy_review_trial_harness import run as trial_harness
 
@@ -112,6 +112,11 @@ def setup(f):
         output = {"key": section["key"], "title": section["title"],
                   "content_blocks": [{"type": "paragraph", "text": "Configure the documented workflow, verify routing and preserve the signed handover record for buyer review."}],
                   "requirement_ids": [], "evidence_refs": [], "company_claims": [], "assumptions": [], "questions": []}
+        if section["key"] == "section-1":
+            output["content_blocks"] += [
+                {"type": "bullet", "text": "Retain the signed handover record."},
+                {"type": "table", "headers": ["Activity", "Record"], "rows": [["Workflow verification", "Signed handover"]]},
+            ]
         jobs.append(enqueue(f, p["id"], "draft_section", "drafting", {"section": section, "requirement_ids": [], "rfp_context_version": 1}, output))
     jobs.append(enqueue(f, p["id"], "plan_commercial", "commercial", {"requirement_ids": []}, {"lines": [], "tasks": [], "questions": []}))
     assert len(jobs) == 31
@@ -212,6 +217,20 @@ def authority(f, x, cases):
           from public.generation_plans where id={q(x['plan']['id'])};"""
         refusal(f, x, "LEGACY_REVIEW_RECOVERY_NOT_SAFE", mutation)
         cases.append({"case": "newer-" + state + "-plan-prevents-stale-plan-recovery", "passed": True})
+    before = snapshot(f, x)
+    old_job = next(j for j in before["jobs"] if j["id"] == x["graphs"][0]["step"]["job_id"])
+    nested_body = {"id": old_job["id"], "expected_revision": old_job["revision"], "action": "retry", "reason": "Synthetic nested retry refusal."}
+    mutation = f"update public.jobs set status='failed',error_code='MODEL_CORRECTION_EXHAUSTED' where id={q(old_job['id'])};update public.generation_steps set status='queued' where job_id={q(old_job['id'])};"
+    command = f.command_sql("job.action", nested_body).replace("begin;", "begin;" + mutation, 1)
+    nested_check = f"reset role;select jsonb_build_object('lineage',(select count(*) from app_private.legacy_zero_inventory_review_lineage where plan_id={q(x['plan']['id'])}),'reviews',(select count(*) from public.generation_steps where plan_id={q(x['plan']['id'])} and task='review_proposal'));rollback;"
+    result = f.sql(command.rsplit("commit;", 1)[0] + nested_check, check=False)
+    if result.returncode:
+        assert "PROPOSAL_RENDER_RETRY_REQUIRED" in result.stderr, result.stderr
+    else:
+        rows = [json.loads(line) for line in result.stdout.splitlines() if line.startswith("{")]
+        assert rows[-1] == {"lineage": 0, "reviews": 0}
+    assert snapshot(f, x) == before
+    cases.append({"case": "nested-job-action-cannot-authorize-new-whole-review", "passed": True})
     mutation = """create function app_private.synthetic_refuse_review_lineage() returns trigger language plpgsql as $$begin
       raise exception 'SYNTHETIC_REVIEW_LINEAGE_FAILURE';end$$;
       create trigger synthetic_review_failure before insert on app_private.legacy_zero_inventory_review_lineage
@@ -318,13 +337,111 @@ def reassemble(f, x, before, step, job, cases):
     cases.append({"case": "fresh-revision-after-another-failure-cannot-authorize-second-review-budget", "passed": True})
 
 
+def old_queued_fence(f, x, cases):
+    plan, job, issuance = uid(), uid(), uid()
+    setup_sql = f"""begin;
+      insert into public.generation_plans(id,workspace_id,opportunity_id,proposal_id,base_version_id,kind,stage,status,evidence_revision,input_hash,frozen_context,created_by)
+      select {q(plan)},workspace_id,opportunity_id,proposal_id,(select active_version_id from public.proposals where id=p.proposal_id),kind,'commercial','running',evidence_revision,input_hash,frozen_context,created_by
+      from public.generation_plans p where id={q(x['plan']['id'])};
+      insert into public.proposal_issuance_requests(id,workspace_id,plan_id,requested_by,operation,idempotency_key,accepted_at,deadline_at)
+      values({q(issuance)},{q(f.workspace)},{q(plan)},{q(OWNER)},'proposal.generate',{q(uid())},transaction_timestamp(),transaction_timestamp()+interval '600 seconds');
+      update public.generation_plans set issuance_request_id={q(issuance)} where id={q(plan)};
+      alter table public.jobs disable trigger zzzzzz_legacy_review_worker_capability;
+      insert into public.jobs(id,workspace_id,type,entity_id,input_hash,status,created_by,checkpoint)
+      select {q(job)},workspace_id,'advance_plan',id,input_hash,'queued',created_by,'{{"model_executor":2,"minimum_worker_executor":5}}'::jsonb
+      from public.generation_plans where id={q(plan)};
+      alter table public.jobs enable trigger zzzzzz_legacy_review_worker_capability;
+      insert into public.generation_steps(workspace_id,plan_id,job_id,task,stage,ordinal,input,created_by)
+      values({q(f.workspace)},{q(plan)},{q(job)},'advance_plan','commercial',1,'{{}}',{q(OWNER)});
+      -- The synthetic new plan also schedules a separate source-only render;
+      -- exclude that unrelated eligible job while testing this exact transition.
+      update public.jobs set status='canceled' where type='render_delivery' and status='queued';
+      do $$begin perform set_config('synthetic.legacy_minimum',(select app_private.minimum_legacy_review_executor(j)::text from public.jobs j where id={q(job)}),true);
+       perform set_config('synthetic.legacy_workflow',(select workflow_version::text from public.generation_plans where id={q(plan)}),true);end$$;
+      set local role service_role;
+    """
+    before = snapshot(f, x)
+    for version in (5, 6):
+        result = f.value(setup_sql + f"select jsonb_build_object('minimum',current_setting('synthetic.legacy_minimum'),'workflow',current_setting('synthetic.legacy_workflow'),'claimed',public.claim_backend_job_v{version}());rollback;")
+        assert result["claimed"] is None, {"worker": version, "minimum": result["minimum"], "workflow": result["workflow"], "claimed_id": result["claimed"]["id"], "claimed_type": result["claimed"]["type"], "expected_id": job}
+    claimed = f.value(setup_sql + "select public.claim_backend_job_v7();rollback;")
+    assert claimed["id"] == job and claimed["checkpoint"]["minimum_worker_executor"] == 5
+    assert snapshot(f, x) == before
+    cases.append({"case": "preexisting-unstamped-commercial-transition-is-dynamically7-without-row-rewrite", "passed": True})
+
+
+def revocation_race(f, x, cases):
+    before = snapshot(f, x)
+    statements = [f.command_sql("generation.retry", payload(x)) for _ in range(2)]
+    results = f.race(statements, f"update public.identity_allowlist set status='inactive' where user_id={q(OWNER)};")
+    try:
+        assert all(r.returncode and ("ACCESS_PENDING" in r.stderr or "ROLE_FORBIDDEN" in r.stderr) for r in results), [r.stderr for r in results]
+        assert snapshot(f, x) == before
+    finally:
+        f.sql(f"update public.identity_allowlist set status='active' where user_id={q(OWNER)}")
+    cases.append({"case": "owner-revoked-during-real-workspace-lock-wait-cannot-admit-review", "passed": True})
+
+
+def extra_races(f, cases):
+    x = setup(f)
+    before = snapshot(f, x)
+    results = f.race([f.command_sql("generation.retry", payload(x)) for _ in range(2)])
+    assert sum(r.returncode == 0 for r in results) == 1, [r.stderr for r in results]
+    assert all(r.returncode == 0 or "REVISION_CONFLICT" in r.stderr for r in results)
+    retained(f, x, before, snapshot(f, x))
+    cases.append({"case": "different-key-lock-race-creates-only-one-review-and-one-lineage", "passed": True})
+
+
+def source_race(f, cases):
+    x = setup(f)
+    before = snapshot(f, x)
+    results = f.race([f.command_sql("generation.retry", payload(x)) for _ in range(2)],
+                     f"update public.documents set extraction_hash=repeat('e',64) where id={q(x['document']['id'])};")
+    assert all(r.returncode and ("STALE_INPUT" in r.stderr or "LEGACY_REVIEW_RECOVERY_NOT_SAFE" in r.stderr) for r in results), [r.stderr for r in results]
+    assert snapshot(f, x) == before
+    cases.append({"case": "source-changed-during-real-lock-wait-prevents-any-recovery-write", "passed": True})
+
+
+def archive_roundtrip(f, cases):
+    before = f.value("select jsonb_agg(to_jsonb(l) order by id) from app_private.legacy_zero_inventory_review_lineage l")
+    manifest = rpc(f, "workspace_backup_manifest", actor=OWNER)
+    archive = []
+    for start in range(0, len(manifest["rows"]), 15):
+        archive += rpc(f, "workspace_backup_rows", ([r["key"] for r in manifest["rows"][start:start + 15]],), actor=OWNER)
+    assert sum(row["key"].startswith("recovery_legacy_zero_inventory_review_lineage/") for row in archive) == len(before)
+    target = PostgresFixture(repository=f.repository, container=f.container).start()
+    try:
+        restore = rpc(target, "begin_workspace_restore", (manifest, True), actor=OWNER)
+        for start in range(0, len(archive), 10):
+            rpc(target, "stage_restore_rows", (restore["id"], archive[start:start + 10]), actor=OWNER)
+        for item in restore["files"]:
+            rpc(target, "complete_restore_file", (item["id"], OWNER, item["content_hash"], item["expected_size"]))
+        assert rpc(target, "commit_workspace_restore", (restore["id"],), actor=OWNER)["state"] == "committed"
+        after = target.value("select jsonb_agg(to_jsonb(l) order by id) from app_private.legacy_zero_inventory_review_lineage l")
+        assert after == [{**row, "workspace_id": target.workspace} for row in before]
+        assert rpc(target, "commit_workspace_restore", (restore["id"],), actor=OWNER)["state"] == "committed"
+        assert target.value("select jsonb_agg(to_jsonb(l) order by id) from app_private.legacy_zero_inventory_review_lineage l") == after
+        refusal_result = target.sql(f"begin;set local role authenticated;set local request.jwt.claim.sub={q(OWNER)};select public.begin_workspace_restore({q(manifest)}::jsonb,true);commit;", check=False)
+        assert refusal_result.returncode and "RESTORE_TARGET_NOT_EMPTY" in refusal_result.stderr
+        cases.append({"case": "canonical-archive-restores-spent-lineage-exactly-and-refuses-nonempty-target", "passed": True, "physical_storage_bytes": False})
+    finally:
+        target.close()
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     f = PostgresFixture(repository=Path(__file__).resolve().parents[3])
     try:
+        started = docker("run", "--rm", "-d", "--name", f.container, "--network", "none", "--cpus", "1",
+                         "--label", "tenderdesk.synthetic-races=true", "--tmpfs", "/var/lib/postgresql/data:rw",
+                         "-e", "POSTGRES_HOST_AUTH_METHOD=trust", IMAGE)
+        if started.returncode:
+            raise RuntimeError(started.stderr)
+        f.owns_container = False
         f.start()
+        f.owns_container = True
         fingerprints = schema_fingerprints(f)
         dispatcher_fixture(f)
         x = setup(f)
@@ -335,15 +452,29 @@ def main():
         authority(f, x, cases)
         print(json.dumps({"authority_cases": len(cases)}), flush=True)
         trial_harness(f, x, cases)
+        revocation_race(f, x, cases)
         before, after, step, claimed = success(f, x, cases)
         print(json.dumps({"admission_cases": len(cases)}), flush=True)
         reassemble(f, x, before, step, claimed, cases)
+        old_queued_fence(f, x, cases)
+        extra_races(f, cases)
+        archive_roundtrip(f, cases)
+        source_race(f, cases)
         receipt = f.receipt(cases)
         receipt["fingerprints"] = fingerprints
-        args.output.write_text(json.dumps(receipt, indent=2) + "\n")
-        print(json.dumps({"passed": len(receipt["cases"]), "plan_stage": after["plan"]["stage"]}))
+        receipt.update({"passed": True, "production_calls": 0, "provider_calls": 0, "cpu_limit": 1,
+                        "qualification": "Synthetic retained accepted records; SQL authority, serialization, history and canonical command proof, not provider qualification.",
+                        "source_hashes": {str(p.relative_to(f.repository)): hashlib.sha256(p.read_bytes()).hexdigest() for p in [
+                            Path(__file__), f.repository/'backend/scripts/testing/legacy_review_trial_harness.py',
+                            f.repository/'backend/supabase/functions/_shared/generation.ts', f.repository/'backend/tests/backend/modelGraphCheckpointFixture.ts']}})
     finally:
+        f.owns_container = True
         f.close()
+    assert docker("inspect", f.container).returncode != 0
+    receipt["cleanup_confirmed"] = True
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    args.output.write_text(json.dumps(receipt, indent=2) + "\n")
+    print(json.dumps({"passed": len(receipt["cases"]), "cleanup_confirmed": True}))
 
 
 if __name__ == "__main__":

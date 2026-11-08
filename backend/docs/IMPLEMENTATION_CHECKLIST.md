@@ -63,14 +63,24 @@ projection. A dynamic claim/wake predicate also excludes old queued legacy
 commercial-to-review transitions from older workers without rewriting their
 checkpoints. The recovery lineage participates in canonical backup/restore.
 
-The initial full-schema PostgreSQL run passes 25 authority, replay, rollback,
-capability and reassembly checks using 31 synthetic retained accepted steps and
-17 sections. It begins through actual `fail_generated_delivery`, admits one
-fresh review and preserves prior version metadata after normal reassembly.
-These are SQL authority tests with synthetic accepted records, not provider
-qualification. Final lock races, preexisting-queue coverage, archive roundtrip,
-operations preparation/readback and complete package checks remain pending.
-No hosted action or provider call occurred during implementation.
+The [final full-schema PostgreSQL proof](evidence/legacy-review-recovery-native-20261108.json)
+passes all 32 cases against exact migration `77631534`, with an isolated
+one-CPU container and confirmed cleanup. It starts through actual
+`fail_generated_delivery` with 31 synthetic accepted steps and 17 sections,
+then exercises canonical Owner retry, normal accepted-review completion and
+new-version assembly while retaining every prior job, section, version,
+model result, budget and usage row. Paragraph, bullet and table projections
+remain exact. Nested job actions create no recovery review; duplicate keys,
+body conflicts, source changes and owner revocation preserve the boundary.
+
+Actual operations preparation and acceptance readback pass on that same
+fixture. Old queued commercial transitions retain their checkpoint bytes and
+are dynamically excluded from older workers. Different-key lock races admit
+only one review. Canonical archive/restore retains spent lineage exactly and
+rejects a nonempty target. These are SQL authority tests with synthetic
+accepted records and Auth/Storage stubs, not provider or physical Storage
+qualification. Package/image checks and hosted execution remain separate
+root-owned gates. No hosted action or provider call occurred here.
 
 ## November 8 — legacy whole-review schema release guards tested locally
 
