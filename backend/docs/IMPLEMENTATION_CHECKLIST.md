@@ -39,6 +39,31 @@ backend build pass; the separate SQL
 successor/rollout capability fence, native qualification, deployment and real
 issuance remain independent gates. No live call or customer command ran here.
 
+## November 8 — executor-6 dispatch native fixture prepared
+
+The separate `worker_dispatch_v6_native.py/.ts` fixture retains all nine worker
+and scheduler behavioral controls and adds `worker_executor6_rpc_paths`. The
+actual persistent worker must exercise `claim_backend_job_v6`,
+`claim_backend_local_job_v6` and `wake_backend_queue_status_v6`; legacy, generic
+or unexpected RPC paths fail even when a receipt claims success. The separate
+nonpersistent revision-wake path remains part of its product/SQL tests. Frozen
+executor-5 fixture files and existing native receipts remain unchanged.
+
+The new driver starts the image's original worker entrypoint and uses its exact
+Cmd for the scheduler child. It requires an immutable local image ID, network
+isolation, a read-only filesystem and one read-only harness mount. It binds every
+copied source file and both harnesses before/after execution. All container
+operations after ownership inspection use the full immutable container ID;
+foreign name collisions, mutable-name replacement, shutdown failures and
+ambiguous cleanup errors cannot produce successful evidence.
+
+Twelve focused Python guards, backend typecheck, Python compilation and diff
+checks pass. These are harness implementation checks. No image build, native
+candidate execution, qualification, publication, deployment or provider request
+was performed for this change. Actual image proof requires the frozen product
+with all executor-6 RPC paths; SQL authority and hosted customer issuance remain
+separate acceptance gates.
+
 ## November 8 — reference UUID punctuation correction deployed
 
 PR54 merged as `0d0de308`; Pages42523934582 passed within the three-minute bound.
