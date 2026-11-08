@@ -1,5 +1,23 @@
 # Implementation status and continuation plan
 
+## November 8 — integrated poll package gates reconciled
+
+The full backend run exercised 3,626 tests in 215 files: 3,624 passed and two
+existing DOCX integration cases exceeded their unchanged five-second local test
+limit while other work was concurrent. Both complete export files then passed
+all 44 tests with one worker and the same timeout, with no product/test changes.
+Backend typecheck and build pass. The [package receipt](evidence/proposal-poll-package-gates-20261108.json)
+retains both complete logs and their distinct outcomes rather than rewriting the
+initial run as green. Frontend files are byte-unchanged from the prior fresh
+389-test/typecheck/build verification at `47cdca4`; that evidence is reused.
+All 31 actual-image controls pass. The final release boundary has 24 passing
+coordinator tests and an independent review confirming null-identity rejection
+before mutation, fixed response handling and unchanged recovery budgets.
+Registry publication and immutable pull/readback now pass for `b5e14c0e`, image
+`492d0716`, with temporary push credentials removed. The publication binds
+artifact source `82d42820` and qualification `1557117f`. Deployment and actual
+customer completion remain separate gates.
+
 ## November 8 — verify the new HTTP RPC boundary before activation
 
 The poll release additionally probes the new RPC from the candidate worker's

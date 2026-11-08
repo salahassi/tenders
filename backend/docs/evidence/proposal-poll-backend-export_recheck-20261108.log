@@ -1,0 +1,13 @@
+
+ RUN  v5.0.4 /workspace/work/tenders-diagnosis/backend
+
+
+ Test Files  2 passed (2)
+      Tests  44 passed (44)
+   Start at  20:11:37
+   Duration  45.89s (tests 97%, import 2%)
+
+
+> tenderdesk-backend@0.2.0 build
+> tsc -b
+

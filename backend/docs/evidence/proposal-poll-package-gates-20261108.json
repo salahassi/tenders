@@ -1,0 +1,54 @@
+{
+  "artifact_source_revision": "82d42820fc7d35ead78629bca8d31bf9207fe895",
+  "backend": {
+    "typecheck": "passed",
+    "full_suite": {
+      "files": 215,
+      "tests": 3626,
+      "passed": 3624,
+      "failed": 2,
+      "failure_kind": "local_test_timeout_5000ms",
+      "duration_seconds": 383.35
+    },
+    "focused_export_recheck": {
+      "files": 2,
+      "tests": 44,
+      "passed": 44,
+      "failed": 0,
+      "max_workers": 1,
+      "test_timeout_unchanged_ms": 5000,
+      "duration_seconds": 45.89
+    },
+    "status": "passed_after_focused_export_recheck",
+    "build": "passed",
+    "logs": {
+      "full": {
+        "path": "backend/docs/evidence/proposal-poll-backend-full-20261108.log",
+        "sha256": "7e0452484e3f0b68ced21ba47635a81624aac6b4abe9b023ce1ae62688280f71"
+      },
+      "export_recheck": {
+        "path": "backend/docs/evidence/proposal-poll-backend-export_recheck-20261108.log",
+        "sha256": "a55d68af36010304470b49ebad1b9c2b46c02b34859455369ce35de795d22131"
+      }
+    }
+  },
+  "frontend": {
+    "status": "reused_unchanged_source",
+    "comparison_anchor": "47cdca4d115276dfff54ee7ff7e06eb142ee5b5e",
+    "source_diff_empty": true,
+    "prior_test_count": 389,
+    "prior_typecheck": "passed",
+    "prior_build": "passed"
+  },
+  "native": {
+    "dispatch_controls": 9,
+    "prompt_controls": 12,
+    "accepted_poll_controls": 10,
+    "all_passed": true,
+    "external_calls": 0,
+    "provider_calls": 0,
+    "qualification_sha256": "1557117fc44b44ff3c5f9beb5244edf3bdb3a0fa67cbff83193a18790dd40c5f"
+  },
+  "latest_release_coordinator_tests": 24,
+  "customer_completion_verified": false
+}
