@@ -11,6 +11,7 @@ SPEC = importlib.util.spec_from_file_location('latency_prompt_native_test_target
 m = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(m)
 CANDIDATE = 'sha256:' + 'd' * 64
+CONTAINER_ID = 'e' * 64
 SOURCES = {'backend/supabase/functions/_shared/model.ts': 'a' * 64}
 
 
@@ -65,25 +66,36 @@ class NativeGuards(unittest.TestCase):
         after = native(); after['legacy_pins_sha256'] = 'd' * 64
         with self.assertRaisesRegex(m.NativeError, 'LEGACY_PINS_CHANGED'): m.compare_legacy(after, before)
 
-    def fake_docker(self, *, reject_probe=False, overlay=False):
+    def fake_docker(self, *, reject_probe=False, overlay=False, foreign=False, daemon_after_remove=False,
+                    replaced_name=False):
         calls = []
         removed = False
         stopped = False
+        name = None
+        inspected_name = False
         def call(*args, **kwargs):
-            nonlocal removed, stopped
+            nonlocal removed, stopped, name, inspected_name
             calls.append((args, kwargs))
-            def result(value='', code=0): return SimpleNamespace(returncode=code, stdout=value if isinstance(value, str) else json.dumps(value))
+            def result(value='', code=0, stderr=''): return SimpleNamespace(returncode=code, stdout=value if isinstance(value, str) else json.dumps(value), stderr=stderr)
             if args[:2] == ('image', 'inspect'): return result([metadata()])
-            if args[0] == 'run': return result('container-id')
+            if args[0] == 'run':
+                name = args[args.index('--name') + 1]
+                return result(CONTAINER_ID, 1 if foreign else 0)
             if args[0] == 'exec' and '/bin/busybox' in args: return result({'status': 'ready', 'component': 'worker'})
             if args[0] == 'exec': return result(native(), 1 if reject_probe else 0)
-            if args[0] == 'stop': stopped = True; return result('container-id')
-            if args[0] == 'rm': removed = True; return result('container-id')
+            if args[0] == 'stop': stopped = True; return result(CONTAINER_ID)
+            if args[0] == 'rm': removed = True; return result(CONTAINER_ID)
             if args[0] == 'inspect':
-                if removed: return result('', 1)
+                if removed: return result('', 1, 'daemon disconnected' if daemon_after_remove else 'Error: No such object: ' + args[-1])
+                if args[-1] == name:
+                    if inspected_name and replaced_name:
+                        raise AssertionError('mutable name used after ownership inspection')
+                    inspected_name = True
                 mounts = [{'Type': 'bind', 'Source': str(m.SCRIPT), 'Destination': '/native-fixture.ts', 'RW': False}]
                 if overlay: mounts.append({'Type': 'bind', 'Source': '/checkout', 'Destination': '/app', 'RW': False})
-                return result([{'HostConfig': {'NetworkMode': 'none', 'ReadonlyRootfs': True}, 'Mounts': mounts,
+                return result([{'Id': CONTAINER_ID, 'Name': '/' + name, 'Image': CANDIDATE, 'Config': {'Labels': {
+                    'tenderdesk.io/latency-native': 'foreign-nonce' if foreign else name}},
+                                'HostConfig': {'NetworkMode': 'none', 'ReadonlyRootfs': True}, 'Mounts': mounts,
                                 'State': {'Running': not stopped, 'ExitCode': 0, 'OOMKilled': False}}])
             raise AssertionError(args)
         return calls, call
@@ -110,6 +122,34 @@ class NativeGuards(unittest.TestCase):
             with patch.object(m, 'docker', side_effect=docker), self.assertRaises(m.NativeError):
                 m.probe(CANDIDATE, False, SOURCES, {'image': metadata(m.BASELINE_IMAGE)})
             self.assertTrue(any(args[0] == 'rm' for args, _ in calls))
+
+    def test_ambiguous_run_never_removes_a_foreign_named_container(self):
+        calls, docker = self.fake_docker(foreign=True)
+        with patch.object(m, 'docker', side_effect=docker), self.assertRaisesRegex(m.NativeError, 'FOREIGN_CONTAINER'):
+            m.probe(CANDIDATE, False, SOURCES, {'image': metadata(m.BASELINE_IMAGE)})
+        self.assertFalse(any(args[0] == 'rm' for args, _ in calls))
+
+    def test_daemon_failure_cannot_be_claimed_as_cleanup_confirmation(self):
+        calls, docker = self.fake_docker(daemon_after_remove=True)
+        with patch.object(m, 'docker', side_effect=docker), self.assertRaisesRegex(m.NativeError, 'CLEANUP_UNCONFIRMED'):
+            m.probe(CANDIDATE, False, SOURCES, {'image': metadata(m.BASELINE_IMAGE)})
+        self.assertTrue(any(args[0] == 'rm' for args, _ in calls))
+
+    def test_owned_full_id_is_used_after_name_can_be_replaced(self):
+        calls, docker = self.fake_docker(replaced_name=True)
+        with patch.object(m, 'docker', side_effect=docker):
+            m.probe(CANDIDATE, False, SOURCES, {'image': metadata(m.BASELINE_IMAGE)})
+        for args, _ in calls:
+            if args[0] in ('exec', 'stop', 'rm'):
+                self.assertIn(CONTAINER_ID, args)
+        self.assertEqual(next(args for args, _ in calls if args[0] == 'rm'), ('rm', '-f', CONTAINER_ID))
+
+    def test_absence_requires_exact_identifier_and_no_other_error(self):
+        prefix = 'Error: No such object: ' + CONTAINER_ID
+        self.assertTrue(m.absent(SimpleNamespace(returncode=1, stderr=prefix + '\n'), CONTAINER_ID))
+        for stderr in (prefix + '-other', prefix + '\nError: daemon disconnected',
+                       'daemon disconnected\n' + prefix, 'Error: No such object: unrelated'):
+            self.assertFalse(m.absent(SimpleNamespace(returncode=1, stderr=stderr), CONTAINER_ID))
 
     def test_receipt_binds_both_image_sources_harnesses_and_full_scope(self):
         historical = {'image': metadata(m.BASELINE_IMAGE), 'source': {'source_entries': {

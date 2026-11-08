@@ -18,6 +18,7 @@ const { verificationPolicyText } = await import(product + "modelVerificationInst
 const baseline = runtime.env.get("NATIVE_BASELINE_MODE") === "true";
 const check = (condition: unknown, code: string) => { if (!condition) throw new Error(code); };
 const equal = (a: unknown, b: unknown, code: string) => check(JSON.stringify(a) === JSON.stringify(b), code);
+const metadataLabel = (value: unknown) => check(typeof value === "string" && /^[a-zA-Z0-9._-]{1,100}$/.test(value), "PROMPT_METADATA_CONTRACT");
 const rejected = async (run: () => unknown | Promise<unknown>, code = "MODEL_IDENTITY_CHANGED") => {
   try { await run(); } catch (error) { check(String(error).includes(code), "WRONG_REJECTION"); return; }
   throw new Error("EXPECTED_REJECTION");
@@ -131,6 +132,11 @@ const checks: Record<string, boolean> = { legacy_phase_pins_retained: true, star
 let reduction = 0;
 if (!baseline) {
   const { analysisLiteralCoverage } = await import(product + "modelAnalysisLiteralCoverage.ts");
+  // SQL records every prepared request under the existing 100-character label
+  // contract. Include old verifier pins paired with the newly selected wire.
+  for (const verification of [1, 2, 3, 4, 5, 6])
+    metadataLabel(JSON.parse(modelPrompt("verify_grounding", x.context, x.evidence,
+      x.requiredIds, "ar", false, verification, 6)).prompt_version);
   for (const task of ["analyze_chunk", "verify_grounding", "repair_result"] as const) {
     const context = task === "analyze_chunk" ? x.original : task === "verify_grounding" ? x.context : { target_task: "analyze_chunk", original_context: x.original };
     const legacy = JSON.parse(modelPrompt(task, context, x.evidence, x.requiredIds, "ar", false, 5, 4));
@@ -138,7 +144,8 @@ if (!baseline) {
     equal(compact.untrusted_data, legacy.untrusted_data, "CONTEXT_CHANGED");
     equal(compact.analysis_evidence_contract, legacy.analysis_evidence_contract, "AUTHORITY_CHANGED");
     equal(compact.evidence, x.evidence.map(({ id, text, kind, verified }) => ({ id, text, kind, verified })), "COMPACT_EVIDENCE_LOST");
-    check(compact.prompt_version.includes(".evidence-wire-v1."), "WIRE_POLICY_UNVERSIONED");
+    check(compact.prompt_version.includes(".ew1."), "WIRE_POLICY_UNVERSIONED");
+    metadataLabel(compact.prompt_version);
     const saved = JSON.stringify(legacy).length - JSON.stringify(compact).length;
     check(saved > 0, "WIRE_NOT_SMALLER"); reduction += saved;
     const m = memory(false), options = semanticOptions(m, `synthetic:new:${task}`, task, context);
@@ -151,6 +158,7 @@ if (!baseline) {
   equal(coverage, { version: 1, kind: "source_literal_fidelity", candidate_hash: x.context.candidate_hash,
     units: [{ content_id: "content-0", path: "$.requirements[0].text", source_span_ids: x.spans.map(s => s.id) }] }, "LITERAL_SCOPE_CHANGED");
   const prompt = JSON.parse(modelPrompt("verify_grounding", x.context, x.evidence, x.requiredIds, "ar", false, 6, 6));
+  metadataLabel(prompt.prompt_version);
   equal(prompt.analysis_literal_coverage, coverage, "LITERAL_MANIFEST_MISSING");
   equal(prompt.required_ids, x.requiredIds, "REQUIRED_IDS_CHANGED");
   equal(prompt.untrusted_data.content_units, candidateContent(x.candidate), "CONTENT_IDS_CHANGED");
@@ -180,6 +188,7 @@ if (!baseline) {
       evidence: flexible.evidence, requiredIds: flexible.requiredIds };
     check(await pinSemanticPrompt(writer) === 6, "FLEXIBLE_WRITER_POLICY");
     const projected = JSON.parse(modelPrompt("analyze_chunk", original, flexible.evidence, flexible.requiredIds, "ar", false, 1, 6));
+    metadataLabel(projected.prompt_version);
     equal(projected.untrusted_data, original, "FLEXIBLE_INPUT_CHANGED");
     equal(projected.evidence, flexible.evidence.map(({ id, text, kind, verified }) => ({ id, text, kind, verified })), "FLEXIBLE_EVIDENCE_CHANGED");
     check(projected.analysis_evidence_contract.requirement_source_kinds.includes("notice"), "NOTICE_SCOPE_LOST");
@@ -189,6 +198,7 @@ if (!baseline) {
     check(await pinVerificationPrompt(verify) === expected && await pinVerificationPrompt(verify) === expected, "FLEXIBLE_VERIFIER_POLICY");
     const verifiedWire = JSON.parse(modelPrompt("verify_grounding", flexible.context, flexible.evidence,
       flexible.requiredIds, "ar", false, expected, 6));
+    metadataLabel(verifiedWire.prompt_version);
     equal(verifiedWire.untrusted_data.candidate, flexible.candidate, "FLEXIBLE_CANDIDATE_CHANGED");
     if (name !== "notice_reference") {
       check(verifiedWire.untrusted_data.candidate.requirements.length === 0 && !verifiedWire.analysis_literal_coverage, "ZERO_INVENTORY_CHANGED");

@@ -12,9 +12,12 @@ new revision-6 contracts. Product files are read from each image, never mounted
 over. The build uses only committed copied roots and supplementary inputs, with
 the verified cached base and no network during dependency compilation.
 
-Eleven focused qualification controls, eight native-fixture guard controls and
+Eleven focused qualification controls, twelve native-fixture guard controls and
 all 23 reused dispatch release controls pass. Backend typecheck passes. Native
-fixture review, actual image build, native execution,
+fixtures also enforce the existing 100-character prompt metadata contract across
+new revision combinations and preserve all 84 historical wire cases. Container
+execution and cleanup use the verified immutable container ID; foreign collisions
+and ambiguous daemon errors cannot count as owned cleanup. Actual image build, native execution,
 receipt capture/freezing, publication and rollout remain pending. Verification
 and publication fail closed while the new qualification hash is unfrozen. This
 runtime proof binds the adaptive-poll migration's exact committed bytes but does

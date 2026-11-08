@@ -133,31 +133,49 @@ def compare_legacy(candidate, historical):
     require(candidate['legacy_pins_sha256'] == historical['legacy_pins_sha256'], 'LEGACY_PINS_CHANGED')
 
 
+def owned_container(value, name, image):
+    require(value.get('Name') == '/' + name and value.get('Image') == image
+            and value.get('Config', {}).get('Labels', {}).get('tenderdesk.io/latency-native') == name,
+            'FOREIGN_CONTAINER')
+    container_id = value.get('Id')
+    require(isinstance(container_id, str) and re.fullmatch('[a-f0-9]{64}', container_id), 'CONTAINER_ID')
+    return container_id
+
+
+def absent(result, identifier):
+    stderr = getattr(result, 'stderr', '')
+    return result.returncode != 0 and stderr.strip() in (
+        'Error: No such object: ' + identifier,
+        'Error: No such container: ' + identifier,
+        'Error response from daemon: No such container: ' + identifier)
+
+
 def probe(image, baseline, expected_sources, historical):
     require(re.fullmatch(r'sha256:[a-f0-9]{64}', image) is not None, 'IMAGE_REFERENCE')
     metadata = json.loads(must(docker('image', 'inspect', image), 'IMAGE_INSPECTION'))[0]
     validate_metadata(metadata, image, historical)
     name = 'tdp-latency-native-' + os.urandom(6).hex()
-    created = False
+    container_id = None
     value = None
     try:
         must(docker('run', '-d', '--name', name, '--network', 'none', '--read-only',
+            '--label', 'tenderdesk.io/latency-native=' + name,
             '--memory', '1280m', '--cpus', '2', '--pids-limit', '128', '--tmpfs', '/tmp:rw,noexec,nosuid,size=64m',
             '--mount', f'type=bind,src={SCRIPT},dst=/native-fixture.ts,readonly',
             '-e', 'APP_RUNTIME_SERVICE=worker', '-e', 'SUPABASE_URL=http://127.0.0.1:9',
             '-e', 'APP_SUPABASE_PUBLISHABLE_KEY=synthetic-public', '-e', 'SUPABASE_SERVICE_ROLE_KEY=synthetic-service',
             '-e', 'APP_WORKER_SECRET=synthetic-worker', '-e', 'NO_PROXY=127.0.0.1,localhost',
             '-e', 'no_proxy=127.0.0.1,localhost', image), 'CONTAINER_START')
-        created = True
+        container = json.loads(must(docker('inspect', name), 'CONTAINER_INSPECTION'))[0]
+        container_id = owned_container(container, name, image)
         health = None
         for _ in range(50):
-            response = docker('exec', name, '/bin/busybox', 'wget', '-Y', 'off', '-qO-', 'http://127.0.0.1:8080/healthz')
+            response = docker('exec', container_id, '/bin/busybox', 'wget', '-Y', 'off', '-qO-', 'http://127.0.0.1:8080/healthz')
             if response.returncode == 0:
                 health = json.loads(response.stdout)
                 break
             time.sleep(0.1)
         require(health == {'status': 'ready', 'component': 'worker'}, 'DEFAULT_WORKER_STARTUP')
-        container = json.loads(must(docker('inspect', name), 'CONTAINER_INSPECTION'))[0]
         require(container['HostConfig']['NetworkMode'] == 'none' and container['HostConfig']['ReadonlyRootfs'], 'ISOLATION')
         mounts = container.get('Mounts', [])
         binds = [mount for mount in mounts if mount.get('Type') == 'bind']
@@ -166,22 +184,27 @@ def probe(image, baseline, expected_sources, historical):
                 and all(mount in binds or mount.get('Type') == 'tmpfs' and mount.get('Destination') == '/tmp'
                         for mount in mounts),
                 'PRODUCT_OVERLAY')
-        raw = must(docker('exec', '-e', 'NATIVE_BASELINE_MODE=' + ('true' if baseline else 'false'), name,
+        raw = must(docker('exec', '-e', 'NATIVE_BASELINE_MODE=' + ('true' if baseline else 'false'), container_id,
             '/bin/deno', 'run', '--cached-only', '--frozen', '--config=/app/backend/supabase/functions/deno.json',
             '--allow-env=NATIVE_BASELINE_MODE', '--allow-read=/app,/deno-dir,/native-fixture.ts', '/native-fixture.ts'),
             'PROMPT_PROBE')
         value = json.loads(raw)
         validate_probe(value, baseline, expected_sources)
-        must(docker('stop', '--time', '5', name), 'SHUTDOWN')
-        state = json.loads(must(docker('inspect', name), 'STOP_INSPECTION'))[0]['State']
+        must(docker('stop', '--time', '5', container_id), 'SHUTDOWN')
+        state = json.loads(must(docker('inspect', container_id), 'STOP_INSPECTION'))[0]['State']
         require(not state['Running'] and state['ExitCode'] == 0 and not state['OOMKilled'], 'SHUTDOWN_NOT_DRAINED')
         value['checks'].update(default_worker_startup=True, shutdown_drained=True)
     finally:
         # A failed/ambiguous docker run may still have created the owned name.
-        found = docker('inspect', name)
-        if created or found.returncode == 0:
-            must(docker('rm', '-f', name, timeout=10), 'CLEANUP')
-            require(docker('inspect', name).returncode != 0, 'CLEANUP_UNCONFIRMED')
+        identifier = container_id or name
+        found = docker('inspect', identifier)
+        if found.returncode == 0:
+            owned_id = owned_container(json.loads(found.stdout)[0], name, image)
+            require(container_id is None or owned_id == container_id, 'CONTAINER_ID_CHANGED')
+            must(docker('rm', '-f', owned_id, timeout=10), 'CLEANUP')
+            require(absent(docker('inspect', owned_id), owned_id), 'CLEANUP_UNCONFIRMED')
+        else:
+            require(absent(found, identifier), 'CLEANUP_INSPECTION_FAILED')
     return value
 
 
