@@ -54,10 +54,15 @@ Implementation and independent review are complete in an isolated worktree.
 The 12 latest-schema retry regressions and 15 issuance tests pass, including
 new issuance admission, unchanged 600-second clock on replay, preserved unknown
 and reserved accounting, nonempty model budgets, manual policy, cutoff changes,
-local transitions, frozen routes and private helper privileges. Backend
-typecheck/build pass. Full backend/frontend tests and frontend build are in
-progress. Deployment and hosted retry acceptance remain pending; this change
-has made no live command, provider, deployment or customer-data mutation.
+local transitions, frozen routes and private helper privileges. Both package
+typechecks/builds pass. The full backend run exercised 3,526 tests: 3,519 passed
+and seven existing DOCX/OCR integration cases exceeded their unchanged timeout
+limits under concurrent load. All 99 tests in those four files then passed with
+one worker and the original limits. The frontend run passed 388/389 tests; the
+single UI wait failure passed with all 19 tests in its isolated file. Thus every
+case passed across the runs; the initial full runs were not clean single passes.
+Deployment and hosted retry acceptance remain pending; this change has made no
+live command, provider, deployment or customer-data mutation.
 
 ## November 8 — authorized technical and financial proposal trial
 
