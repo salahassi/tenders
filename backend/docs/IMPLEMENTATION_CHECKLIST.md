@@ -26,6 +26,11 @@ transport and unknown-commit reconciliation. Workflow YAML, shell and embedded
 Python syntax pass. The run deadline includes queue/setup and reserves owned
 client cleanup inside 170 seconds. No production deployment or business retry
 has been performed by this release change; hosted acceptance remains pending.
+The trial's read-only admission preflight now mirrors the installed helper's
+exact branches, with explicit installed/legacy/modern and queued/blocked model-job
+metadata. Before installation it retains the legacy result. All 18 request
+controls pass across actual parent/child SQL definitions, including recent and
+aged same-job ambiguity; no assertion or audit function is called by inspection.
 Independent review reproduced an initially omitted target-function attribute
 check; full `pg_proc` equality except the body now rejects immutable/strict or
 other unreviewed command-attribute changes. Both regressions pass with the fix.
@@ -142,6 +147,20 @@ successful render job is not counted as complete analysis or an issued package.
 Full proposal completion is still unproven. The observer now adds a bounded,
 content-free private attempt timeline to distinguish model skips, accepted calls,
 poll exchanges and provider latency without changing processing or its deadline.
+
+Final read-only observation [42508072180](https://github.com/salahassi/tenders/actions/runs/42508072180)
+at `aaf54b1` passed in 47 seconds including queue. The actual issuance **failed**
+at its original 18:03:30 UTC deadline with `PROPOSAL_ISSUANCE_TIMEOUT`; no complete
+technical/financial package was issued or downloaded. Seven of twelve analysis
+jobs completed, five stopped, and the separate render job is not final delivery.
+The exact trial recorded 21 accepted generation exchanges, 32 polls and 45
+unconfigured-model skips. Three independent grounding verifiers failed with
+`EVIDENCE_REFERENCE_INVALID` and used the existing fallback. The measured writer
+and verifier roles are distinct; this was not a duplicate generation retry.
+No further paid request was sent. The scheduler correction improves progress
+but does not close whole-proposal latency. Lossless prompt projection, explicit
+handling of deterministic source quotations and bounded faster status polling
+are being evaluated separately before another actual trial.
 
 ## November 8 — remove synchronous proposal dispatch waits
 

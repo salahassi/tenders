@@ -90,6 +90,31 @@ WITH owners AS MATERIALIZED (
  SELECT j.id,j.status,j.lease_token,j.lease_until FROM public.jobs j WHERE j.workspace_id='{w}' AND
  (j.entity_id IN (SELECT id FROM plans) OR j.checkpoint->>'issuance_request_id' IN
   (SELECT r.id::text FROM public.proposal_issuance_requests r JOIN plans p ON r.workspace_id=p.workspace_id AND r.plan_id=p.id))
+), retry_admission AS MATERIALIZED (
+ SELECT to_regprocedure('app_private.assert_generation_retry_usage(public.generation_plans,text)') IS NOT NULL AS modern_guard_installed,
+  EXISTS(SELECT 1 FROM public.provider_usage WHERE workspace_id='{w}' AND state='reserved') AS has_reserved,
+  EXISTS(SELECT 1 FROM public.provider_usage WHERE workspace_id='{w}' AND state='unknown') AS has_unknown,
+  EXISTS(SELECT 1 FROM public.model_routing WHERE workspace_id='{w}' AND enabled) AS legacy_routing_enabled,
+  coalesce((SELECT s.enabled AND (s.admitted_after IS NULL OR p.created_at>=s.admitted_after)
+   FROM latest p LEFT JOIN public.model_execution_settings s ON s.workspace_id=p.workspace_id),false) AS modern_admission
+), queued_model_jobs AS MATERIALIZED (
+ SELECT j.* FROM public.jobs j JOIN public.generation_steps step ON step.workspace_id=j.workspace_id AND step.job_id=j.id
+ JOIN latest p ON p.workspace_id=j.workspace_id AND p.id=j.entity_id AND p.id=step.plan_id
+ WHERE step.status='queued' AND app_private.queue_work_class(j)<>'local'
+), model_job_readiness AS MATERIALIZED (
+ SELECT j.id,CASE WHEN j.checkpoint->>'model_executor'='2' AND j.checkpoint#>>'{{model_routing,mode}}'='round_robin'
+  THEN NOT EXISTS(SELECT 1 FROM public.provider_usage u WHERE u.workspace_id=j.workspace_id AND u.job_id=j.id
+   AND app_private.model_usage_blocks_recovery(j,u,now()))
+  ELSE a.modern_admission AND NOT(j.checkpoint ? 'model_routing')
+   AND NOT EXISTS(SELECT 1 FROM public.provider_usage u WHERE u.workspace_id=j.workspace_id AND u.job_id=j.id)
+  END AS ready
+ FROM queued_model_jobs j CROSS JOIN retry_admission a
+), retry_usage AS MATERIALIZED (
+ SELECT a.*,NOT a.has_reserved AND (NOT a.has_unknown OR a.legacy_routing_enabled) AS legacy_ready,
+  NOT a.has_reserved AND (NOT a.has_unknown OR a.legacy_routing_enabled OR
+   (a.modern_guard_installed AND NOT EXISTS(SELECT 1 FROM model_job_readiness WHERE ready IS NOT TRUE)
+    AND (EXISTS(SELECT 1 FROM model_job_readiness) OR a.modern_admission))) AS ready
+ FROM retry_admission a
 )
 SELECT jsonb_build_object('version',1,'kind','proposal_trial_request_proof','observed_at',now(),
  'selection',jsonb_build_object('version',1,'workspace_id','{w}','opportunity_id','{o}'),
@@ -97,6 +122,8 @@ SELECT jsonb_build_object('version',1,'kind','proposal_trial_request_proof','obs
  'opportunity',(SELECT jsonb_build_object('id',id,'revision',revision) FROM opportunity),
  'proposal',(SELECT jsonb_build_object('id',id,'revision',revision,'active_version_id',active_version_id) FROM proposal LIMIT 1),
  'workspace_evidence_revision',(SELECT evidence_revision FROM public.workspaces WHERE id='{w}'),
+ 'retry_usage',(SELECT to_jsonb(r)||jsonb_build_object('queued_model_jobs',(SELECT count(*) FROM model_job_readiness),
+  'blocked_model_jobs',(SELECT count(*) FROM model_job_readiness WHERE ready IS NOT TRUE)) FROM retry_usage r),
  'plan',(SELECT jsonb_build_object('id',id,'proposal_id',proposal_id,'revision',revision,'status',status,'stage',stage,
   'input_hash',input_hash,'evidence_revision',evidence_revision,'base_version_id',base_version_id,'issuance_request_id',issuance_request_id,
   'current_contract',coalesce(frozen_context->'generated_delivery_version'='3'::jsonb AND frozen_context->'proposal_consistency_version'='1'::jsonb,false)) FROM latest),
@@ -111,8 +138,7 @@ SELECT jsonb_build_object('version',1,'kind','proposal_trial_request_proof','obs
   'proposal_identity',(SELECT count(*) FROM proposal)<=1 AND NOT EXISTS(SELECT 1 FROM latest p WHERE NOT EXISTS(SELECT 1 FROM proposal s WHERE s.id=p.proposal_id)),
   'no_other_active_plan',NOT EXISTS(SELECT 1 FROM plans WHERE status IN ('queued','running','blocked') AND id IS DISTINCT FROM (SELECT id FROM latest)),
   'no_selected_leases',NOT EXISTS(SELECT 1 FROM selected_jobs WHERE status='running' OR lease_token IS NOT NULL OR lease_until>now()),
-  'usage_ready',NOT EXISTS(SELECT 1 FROM public.provider_usage WHERE workspace_id='{w}' AND (state='reserved' OR
-    (state='unknown' AND NOT EXISTS(SELECT 1 FROM public.model_routing WHERE workspace_id='{w}' AND enabled))))
+  'usage_ready',(SELECT ready FROM retry_usage)
   ));
 ROLLBACK;
 """
