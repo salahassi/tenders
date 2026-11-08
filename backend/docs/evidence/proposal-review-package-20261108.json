@@ -1,0 +1,73 @@
+{
+  "kind": "legacy_whole_review_package_verification",
+  "full_backend": {
+    "source_revision": "d2b20664c333c73662faa3f1f77b00486f90d5a0",
+    "source_revision_after": "d2b20664c333c73662faa3f1f77b00486f90d5a0",
+    "command": [
+      "npm",
+      "test",
+      "--",
+      "--maxWorkers=2"
+    ],
+    "started_at": "2026-11-08T22:54:35.383328+00:00",
+    "finished_at": "2026-11-08T23:02:27.346416+00:00",
+    "duration_seconds": 471.963,
+    "exit_code": 1,
+    "log_sha256": "3913f38e5880525dbc8b2e6c0df68a87eb37ace38b577ed7972d260f8f0f7c5c",
+    "log_bytes": 1461,
+    "max_workers": 2,
+    "timeouts_changed": false,
+    "test_files": 218,
+    "tests": 3674,
+    "passed": 3673,
+    "failed": 1,
+    "failure": "Existing DOCX integration case exceeded unchanged default5000ms timeout; no assertion failure."
+  },
+  "isolated_original_timeout_repeat": {
+    "source_revision": "dfa062450bb65e23e147548bcd92dc5f00e64bc6",
+    "command": [
+      "node_modules/.bin/vitest",
+      "run",
+      "tests/backend/generatedDeliveryPipeline.integration.test.ts",
+      "--maxWorkers=1"
+    ],
+    "started_at": "2026-11-08T23:04:20.862262+00:00",
+    "duration_seconds": 23.438,
+    "exit_code": 0,
+    "log_sha256": "1b6b2c36d59597a1b71c663aa453b1a5acabb2f6938d3a6aa0640ac8cda0ad63",
+    "timeouts_changed": false,
+    "test_files_passed": 1,
+    "tests_passed": 21
+  },
+  "backend_typecheck_build": [
+    {
+      "command": [
+        "npm",
+        "run",
+        "typecheck"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 3.644,
+      "log_sha256": "537fdd9af319d22fba80875202b6f4eed7027692e77332c3979971609ba8b220"
+    },
+    {
+      "command": [
+        "npm",
+        "run",
+        "build"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 3.152,
+      "log_sha256": "8652d82be3115ea6597ae3b7dcf42d83bc898c68ec15888bbf53917a98ebac84"
+    }
+  ],
+  "product_and_vitest_inputs_unchanged_since_full_suite": true,
+  "frontend_unchanged_from": "47cdca4",
+  "frontend_prior_gates_retained": true,
+  "hosted_deployment": false,
+  "customer_files_issued": false,
+  "limits": [
+    "The full suite had one timing failure. Its entire21-test file passed alone without changing timeout or product/test source.",
+    "The initial npm-test filtered attempt retained the package generalfilter; it was stopped and replaced by exact directVitest selection."
+  ]
+}

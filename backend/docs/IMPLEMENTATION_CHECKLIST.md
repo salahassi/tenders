@@ -1,5 +1,20 @@
 # Implementation status and continuation plan
 
+## November 8 — integrated whole-review package verified locally
+
+The integrated source `d2b2066` ran all 3,674 backend tests across 218 files.
+3,673 passed; the existing positive DOCX integration case exceeded its unchanged
+5-second timeout under the full run. Its entire 21-test file then passed alone
+in23.438seconds with the original timeout and unchanged product/test bytes.
+The initial filtered npm invocation retained the package-wide filter and was
+stopped; the recorded successful repeat invokes the exact file directly.
+Backend typecheck and build pass. Frontend inputs remain identical to `47cdca4`,
+so its prior package gates remain applicable. The
+[package receipt](evidence/proposal-review-package-20261108.json) retains the
+full-run timing failure and separate repeat; it does not claim a zero-failure
+full run. Native SQL completion, exact-image qualification, deployment and real
+customer file issuance remain pending. No live command occurred in these checks.
+
 ## November 8 — native ops hook keeps a single rollback transaction
 
 The integrated native hook reached ready proof, exact prepared command and
