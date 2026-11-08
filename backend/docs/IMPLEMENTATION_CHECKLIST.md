@@ -1,5 +1,35 @@
 # Implementation status and continuation plan
 
+## November 8 — bounded SQL-only retry compatibility release
+
+The new release workflow applies only the reviewed modern-routing retry migration;
+all five deployed images, workload definitions, private configuration and provider
+settings remain unchanged. The atomic schema wrapper starts from the exact
+deployed dispatch SQL/catalog/structure receipt, preserves every existing row and
+schema/authority attribute except the reviewed command body, and permits only
+the new private invoker helper. It appends a separate checksum/catalog/structure
+receipt after these checks, retaining the original application and dispatch
+release rows byte for byte. A lost COMMIT acknowledgement triggers one read-only
+verification, never an apply retry or speculative DDL rollback.
+
+Trial verification now explicitly accepts either the exact predecessor state or
+the complete new receipt with its exact current catalog. Partial receipts,
+untracked changes, wrong source hashes or unknown later schema changes fail
+closed. There is no exception-based fallback to weaker validation. Runtime image
+qualification remains valid because the change affects migrations and operations
+only, outside the immutable image's copied inputs.
+
+Local operations validation: 12 tests pass, including an executable PostgreSQL
+transaction with eleven mutation/authority fault injections, unchanged predecessor
+receipts, replay, read-only observation, partial-ledger rejection, bounded SQL
+transport and unknown-commit reconciliation. Workflow YAML, shell and embedded
+Python syntax pass. The run deadline includes queue/setup and reserves owned
+client cleanup inside 170 seconds. No production deployment or business retry
+has been performed by this release change; hosted acceptance remains pending.
+Independent review reproduced an initially omitted target-function attribute
+check; full `pg_proc` equality except the body now rejects immutable/strict or
+other unreviewed command-attribute changes. Both regressions pass with the fix.
+
 ## November 8 — modern model routing in saved proposal resume
 
 The canonical whole-plan retry guard still recognized only the legacy
