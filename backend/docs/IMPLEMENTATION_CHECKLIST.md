@@ -1,5 +1,23 @@
 # Implementation status and continuation plan
 
+## November 8 — commercial successor schema source frozen
+
+The operational schema helper now accepts only migration `1cab7a1a` from product
+commit `6641e9c`. The final native PostgreSQL run separately passed42 authority,
+retry, mixed-worker/wake, concurrency and archive cases with owned cleanup; its
+receipt is maintained with that fixture. No production fingerprint is inferred
+from an isolated database.
+
+All59 release/schema/trial/qualification controls pass again against those exact
+SQL bytes, including22 full-schema PostgreSQL fault injections, the deterministic
+renamed-function selfqualification check, preserved16 predecessor receipt rows
+and the19-row child chain. The
+[schema guard receipt](evidence/proposal-successor-schema-guards-20261108.json)
+binds the actual tested source hashes and distinguishes isolated SQL proofs from
+mocked release coordination. Final image/native qualification, publication,
+hosted deployment and customer issuance remain separate gates. No hosted call,
+provider request or production mutation occurred in this verification.
+
 ## November 8 — successor package checks reconciled
 
 The complete backend run covered 3,664 tests in 217 files at source `6b3eddc`:
