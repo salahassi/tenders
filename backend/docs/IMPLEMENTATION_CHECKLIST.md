@@ -1,5 +1,33 @@
 # Implementation status and continuation plan
 
+## November 8 — poll accepted model requests before graph reconstruction
+
+Accepted background requests now have a narrow preparation path before graph
+replay. One service-only `prepare_accepted_model_poll` transaction proves the
+existing lease, issuance, graph/phase/input identity, saved round, frozen model,
+versioned prompt pins and current content authorization; it resumes the original
+reservation and starts the ordinary attempt without creating a new generation.
+Incomplete proof falls back to the existing path. Healthy pending GETs finish the
+attempt and use the existing adaptive defer. Ready/error responses enter normal
+accounting and validation through an invocation-local, single-use receipt bound
+to the exact request and execution metadata. Remote expiry retains ordinary
+reconciliation; issuance expiry remains closed. No deadline, concurrency,
+provider selection, semantic validation or historical prompt bytes change.
+
+The 90-second fresh-generation budget now resolves an exact accepted phase before
+yielding, so preparation time cannot repeatedly prevent its GET. Resume errors
+retain the existing attempt/fallback bookkeeping. Five focused controls cover
+late accepted versus unaccepted work and identity, authorization and transient
+resume failures; all pass. The existing model, graph and catalog targeted suites
+passed 166 tests. Independent full-schema controls separately passed 29 cases,
+including real content revocation, ready-response validation/accounting, stale
+receipts, expiry and writer/verifier pending paths. Those fixtures measure one
+RPC before a healthy GET and three total, versus the previous fourteen and
+eighteen. These are local structural measurements; production elapsed-time
+improvement and complete file issuance remain unproven pending release and an
+actual continuation. The frozen integrated source still requires full package
+gates and image-bound qualification before deployment.
+
 ## November 8 — bounded accepted-poll release controls prepared
 
 The next schema child is bound to the deployed admission catalog `28dc9a60`,

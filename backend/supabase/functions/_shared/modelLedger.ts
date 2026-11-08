@@ -24,6 +24,8 @@ export function modelLedger(
   let version = 1;
   let currentAttempt: string | undefined;
   return {
+    requestPrefix: prefix,
+    jobIdentity: { id: job.id, lease_token: job.lease_token },
     environment: (config) =>
       backend.resolveModelEnvironment?.(config) ??
       (config.connection_id && environments?.[config.provider]
@@ -92,7 +94,14 @@ export function modelLedger(
       project_name,
       operation_name,
       config,
+      reuseAttemptId,
     ) => {
+      if (reuseAttemptId) {
+        // The invocation-local accepted-poll receipt already bound this exact
+        // attempt in the fused SQL guard. Preserve its original GET telemetry.
+        currentAttempt = reuseAttemptId;
+        return currentAttempt;
+      }
       currentAttempt = String(
         await backend.internal(
           config?.model_config_id
