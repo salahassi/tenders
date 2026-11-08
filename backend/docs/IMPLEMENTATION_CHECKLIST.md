@@ -55,6 +55,18 @@ now retains the request proof and bounded usage/job metadata to distinguish an
 active reservation from unknown historical usage before choosing the canonical
 operation. It neither settles usage nor changes routing or provider configuration.
 
+Read-only inspection [42506879559](https://github.com/salahassi/tenders/actions/runs/42506879559)
+at `5382232` passed in 51 seconds including queue. It found no reserved provider
+usage, historical unknown usage, enabled modern execution/configurations, disabled
+legacy routing, and a failed current-contract plan with unchanged evidence and
+no active proposal version. Canonical retry still consults the legacy routing
+guard; canonical fresh generation does not. The harness now chooses the normal
+fresh `proposal.generate` command when this retry-only guard prevents reuse,
+while retaining failed/canceled-plan, active-version, lease and concurrent-plan
+checks. It sends no retry followed by generation. All 18 request controls and
+12 coordinator controls pass; saved work and unknown accounting are retained.
+The application retry compatibility defect is being corrected separately.
+
 ## November 8 — remove synchronous proposal dispatch waits
 
 **Deployed:** [42499311138](https://github.com/salahassi/tenders/actions/runs/42499311138)

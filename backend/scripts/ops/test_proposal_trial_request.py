@@ -60,6 +60,34 @@ class RequestTests(unittest.TestCase):
             with self.assertRaisesRegex(m.TrialRequestError, 'CURRENT_RETRY_REQUIRED'):
                 m.prepare(proof)
 
+    def test_legacy_usage_admission_falls_back_to_exact_fresh_generate(self):
+        for status in ('failed', 'canceled'):
+            proof = copy.deepcopy(self.proof)
+            proof['plan']['status'] = status
+            proof['guards']['usage_ready'] = False
+            prepared = m.prepare(proof)
+            self.assertEqual(prepared['operation'], 'proposal.generate')
+            self.assertEqual(prepared['body'], {'commands': [{'operation': 'proposal.generate',
+                'input': {'id': O, 'expected_revision': 12}}]})
+            self.assertEqual(proof['plan']['id'], G)
+            self.assertEqual(proof['plan']['input_hash'], 'a' * 64)
+
+    def test_fresh_usage_fallback_preserves_active_version_and_work_guards(self):
+        base = copy.deepcopy(self.proof); base['guards']['usage_ready'] = False
+        changed = copy.deepcopy(base); changed['proposal']['active_version_id'] = J
+        with self.assertRaisesRegex(m.TrialRequestError, 'EXISTING_VERSION_REQUIRES_REVIEW'):
+            m.prepare(changed)
+        changed = copy.deepcopy(base); changed['plan']['status'] = 'blocked'
+        with self.assertRaisesRegex(m.TrialRequestError, 'CURRENT_RETRY_REQUIRED'):
+            m.prepare(changed)
+        for guard in ('no_selected_leases', 'no_other_active_plan'):
+            changed = copy.deepcopy(base); changed['guards'][guard] = False
+            with self.assertRaisesRegex(m.TrialRequestError, guard.upper()):
+                m.prepare(changed)
+        changed = copy.deepcopy(base); changed['guards']['usage_ready'] = None
+        with self.assertRaisesRegex(m.TrialRequestError, 'PROOF_INVALID'):
+            m.prepare(changed)
+
     def test_initial_generate_without_any_saved_plan(self):
         proof = copy.deepcopy(self.proof)
         proof.update(plan=None, proposal=None, latest_issuance=None)
@@ -77,7 +105,7 @@ class RequestTests(unittest.TestCase):
         self.persist.assert_not_called(); self.client.request.assert_not_called()
 
     def test_each_authority_and_ambiguity_guard_stops_new_request(self):
-        for guard in m.GUARDS:
+        for guard in m.GUARDS - {'usage_ready'}:
             with self.subTest(guard=guard):
                 proof = copy.deepcopy(self.proof); proof['guards'][guard] = False
                 with self.assertRaisesRegex(m.TrialRequestError, guard.upper()): m.prepare(proof)

@@ -133,7 +133,8 @@ def read(database, sql, *, max_bytes=64 * 1024):
 
 def validate_proof(proof):
     require(isinstance(proof, dict) and type(proof.get('version')) is int and proof['version'] == 1 and proof.get('kind') == 'proposal_trial_request_proof'
-            and isinstance(proof.get('guards'), dict) and set(proof['guards']) == GUARDS,
+            and isinstance(proof.get('guards'), dict) and set(proof['guards']) == GUARDS
+            and all(type(value) is bool for value in proof['guards'].values()),
             'PROPOSAL_TRIAL_PROOF_INVALID')
     validate_selection(proof.get('selection'))
     for name in sorted(BASE_GUARDS):
@@ -230,11 +231,14 @@ def prepare(proof):
     if plan and (plan['status'] in {'queued', 'running', 'completed'} or issuance and issuance['outcome'] in {'active', 'issued'}):
         require(proof['guards']['no_other_active_plan'] is True, 'PROPOSAL_TRIAL_PRECONDITION_NO_OTHER_ACTIVE_PLAN')
         return envelope | {'mode': 'observe_existing', 'target': existing_target(proof)}
-    for name in sorted(GUARDS):
+    # The server's legacy workspace usage admission gate applies to retry.
+    # Fresh generation retains the worker's capacity and same-request ambiguity
+    # guards; historical unknown accounting is neither cleared nor rewritten.
+    for name in sorted(GUARDS - {'usage_ready'}):
         require(proof['guards'][name] is True, 'PROPOSAL_TRIAL_PRECONDITION_' + name.upper())
     if plan and plan.get('stage') == 'completed' and issuance:
         raise TrialRequestError('PROPOSAL_RENDER_RETRY_REQUIRED')
-    retry = bool(plan and plan['status'] in {'failed', 'canceled', 'blocked'} and plan['current_contract']
+    retry = bool(proof['guards']['usage_ready'] and plan and plan['status'] in {'failed', 'canceled', 'blocked'} and plan['current_contract']
                  and plan['evidence_revision'] == proof['workspace_evidence_revision']
                  and plan.get('base_version_id') == proposal.get('active_version_id'))
     if retry:
