@@ -1,5 +1,23 @@
 # Implementation status and continuation plan
 
+## November 8 — reference UUID punctuation correction deployed
+
+PR54 merged as `0d0de308`; Pages42523934582 passed within the three-minute bound.
+Release42523959464 from `d62904e` passed in 44 seconds including queue and cleanup.
+Worker/scheduler now use `2097a079`, qualified image `c74fd450` from artifact source
+`698d80fc`, qualification `7e351bc3`. The exact fifth-child schema remains SQL
+`8d089d8d`, catalog `36d60b8f`, structure `1b9db070`; no SQL apply was attempted.
+API `f573e991`, source-browser `077b06ed`, frontend `522ad1b7` and configuration
+are retained. Scheduler pause/drain, worker authorization, service RPC rejection,
+resume/readiness and cleanup passed. See the
+[deployment receipt](evidence/proposal-reference-passed-20261108-42523959464.json).
+
+No business command or model request was issued by deployment. The selected
+commercial job remains exhausted with its retained schema-commentary defect.
+Do not retry it unchanged: a separately authorized, bounded successor is under
+implementation, preserving all prior candidates, usage and completed sections.
+Actual customer file issuance remains open.
+
 ## November 8 — reference-boundary artifact and package gates captured
 
 Frozen artifact source `698d80fc` built image `c74fd450` offline. The actual image

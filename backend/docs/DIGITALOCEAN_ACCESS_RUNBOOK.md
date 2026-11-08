@@ -5,6 +5,23 @@ The repository-root [AGENTS.md](../../AGENTS.md) points here so the established
 route is available in every checkout, without relying on conversation history.
 Last reviewed: November 8, 2026.
 
+## Reference UUID punctuation (November 8, current runtime)
+
+[Run42523959464](https://github.com/salahassi/tenders/actions/runs/42523959464)
+from `d62904e` passed in 44 seconds including queue and cleanup. Worker/scheduler
+now run `2097a079`, image `c74fd450`, artifact source `698d80fc`, qualification
+`7e351bc3`. API `f573e991`, source-browser `077b06ed`, frontend `522ad1b7` and all
+configuration are retained. See the
+[receipt](evidence/proposal-reference-passed-20261108-42523959464.json).
+
+This release changed no schema. Current SQL `8d089d8d`, catalog `36d60b8f` and
+structure `1b9db070` remain the exact fifth child. The actual null-identity service
+route rejection, rollout, activation and cleanup passed. The trial runner now
+requires the reference qualification and this image. Its prior-image release
+guard prevents another unchanged apply; use explicit inspection and forward
+recovery after activation. The saved commercial job's exhausted semantic finding
+and completed customer issuance are separate from the deployed punctuation fix.
+
 ## Accepted model polling (November 8, current runtime and schema)
 
 [Run42519090178](https://github.com/salahassi/tenders/actions/runs/42519090178)
