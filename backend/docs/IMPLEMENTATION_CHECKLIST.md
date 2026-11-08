@@ -79,8 +79,12 @@ Only the undeployed revision-6 labels were shortened (`ew1` and
 The five affected suites now pass 144 tests. Added checks cover the label bound
 for every verifier revision with the new evidence policy and actual SQL metadata
 persistence for both the revision-5 empty-inventory fallback and revision-6
-literal-proof path. A fresh complete backend run, frontend checks and native
-image qualification remain pending; the earlier failed full result is retained.
+literal-proof path. On corrected product source `63a1e56`, the fresh complete
+backend run passes all 3,582 tests in 211 files (449 seconds); the separate
+frontend run passes all 389 tests in 61 files. Both packages' typecheck and build
+pass. Each complete test run used at most two workers and unchanged timeouts;
+the earlier failed full result is retained. Native image qualification,
+deployment and actual hosted issuance remain separate pending gates.
 
 ## November 8 — bounded SQL-only retry compatibility release
 
