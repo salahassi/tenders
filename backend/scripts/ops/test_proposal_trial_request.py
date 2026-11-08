@@ -211,7 +211,7 @@ CREATE TABLE opportunities(id uuid,workspace_id uuid,revision int,archived boole
 CREATE TABLE proposals(id uuid,workspace_id uuid,opportunity_id uuid,revision int,active_version_id uuid);
 CREATE TABLE generation_plans(id uuid,workspace_id uuid,opportunity_id uuid,proposal_id uuid,revision int,status text,stage text,input_hash text,evidence_revision bigint,base_version_id uuid,issuance_request_id uuid,frozen_context jsonb,kind text,created_at timestamptz);
 CREATE TABLE proposal_issuance_requests(id uuid,workspace_id uuid,plan_id uuid,requested_by uuid,operation text,idempotency_key text,outcome text,accepted_at timestamptz,deadline_at timestamptz);
-CREATE TABLE jobs(id uuid,workspace_id uuid,entity_id uuid,status text,lease_token uuid,lease_until timestamptz,checkpoint jsonb,type text,error_code text,cancel_requested boolean,next_attempt_at timestamptz);
+CREATE TABLE jobs(id uuid,workspace_id uuid,entity_id uuid,status text,lease_token uuid,lease_until timestamptz,checkpoint jsonb,type text,error_code text,cancel_requested boolean,next_attempt_at timestamptz,attempts int NOT NULL DEFAULT 0,updated_at timestamptz DEFAULT now());
 CREATE TABLE provider_usage(workspace_id uuid,state text,id uuid DEFAULT gen_random_uuid(),job_id uuid,error_code text,created_at timestamptz DEFAULT now(),updated_at timestamptz DEFAULT now(),remote_deadline timestamptz,reconciliation_after timestamptz,remote_request_id text,provider text,model text,connection_id uuid,model_config_id uuid);
 CREATE TABLE generation_steps(workspace_id uuid,job_id uuid,plan_id uuid,status text);
 CREATE TABLE model_attempts(id bigserial,operation text,workspace_id uuid,job_id uuid,usage_id uuid,provider text,model text,connection_id uuid,model_config_id uuid,status text,result_code text,response_id text,finish_reason text);
@@ -223,6 +223,14 @@ CREATE TABLE model_task_routes(workspace_id uuid,task text,revision int DEFAULT 
 CREATE TABLE restore_sessions(workspace_id uuid,state text);
 CREATE TABLE app_private.model_graph_threads(id uuid,workspace_id uuid,job_id uuid);
 CREATE TABLE app_private.model_graph_results(id uuid,workspace_id uuid,thread_id uuid,result_key text,value jsonb,created_at timestamptz DEFAULT now());
+CREATE TABLE app_private.model_graph_checkpoints(thread_id uuid,created_at timestamptz DEFAULT now(),checkpoint jsonb);
+CREATE TABLE app_private.k8s_dispatch_queue(singleton boolean,generation bigint,acknowledged_generation bigint,
+ lease_generation bigint,lease_until timestamptz,next_attempt_at timestamptz,last_periodic_at timestamptz,failures int);
+CREATE TABLE app_private.k8s_dispatch_timers(due_at timestamptz);
+INSERT INTO app_private.k8s_dispatch_queue VALUES(true,7,6,null,null,'-infinity',now(),0);
+INSERT INTO app_private.k8s_dispatch_timers VALUES(now()-interval '1 second'),(now()+interval '5 seconds');
+INSERT INTO app_private.model_graph_checkpoints VALUES('00000000-0000-4000-8000-000000000901',now(),'{{"body":"private-checkpoint-payload"}}');
+
 INSERT INTO workspaces VALUES('{W}',8);
 INSERT INTO memberships VALUES('{W}','{A}',true,'Owner');
 INSERT INTO identity_allowlist VALUES('{W}','{A}','active','Owner');
@@ -290,8 +298,10 @@ await db.exec(`UPDATE model_execution_settings SET enabled=true,admitted_after=n
 const childLocalAllowed=await read(x.inspect);
 await db.exec(`UPDATE provider_usage SET state='reserved' WHERE id=(SELECT id FROM provider_usage LIMIT 1)`);
 const childReserved=await read(x.inspect);
+await db.exec(`INSERT INTO jobs(id,workspace_id,entity_id,status,type,next_attempt_at) SELECT gen_random_uuid(),'${x.w}','${x.g}','queued','draft_section',now()+interval '1 hour' FROM generate_series(1,101)`);
+const queueBounded=await read(x.diagnostic);
 console.log(JSON.stringify({normal,accepted,disabled,reserved,unknown,routed,mismatch,diagnostic,bounded,
- parentModern,childUntouched,childFrozen,childRecent,childAged,childManual,childLocalDenied,childLocalAllowed,childReserved})); await db.close();
+ parentModern,childUntouched,childFrozen,childRecent,childAged,childManual,childLocalDenied,childLocalAllowed,childReserved,queueBounded})); await db.close();
 """
         result = subprocess.run(['node', '--input-type=module', '-e', script], input=json.dumps({
             'schema': schema, 'inspect': inspect_sql, 'acceptance': m.acceptance_sql(prepared), 'diagnostic': m.diagnostic_sql(proof['selection']), 'w': W, 'j': J, 'g': G, 'helpers': helpers, 'child': child}),
@@ -309,6 +319,26 @@ console.log(JSON.stringify({normal,accepted,disabled,reserved,unknown,routed,mis
         self.assertEqual(data['diagnostic']['unknown_count'], 1)
         self.assertTrue(data['diagnostic']['routing_enabled'])
         m.validate_verifier_diagnostic(data['diagnostic'])
+        m.validate_queue_diagnostic(data['diagnostic'])
+        queue = data['diagnostic']['queue_diagnostics']
+        self.assertEqual(queue['job_count'], 1)
+        self.assertEqual(queue['jobs'][0]['graph']['checkpoints']['count'], 1)
+        self.assertEqual(queue['jobs'][0]['graph']['results']['count'], 1)
+        self.assertEqual(queue['dispatch']['generation'], 7)
+        self.assertEqual(queue['timers']['count'], 2)
+        self.assertEqual(queue['timers']['due_count'], 1)
+        m.validate_queue_diagnostic(data['queueBounded'])
+        self.assertEqual(data['queueBounded']['queue_diagnostics']['job_count'], 103)
+        self.assertEqual(len(data['queueBounded']['queue_diagnostics']['jobs']), 100)
+        self.assertTrue(data['queueBounded']['queue_diagnostics']['jobs_truncated'])
+        for mutation in ('payload', 'timestamp', 'count'):
+            changed = copy.deepcopy(data['diagnostic'])
+            if mutation == 'payload': changed['queue_diagnostics']['jobs'][0]['checkpoint'] = {'private': True}
+            elif mutation == 'timestamp': changed['queue_diagnostics']['dispatch']['last_periodic_at'] = 'customer text'
+            else: changed['queue_diagnostics']['reserved_workspace'] += 1
+            with self.subTest(mutation=mutation), self.assertRaises(m.TrialRequestError):
+                m.validate_queue_diagnostic(changed)
+
         projected = data['diagnostic']['verifier_diagnostics']
         self.assertEqual(projected['plan_id'], G)
         self.assertEqual(projected['report_count'], 1)
@@ -318,7 +348,7 @@ console.log(JSON.stringify({normal,accepted,disabled,reserved,unknown,routed,mis
         self.assertEqual(projected['attempts'][0]['model_config_id'], '00000000-0000-4000-8000-000000000903')
         route = data['diagnostic']['verifier_routes'][0]
         self.assertEqual((route['revision'], route['models'][0]['revision'], route['models'][0]['connection_revision']), (7, 5, 3))
-        for private in ['private-project', 'private-customer-content', '99999', 'numeric_literals']:
+        for private in ['private-project', 'private-customer-content', 'private-checkpoint-payload', '99999', 'numeric_literals']:
             self.assertNotIn(private, json.dumps(data['diagnostic']))
         self.assertEqual(data['bounded']['total'], 102)
         self.assertTrue(data['bounded']['truncated'])

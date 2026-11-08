@@ -26,6 +26,21 @@ were still queued with one pending remote request. Some saved catalogs retain
 the old verifier by design. Effective parallel occupancy and whole-package
 completion remain open; configuration acceptance alone does not close them.
 
+## November 8 — read-only proposal queue-capacity snapshot
+
+The existing encrypted trial inspection now projects at most 100 selected-plan
+jobs with due times, lease-presence flags, catalog/graph flags, work class and
+current task. It compares selected versus other workspace reservations, reads
+only dispatcher counters/deadlines and aggregates graph checkpoint/result counts
+and timestamp ranges. No checkpoint/result body, lease token, remote request ID
+or credential is added. Strict readback validation rejects extra payload fields,
+invalid timestamp/count metadata and inconsistent truncation. The original
+read-only transaction, selected workspace/plan scope and byte/time bounds remain.
+Actual PostgreSQL fixture coverage exercises this projection, 103-job truncation,
+private-body exclusion and malformed metadata rejection. This diagnostic changes
+no queue ordering, concurrency setting, routing, job or provider request; hosted
+inspection and any subsequent scheduling correction remain separate evidence.
+
 ## November 8 — bound admission migration proof without reading customer payloads
 
 Hosted admission apply42514254147 stopped with SQLSTATE `57014` at the unchanged

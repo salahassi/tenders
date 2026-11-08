@@ -235,7 +235,27 @@ latest AS MATERIALIZED (
  SELECT a.id,a.job_id,a.model,a.model_config_id,a.result_code FROM public.model_attempts a JOIN selected_jobs j ON j.id=a.job_id
  WHERE a.workspace_id='{w}' AND a.operation='verify_grounding' AND a.result_code IN
  ('EVIDENCE_REFERENCE_INVALID','MODEL_COVERAGE_INCOMPLETE','UNSUPPORTED_COMPANY_CLAIM','SUCCEEDED')
-), attempts AS (SELECT * FROM verifier_attempts ORDER BY id DESC LIMIT 32)
+), attempts AS (SELECT * FROM verifier_attempts ORDER BY id DESC LIMIT 32), queue_jobs AS MATERIALIZED (
+ SELECT j.id,j.type,j.status,j.error_code,j.attempts,j.updated_at,j.next_attempt_at,j.lease_until,
+  j.lease_token IS NOT NULL AS has_lease,coalesce(j.next_attempt_at<=now(),false) AS due_now,
+  app_private.queue_work_class(j) AS work_class,coalesce(j.checkpoint ? 'graph_thread',false) AS has_graph_thread,
+  coalesce(j.checkpoint ? 'model_catalog_snapshot',false) AS has_catalog,
+  j.checkpoint#>>'{{model_operation,task}}' AS model_task,
+  j.checkpoint#>'{{model_operation,route_revision}}' AS route_revision,
+  coalesce(pg_column_size(j.checkpoint),0) AS checkpoint_bytes
+ FROM public.jobs j JOIN selected_jobs selected ON selected.id=j.id WHERE j.workspace_id='{w}'
+ ORDER BY (j.status IN ('running','retry_wait','queued','quota_wait')) DESC,j.updated_at DESC,j.id LIMIT 100
+), graph_times AS (
+ SELECT q.id AS job_id,
+  (SELECT count(*) FROM app_private.model_graph_threads t WHERE t.workspace_id='{w}' AND t.job_id=q.id) AS threads,
+  (SELECT jsonb_build_object('count',count(*),'first_at',min(c.created_at),'last_at',max(c.created_at))
+   FROM app_private.model_graph_threads t JOIN app_private.model_graph_checkpoints c ON c.thread_id=t.id
+   WHERE t.workspace_id='{w}' AND t.job_id=q.id) AS checkpoints,
+  (SELECT jsonb_build_object('count',count(*),'first_at',min(r.created_at),'last_at',max(r.created_at))
+   FROM app_private.model_graph_threads t JOIN app_private.model_graph_results r ON r.thread_id=t.id AND r.workspace_id=t.workspace_id
+   WHERE t.workspace_id='{w}' AND t.job_id=q.id) AS results
+ FROM queue_jobs q
+)
 SELECT jsonb_build_object('version',1,'kind','proposal_trial_usage_diagnostic','observed_at',now(),
  'selection',jsonb_build_object('version',1,'workspace_id','{w}','opportunity_id','{o}'),
  'total',(SELECT count(*) FROM pending),'truncated',(SELECT count(*) FROM pending)>100,
@@ -251,6 +271,24 @@ SELECT jsonb_build_object('version',1,'kind','proposal_trial_usage_diagnostic','
    ON n.workspace_id=c.workspace_id AND n.id=c.connection_id WHERE c.workspace_id='{w}' AND c.enabled AND n.enabled),
  'task_route_count',(SELECT count(*) FROM public.model_task_routes WHERE workspace_id='{w}'),
  'selected_latest_plan_created_at',(SELECT max(created_at) FROM public.generation_plans WHERE workspace_id='{w}' AND opportunity_id='{o}' AND kind='proposal'),
+ 'queue_diagnostics',jsonb_build_object('plan_id',(SELECT id FROM latest),
+  'job_count',(SELECT count(*) FROM selected_jobs),'jobs_truncated',(SELECT count(*) FROM selected_jobs)>100,
+  'reserved_workspace',(SELECT count(*) FROM pending WHERE state='reserved'),
+  'reserved_selected',(SELECT count(*) FROM pending WHERE state='reserved' AND job_id IN (SELECT id FROM selected_jobs)),
+  'reserved_other',(SELECT count(*) FROM pending WHERE state='reserved' AND NOT EXISTS(SELECT 1 FROM selected_jobs j WHERE j.id=pending.job_id)),
+  'jobs',coalesce((SELECT jsonb_agg(jsonb_build_object('job_id',q.id,'type',q.type,'status',q.status,
+    'error_code',q.error_code,'attempts',q.attempts,'updated_at',q.updated_at,'next_attempt_at',q.next_attempt_at,
+    'lease_until',q.lease_until,'has_lease',q.has_lease,'due_now',q.due_now,'work_class',q.work_class,
+    'has_graph_thread',q.has_graph_thread,'has_catalog',q.has_catalog,'model_task',q.model_task,
+    'route_revision',q.route_revision,'checkpoint_bytes',q.checkpoint_bytes,
+    'graph',jsonb_build_object('threads',g.threads,'checkpoints',g.checkpoints,'results',g.results))
+    ORDER BY (q.status IN ('running','retry_wait','queued','quota_wait')) DESC,q.updated_at DESC,q.id)
+    FROM queue_jobs q JOIN graph_times g ON g.job_id=q.id),'[]'::jsonb),
+  'dispatch',(SELECT jsonb_build_object('generation',generation,'acknowledged_generation',acknowledged_generation,
+    'lease_generation',lease_generation,'lease_until',lease_until,'next_attempt_at',next_attempt_at,
+    'last_periodic_at',last_periodic_at,'failures',failures) FROM app_private.k8s_dispatch_queue WHERE singleton),
+  'timers',(SELECT jsonb_build_object('count',count(*),'due_count',count(*) FILTER(WHERE due_at<=now()),
+    'first_at',min(due_at),'last_at',max(due_at)) FROM app_private.k8s_dispatch_timers)),
  'verifier_diagnostics',jsonb_build_object('plan_id',(SELECT id FROM latest),
   'report_count',(SELECT count(*) FROM invalid_reports),'reports_truncated',(SELECT count(*) FROM invalid_reports)>8,
   'attempt_count',(SELECT count(*) FROM verifier_attempts),'attempts_truncated',(SELECT count(*) FROM verifier_attempts)>32,
@@ -292,6 +330,7 @@ def diagnostic(database, selection):
             and type(value.get('truncated')) is bool and type(value.get('routing_enabled')) is bool,
             'PROPOSAL_TRIAL_USAGE_DIAGNOSTIC_INVALID')
     validate_verifier_diagnostic(value)
+    validate_queue_diagnostic(value)
     return value
 
 
@@ -354,6 +393,63 @@ def validate_verifier_diagnostic(value):
         and revision(settings['revision']) and type(settings['max_parallel_requests']) is int
         and 1 <= settings['max_parallel_requests'] <= 4
         and (settings['admitted_after'] is None or isinstance(settings['admitted_after'], str)), code)
+
+
+def validate_queue_diagnostic(value):
+    """Only bounded queue metadata; never graph/checkpoint payloads or lease tokens."""
+    code = 'PROPOSAL_TRIAL_QUEUE_DIAGNOSTIC_INVALID'
+    q = value.get('queue_diagnostics')
+    require(isinstance(q, dict) and set(q) == {'plan_id', 'job_count', 'jobs_truncated', 'jobs',
+        'reserved_workspace', 'reserved_selected', 'reserved_other', 'dispatch', 'timers'}, code)
+    require(q['plan_id'] is None or uuid_value(q['plan_id']), code)
+    require(all(revision(q[k]) for k in ('job_count', 'reserved_workspace', 'reserved_selected', 'reserved_other'))
+        and q['reserved_workspace'] == q['reserved_selected'] + q['reserved_other']
+        and isinstance(q['jobs'], list) and len(q['jobs']) == min(q['job_count'], 100)
+        and type(q['jobs_truncated']) is bool and q['jobs_truncated'] == (q['job_count'] > 100), code)
+    def timestamp(v):
+        if v is None or v in ('infinity', '-infinity'):
+            return True
+        if not isinstance(v, str) or len(v) > 40:
+            return False
+        try:
+            return datetime.fromisoformat(v.replace('Z', '+00:00')).tzinfo is not None
+        except ValueError:
+            return False
+    def aggregate(v, timers=False):
+        require(isinstance(v, dict) and set(v) == ({'count', 'due_count', 'first_at', 'last_at'} if timers
+            else {'count', 'first_at', 'last_at'}) and revision(v['count'])
+            and timestamp(v['first_at']) and timestamp(v['last_at'])
+            and ((v['first_at'] is None and v['last_at'] is None) == (v['count'] == 0)), code)
+        if timers:
+            require(revision(v['due_count']) and v['due_count'] <= v['count'], code)
+    fields = {'job_id', 'type', 'status', 'error_code', 'attempts', 'updated_at', 'next_attempt_at',
+        'lease_until', 'has_lease', 'due_now', 'work_class', 'has_graph_thread', 'has_catalog',
+        'model_task', 'route_revision', 'checkpoint_bytes', 'graph'}
+    for row in q['jobs']:
+        require(isinstance(row, dict) and set(row) == fields and uuid_value(row['job_id'])
+            and isinstance(row['type'], str) and re.fullmatch('[a-z][a-z0-9_]{0,79}', row['type'])
+            and row['status'] in {'queued', 'running', 'retry_wait', 'quota_wait', 'succeeded', 'blocked', 'failed', 'canceled'}
+            and (row['error_code'] is None or isinstance(row['error_code'], str)
+                and re.fullmatch('[A-Z][A-Z0-9_]{0,119}', row['error_code']))
+            and revision(row['attempts']) and revision(row['checkpoint_bytes'])
+            and all(timestamp(row[k]) for k in ('updated_at', 'next_attempt_at', 'lease_until'))
+            and all(type(row[k]) is bool for k in ('has_lease', 'due_now', 'has_graph_thread', 'has_catalog'))
+            and row['work_class'] in {'local', 'poll', 'proposal', 'background'}
+            and (row['model_task'] is None or isinstance(row['model_task'], str)
+                and re.fullmatch('[a-z][a-z0-9_]{0,79}', row['model_task']))
+            and (row['route_revision'] is None or revision(row['route_revision'])), code)
+        graph = row['graph']
+        require(isinstance(graph, dict) and set(graph) == {'threads', 'checkpoints', 'results'}
+            and revision(graph['threads']), code)
+        aggregate(graph['checkpoints']); aggregate(graph['results'])
+    dispatch = q['dispatch']
+    require(isinstance(dispatch, dict) and set(dispatch) == {'generation', 'acknowledged_generation',
+        'lease_generation', 'lease_until', 'next_attempt_at', 'last_periodic_at', 'failures'}
+        and all(revision(dispatch[k]) for k in ('generation', 'acknowledged_generation', 'failures'))
+        and dispatch['acknowledged_generation'] <= dispatch['generation']
+        and (dispatch['lease_generation'] is None or revision(dispatch['lease_generation']))
+        and all(timestamp(dispatch[k]) for k in ('lease_until', 'next_attempt_at', 'last_periodic_at')), code)
+    aggregate(q['timers'], True)
 
 
 def existing_target(proof):
