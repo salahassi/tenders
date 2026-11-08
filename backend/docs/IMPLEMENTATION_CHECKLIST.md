@@ -2,6 +2,24 @@
 
 ## November 8 — model settings saves and repeated workspace reads
 
+**Deployed and accepted:** [run42465497658](https://github.com/salahassi/tenders/actions/runs/42465497658)
+at `c804cffa87c5d95ef3be837b9911863496ec3edf` passed in **113 seconds including
+queue time**. Only frontend changed to `522ad1b7`. Genuine production settings
+startup completed in **8,898 ms / 37 API reads**, then two clock-advanced polls
+each made exactly **one status read, zero catalog reads and zero business reads**.
+All requests returned 200, all 16 table counts matched (including 1,808 jobs),
+and the page settled without alerts, browser errors or a loading skeleton.
+The same immutable image passes four isolated enable/disable saves at six
+requests each, changed-catalog polling and sidebar navigation. Production
+provider settings were not toggled to obtain this evidence. Public HTML and
+all 55 code assets match the image, and the actual PDF worker probe passes.
+Schema/configuration preservation, session logout and both cleanup stages pass.
+The [final receipt](evidence/model-settings-release-passed-20261108-42465497658.json)
+separates isolated save evidence from genuine read-only production acceptance.
+Initial workspace startup still reads all business collections once; this closes
+save/poll amplification, not that broader loading cost or independent proposal
+and provider availability acceptance. The prior diagnosis follows.
+
 **Reopened:** the November 7 acceptance measured startup only. It did not
 exercise a model/connection save or the following minute's status poll. Every
 `runCommand` still refreshed the whole repository before the model component
@@ -34,10 +52,10 @@ its existing 5-second limit. The subsequent complete backend run passes all
 3,499 tests without changing that limit, and both package typechecks/builds pass.
 Immutable frontend `522ad1b7` is built from `f5e4e5a`, published and pull-verified
 with identical image configuration/layers and temporary credential cleanup.
-Hosted acceptance remains pending.
+Hosted acceptance passes in the run recorded above.
 
-Deployment is **pending**. The new three-minute `deploy-model-settings.yml`
-updates only frontend against the observed `b2201c24` baseline. It retains API
+Deployment **passed**. The three-minute `deploy-model-settings.yml`
+updated only frontend against the observed `b2201c24` baseline. It retains API
 `f573e991`, the other runtime images `077b06ed`, private configuration and the
 original applied schema. It checks exact image assets and isolated toggles,
 then genuine read-only production settings startup and two clock-advanced
