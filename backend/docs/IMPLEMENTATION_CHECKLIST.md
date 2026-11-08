@@ -73,6 +73,38 @@ backend build pass; the separate SQL
 successor/rollout capability fence, native qualification, deployment and real
 issuance remain independent gates. No live call or customer command ran here.
 
+## November 8 — bounded commercial successor release controls prepared
+
+The separate successor release binds deployed worker/scheduler `2097a079` and
+exact fifth-child SQL `8d089d8d`, catalog `36d60b8f`, structure `1b9db070`.
+Its sixth ledger appends three receipts atomically with the reviewed DDL. Every
+existing business row and historical receipt remains protected by transaction
+activity/storage checks; only the frozen source avoids full row serialization.
+Existing routine changes are limited to two bodies and one exact command rename
+with exact selfqualification replacement and owner-only delegate authority. The approved jobs trigger, private lineage
+and recovery view, new helpers and service-only executor-6 RPCs are checked.
+The new lineage table must remain empty during installation.
+
+After exact SQL readback, the scheduler is paused and drained, then worker and
+scheduler images are replaced. Readiness, the existing null-identity poll
+rejection, all four v6 routes through a bounded read-only OpenAPI request, exact
+schema and retained configuration are required before activation. Earlier
+failures restore the old pair while retaining the child and capability fence;
+V2 jobs require a subsequent explicit forward release. Activation ambiguity
+requires actual-state inspection and forward recovery. The 170-second total
+including queue, SQL20/transport30 limits, recovery and cleanup reserves remain.
+
+Twenty-seven release/boundary controls, fifteen trial-runner controls and thirteen
+qualification controls pass together. The actual isolated full-schema PostgreSQL
+proof passes22 mutation/authority/structure fault cases plus read-only parent,
+atomic child replay, all16 unchanged predecessor rows and the19-row ledger.
+That proof locally binds the current candidate SQL bytes; the operational SQL
+hash remains deliberately unfrozen until product tests and review finish. The
+trial runner now selects the successor image/child while preserving both earlier
+SQL policy bindings and canonical issuance identity. No live command, build,
+publication or deployment occurred. Final SQL freeze, native artifact capture,
+full package gates and hosted customer completion remain separate pending work.
+
 ## November 8 — separate executor-six/commercial-successor image qualification prepared
 
 The new `proposal-successor-runtime.py` keeps the deployed UUID-corrected image
