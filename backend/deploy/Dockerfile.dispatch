@@ -7,5 +7,5 @@ COPY --chown=deno:deno backend/scripts/runtime/ /app/backend/scripts/runtime/
 COPY --chown=deno:deno frontend/src/lib/renderDocx.ts /app/frontend/src/lib/renderDocx.ts
 COPY --chown=deno:deno frontend/src/lib/docxTableStream.ts /app/frontend/src/lib/docxTableStream.ts
 COPY --chown=deno:deno frontend/public/fonts/ /app/frontend/public/fonts/
-RUN --network=none deno cache --cached-only --frozen --config=supabase/functions/deno.json scripts/runtime/main.ts supabase/functions/_shared/deliveryRender.process.ts supabase/functions/_shared/deliveryVerify.process.ts && chmod -R a+rX /deno-dir
+RUN --network=none deno cache --frozen --config=supabase/functions/deno.json scripts/runtime/main.ts supabase/functions/_shared/deliveryRender.process.ts supabase/functions/_shared/deliveryVerify.process.ts && chmod -R a+rX /deno-dir
 USER deno
