@@ -112,6 +112,48 @@ class TrialRunnerTests(unittest.TestCase):
         self.persist.assert_not_called()
         self.sample.assert_called_once_with(self.database, self.target, None)
 
+    def test_expected_retry_blocks_fresh_generation_before_session_or_intent(self):
+        args = self.args()
+        args.expected_operation = 'generation.retry'
+        self.prepared['operation'] = 'proposal.generate'
+        result = m.run(args)
+        self.assertEqual(result['failure_code'], 'PROPOSAL_TRIAL_EXPECTED_OPERATION_MISMATCH')
+        self.assertFalse(result['send_attempted'])
+        self.assertFalse(result['intent_persisted'])
+        self.assertNotIn('prepared', self.reports[-1])
+        self.session.assert_not_called()
+        self.persist.assert_not_called()
+        self.send.assert_not_called()
+
+    def test_expected_retry_allows_exact_retry_and_observe_existing_only(self):
+        args = self.args()
+        args.expected_operation = 'generation.retry'
+        self.prepared['operation'] = 'generation.retry'
+        def send(_client, _session, prepared, persist, before_send):
+            persist(prepared)
+            before_send()
+            return {'sent': True, 'accepted': True, 'http_status': 200, 'unknown': False}
+        self.send.side_effect = send
+        result = m.run(args)
+        self.assertTrue(result['request_sent'])
+        self.send.assert_called_once()
+        self.send.reset_mock()
+        self.session.reset_mock()
+        self.prepare.return_value = {'mode': 'observe_existing', 'target': self.target}
+        result = m.run(args)
+        self.assertFalse(result['send_attempted'])
+        self.send.assert_not_called()
+        self.session.assert_not_called()
+
+    def test_expected_command_restriction_is_validated_before_access(self):
+        for mode, expected in (('start', 'generation.cancel'), ('observe', 'generation.retry')):
+            args = self.args(mode)
+            args.expected_operation = expected
+            with self.assertRaisesRegex(RuntimeError, 'EXPECTED_OPERATION_INVALID'):
+                m.run(args)
+        self.runtime.assert_not_called()
+        self.input.assert_not_called()
+
     def test_transport_exception_after_send_reconciles_without_second_send(self):
         def uncertain(_client, _session, prepared, persist, before_send):
             persist(prepared)

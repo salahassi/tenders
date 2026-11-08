@@ -1,5 +1,18 @@
 # Implementation status and continuation plan
 
+## November 8 — restrict the saved-work trial to canonical retry
+
+The trial workflow accepts an optional expected operation. A start constrained
+to `generation.retry` now rejects a newly prepared `proposal.generate` before
+opening an Owner session, persisting request intent or sending a command. It may
+observe an already active request without sending another command. Inspection,
+observation and download keep their existing private selection/report schemas.
+This guard prevents a failed retry admission from silently starting all twelve
+analysis chunks again after seven completed chunks were saved. Focused tests
+cover rejected fallback, accepted exact retry, observation without sending and
+invalid restrictions. No runtime, database, provider or customer action is part
+of this operational change; the post-release retry remains pending.
+
 ## November 8 — separate latency runtime qualification preparation
 
 The latency candidate has its own build, qualification and publication paths;

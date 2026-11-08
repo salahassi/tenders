@@ -170,9 +170,12 @@ def private_input(name, digest):
 def run(args):
     global STAGE
     os.environ['TENDERDESK_TRANSFER_HTTP_TIMEOUT_SECONDS'] = '10'
+    expected_operation = getattr(args, 'expected_operation', 'any')
+    require(expected_operation in {'any', 'generation.retry', 'proposal.generate'}
+            and (expected_operation == 'any' or args.mode == 'start'), 'EXPECTED_OPERATION_INVALID')
     report = {'version': 1, 'kind': 'proposal_trial_report', 'mode': args.mode,
               'source_revision': os.environ['GITHUB_SHA'], 'request_sent': False, 'send_attempted': False,
-              'intent_persisted': False, 'cleanup_verified': False}
+              'intent_persisted': False, 'cleanup_verified': False, 'expected_operation': expected_operation}
     require(args.mode != 'start' or (args.activate and os.environ.get('RUN_PROPOSAL_TRIAL') == 'true'),
             'ACTIVATION_REQUIRED')
     require(os.environ.get('GITHUB_RUN_ATTEMPT') == '1', 'WORKFLOW_REPLAY_REFUSED')
@@ -198,6 +201,10 @@ def run(args):
             proof = request.inspect(database, incoming)
             report.update(selection=incoming, proof=proof)
             prepared = request.prepare(proof)
+            # Restrict the permitted command before authentication, durable
+            # intent or transmission. Observing an existing request sends none.
+            require(expected_operation == 'any' or prepared['mode'] == 'observe_existing'
+                    or prepared.get('operation') == expected_operation, 'EXPECTED_OPERATION_MISMATCH')
             report.update(selection=incoming, prepared=prepared)
             if prepared['mode'] == 'observe_existing':
                 target = prepared['target']
@@ -323,6 +330,7 @@ def main():
     parser.add_argument('--input-object', required=True)
     parser.add_argument('--input-sha256', required=True)
     parser.add_argument('--activate', action='store_true')
+    parser.add_argument('--expected-operation', choices=('any', 'generation.retry', 'proposal.generate'), default='any')
     args = parser.parse_args()
     try:
         with redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):

@@ -25,6 +25,15 @@ on:
         required: true
         type: boolean
         default: false
+      expected_operation:
+        description: Restrict a new start command; use generation.retry to preserve saved work
+        required: false
+        type: choice
+        default: any
+        options:
+          - any
+          - generation.retry
+          - proposal.generate
 permissions:
   contents: read
   actions: read
@@ -39,6 +48,7 @@ jobs:
       TRIAL_MODE: ${{ inputs.mode }}
       TRIAL_INPUT_OBJECT: ${{ inputs.input_object }}
       TRIAL_INPUT_SHA256: ${{ inputs.input_sha256 }}
+      TRIAL_EXPECTED_OPERATION: ${{ inputs.expected_operation || 'any' }}
       RUN_PROPOSAL_TRIAL: ${{ inputs.mode == 'start' && inputs.activation_confirmed && 'true' || 'false' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -55,6 +65,8 @@ jobs:
           mode=os.environ['TRIAL_MODE']
           if mode not in {'start','inspect','observe','download'}:raise SystemExit('Invalid trial mode')
           if mode=='start' and os.environ['RUN_PROPOSAL_TRIAL']!='true':raise SystemExit('Start requires explicit activation')
+          expected=os.environ['TRIAL_EXPECTED_OPERATION']
+          if expected not in {'any','generation.retry','proposal.generate'} or (expected!='any' and mode!='start'):raise SystemExit('Invalid expected command restriction')
           if os.environ['GITHUB_RUN_ATTEMPT']!='1':raise SystemExit('Workflow replay is refused')
           if not re.fullmatch(r'(requests|diagnostics)/[A-Za-z0-9][A-Za-z0-9._/-]{0,160}\.bundle',os.environ['TRIAL_INPUT_OBJECT']):raise SystemExit('Invalid private input object')
           if not re.fullmatch(r'[a-f0-9]{64}',os.environ['TRIAL_INPUT_SHA256']):raise SystemExit('Invalid private input hash')
@@ -86,7 +98,7 @@ jobs:
           DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
         run: |
           set -euo pipefail
-          args=(--mode "$TRIAL_MODE" --input-object "$TRIAL_INPUT_OBJECT" --input-sha256 "$TRIAL_INPUT_SHA256")
+          args=(--mode "$TRIAL_MODE" --input-object "$TRIAL_INPUT_OBJECT" --input-sha256 "$TRIAL_INPUT_SHA256" --expected-operation "$TRIAL_EXPECTED_OPERATION")
           if [ "$RUN_PROPOSAL_TRIAL" = true ]; then args+=(--activate); fi
           python3 backend/scripts/ops/proposal-trial-runner.py "${args[@]}"
       - name: Remove only the owned session and temporary database client
