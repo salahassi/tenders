@@ -1,5 +1,32 @@
 # Implementation status and continuation plan
 
+## November 8 — canonical missing legacy review recovery implemented locally
+
+A direct Owner `generation.retry` may now append one genuine whole-proposal
+review to the exact failed legacy plan with no extracted requirements and no
+prior review. The canonical retry creates its normal 600-second issuance and
+fresh review job; original base version, frozen context, input hash, completed
+steps, old jobs, model receipts, budgets and usage remain unchanged. Immutable
+lineage pins the retained accepted version and sections, authorizing only the
+new review and adjacent assembly against that current version. Reassembly
+creates a new version and updates only that version's consistency metadata.
+Existing source, role, revision and modern scoped usage checks remain required;
+reserved usage blocks recovery while old unknown usage is retained unchanged.
+
+Worker seven fences cover the marked review, following advance and generated
+projection. A dynamic claim/wake predicate also excludes old queued legacy
+commercial-to-review transitions from older workers without rewriting their
+checkpoints. The recovery lineage participates in canonical backup/restore.
+
+The initial full-schema PostgreSQL run passes 25 authority, replay, rollback,
+capability and reassembly checks using 31 synthetic retained accepted steps and
+17 sections. It begins through actual `fail_generated_delivery`, admits one
+fresh review and preserves prior version metadata after normal reassembly.
+These are SQL authority tests with synthetic accepted records, not provider
+qualification. Final lock races, preexisting-queue coverage, archive roundtrip,
+operations preparation/readback and complete package checks remain pending.
+No hosted action or provider call occurred during implementation.
+
 ## November 8 — legacy whole-review schema release guards tested locally
 
 The eighth-child release now has an isolated PGlite regression matrix against
