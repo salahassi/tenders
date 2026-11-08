@@ -1,5 +1,23 @@
 # Implementation status and continuation plan
 
+## November 8 — actual commercial recovery completed; delivery projection failed
+
+Canonical retry42527441822 at `4288562` was accepted21:54:10 UTC. The new
+commercial job completed after215.993 seconds, with the saved drafts retained.
+The request then failed at local `prepare_generated_delivery` with
+`GENERATED_DELIVERY_VALIDATION_FAILED`; terminal observation42527728717 confirms
+three completed jobs and one failed projection, four accepted model submissions,
+thirteen polls and no skipped calls. No whole package was issued. See the
+[terminal receipt](evidence/proposal-successor-trial-delivery-failed-20261108-42527728717.json).
+
+Source review identified an independent receipt-resolution defect: delivery SQL
+reads raw checkpoint channel values although the real graph saver stores a typed
+base64 envelope. The old delivery fixture used the raw shape and missed that
+boundary. A strict decoder, genuine serializer fixture and bounded read-only
+production diagnosis are under implementation. Further local projection retry
+is deferred until actual receipt/context checks establish the complete cause.
+No completed content or model budget is being reset.
+
 ## November 8 — commercial successor capability deployed
 
 PR55 merged as `7b509dfb`; Pages42527133564 passed. Release42527251795 from
