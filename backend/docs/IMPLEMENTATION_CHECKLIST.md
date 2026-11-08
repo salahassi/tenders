@@ -1,5 +1,21 @@
 # Implementation status and continuation plan
 
+## November 8 — actual delivery diagnosis confirms two separate blockers
+
+Read-only inspection42529255084 from `6548ec2` completed within56seconds,
+with no command sent and owned cleanup confirmed. The private current failed
+projection has31 accepted model outputs, all matching their completed steps and
+retained hashes. The raw checkpoint join finds zero eligible receipts; decoding
+the actual saver envelope finds all31. Source resolution is current.
+
+The same observation confirms workflow1, zero extracted requirements,17 draft
+sections and completed commercial planning, but no whole-proposal review.
+The legacy commercial transition schedules zero reviews for an empty inventory;
+delivery correctly refuses a missing review. Checkpoint decoding alone cannot
+issue this package. A real accepted review and guarded continuation are required;
+local file retry remains deferred. No content, paid budgets or accepted history
+were reset. See the [sanitized diagnosis](evidence/proposal-delivery-diagnosis-20261108-42529255084.json).
+
 ## November 8 — delivery inspection binds the actual failed issuance state
 
 The initial synthetic inspector fixture assumed the plan remained completed.
