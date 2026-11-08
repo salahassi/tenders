@@ -67,6 +67,18 @@ checks. It sends no retry followed by generation. All 18 request controls and
 12 coordinator controls pass; saved work and unknown accounting are retained.
 The application retry compatibility defect is being corrected separately.
 
+The single authorized `proposal.generate` was accepted in
+[42507148785](https://github.com/salahassi/tenders/actions/runs/42507148785)
+at `b7b9a60` (62-second run). Its database clock is 17:53:30–18:03:30 UTC.
+Authenticated command, exact durable intent, issuance binding and cleanup pass.
+Read-only observations `42507262148` (103 seconds) and `42507449383` (99 seconds)
+retain that exact request and deadline. At approximately 257 seconds, two of
+twelve analysis jobs had completed; two were waiting and eight queued. A separate
+successful render job is not counted as complete analysis or an issued package.
+Full proposal completion is still unproven. The observer now adds a bounded,
+content-free private attempt timeline to distinguish model skips, accepted calls,
+poll exchanges and provider latency without changing processing or its deadline.
+
 ## November 8 — remove synchronous proposal dispatch waits
 
 **Deployed:** [42499311138](https://github.com/salahassi/tenders/actions/runs/42499311138)

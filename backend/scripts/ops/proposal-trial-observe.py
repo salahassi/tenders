@@ -33,6 +33,9 @@ STAGES = {
     'render_delivery': 'rendering', 'verify_delivery': 'rendering',
 }
 STAGE_ORDER = ('analysis', 'planning', 'drafting', 'commercial', 'review', 'finalizing', 'rendering', 'processing')
+ATTEMPT_KEYS = {'id', 'job_id', 'type', 'operation', 'provider', 'model', 'status', 'result_code', 'http_status',
+                'request_phase', 'sent', 'round_number', 'worker_attempt', 'started_at', 'finished_at', 'retry_after',
+                'usage_state', 'actual_input', 'actual_output', 'thinking_tokens', 'reserved_input', 'reserved_output'}
 
 
 class TrialObservationError(Exception):
@@ -72,6 +75,18 @@ def observation_sql(target):
     sql = sql.replace("'proposal.generate'", "'" + target['operation'] + "'")
     actor = "'actor_id','" + target['actor_id'] + "')"
     sql = replace_once(sql, actor, actor[:-1] + ",'operation','" + target['operation'] + "')")
+    # Projection precedes aggregation and never includes raw execution metadata,
+    # lease tokens, remote request IDs, prompts or response bodies.
+    sql = replace_once(sql, ")\nSELECT jsonb_build_object(\n 'version',1", """), selected_attempts AS MATERIALIZED (
+ SELECT a.id::text id,a.job_id,j.type,a.operation,a.provider,a.model,a.status,a.result_code,a.http_status,
+  a.request_phase,a.sent,a.round_number,a.worker_attempt,a.started_at,a.finished_at,a.retry_after,
+  u.state usage_state,u.actual_input,u.actual_output,u.thinking_tokens,u.reserved_input,u.reserved_output
+ FROM public.model_attempts a JOIN jobs j ON j.workspace_id=a.workspace_id AND j.id=a.job_id
+ JOIN request r ON r.workspace_id=a.workspace_id AND a.started_at>=r.accepted_at
+ LEFT JOIN public.provider_usage u ON u.workspace_id=a.workspace_id AND u.id=a.usage_id
+)
+SELECT jsonb_build_object(
+ 'version',1""")
     progress = """ 'job_progress',jsonb_build_object(
   'total',(SELECT count(*) FROM jobs),
   'completed',(SELECT count(*) FROM jobs WHERE status='succeeded'),
@@ -79,10 +94,15 @@ def observation_sql(target):
    'updated_at',updated_at) ORDER BY type,status),'[]') FROM (
     SELECT type,status,count(*) n,max(updated_at) updated_at FROM jobs GROUP BY type,status) grouped)),
  'attempt_progress',(SELECT jsonb_build_object('total',count(*),
-  'accepted_waits',count(*) FILTER(WHERE a.status='waiting' AND a.http_status=200 AND a.result_code='MODEL_IN_PROGRESS'),
-  'last_started_at',max(a.started_at),'last_finished_at',max(a.finished_at))
-  FROM public.model_attempts a JOIN jobs j ON j.workspace_id=a.workspace_id AND j.id=a.job_id
-  JOIN request r ON r.workspace_id=a.workspace_id AND a.started_at>=r.accepted_at),
+  'accepted_waits',count(*) FILTER(WHERE status='waiting' AND http_status=200 AND result_code='MODEL_IN_PROGRESS'),
+  'accepted_http_attempts',count(*) FILTER(WHERE sent AND http_status BETWEEN 200 AND 299 AND request_phase IS DISTINCT FROM 'poll'),
+  'poll_attempts',count(*) FILTER(WHERE request_phase='poll'),
+  'skipped_attempts',count(*) FILTER(WHERE status='skipped'),
+  'last_started_at',max(started_at),'last_finished_at',max(finished_at)) FROM selected_attempts),
+ 'attempt_timeline',jsonb_build_object('total',(SELECT count(*) FROM selected_attempts),
+  'truncated',(SELECT count(*) FROM selected_attempts)>200,
+  'attempts',(SELECT coalesce(jsonb_agg(to_jsonb(safe) ORDER BY safe.started_at,safe.id::bigint),'[]') FROM (
+   SELECT * FROM selected_attempts ORDER BY started_at DESC,id::bigint DESC LIMIT 200) safe)),
 """
     sql = replace_once(sql, " 'plan',(SELECT", progress + " 'plan',(SELECT")
     sql = replace_once(sql, "'snapshot_id',s.id,'created_at',s.created_at,",
@@ -163,6 +183,43 @@ def validate_sample(value, target, previous=None):
     for key in ('last_started_at', 'last_finished_at'):
         if attempts.get(key) is not None:
             require(issuance.timestamp(attempts[key]) <= observed, 'PROPOSAL_TRIAL_CLOCK_INVALID')
+    # Earlier encrypted reports have only aggregate metadata. They remain valid
+    # previous-clock evidence while every newly sampled SQL result adds this.
+    if 'attempt_timeline' in value:
+        timeline = value['attempt_timeline']
+        require(isinstance(timeline, dict) and timeline.get('total') == attempts['total']
+                and timeline.get('truncated') is (attempts['total'] > 200)
+                and isinstance(timeline.get('attempts'), list)
+                and len(timeline['attempts']) == min(attempts['total'], 200), 'PROPOSAL_TRIAL_TIMELINE_INVALID')
+        for key in ('accepted_http_attempts', 'poll_attempts', 'skipped_attempts'):
+            require(type(attempts.get(key)) is int and 0 <= attempts[key] <= attempts['total'],
+                    'PROPOSAL_TRIAL_TIMELINE_INVALID')
+        prior_order, identities = None, set()
+        for row in timeline['attempts']:
+            require(isinstance(row, dict) and set(row) == ATTEMPT_KEYS
+                    and isinstance(row['id'], str) and re.fullmatch(r'[1-9][0-9]{0,18}', row['id'])
+                    and row['id'] not in identities and uuid_value(row['job_id'])
+                    and row['status'] in {'running', 'succeeded', 'failed', 'skipped', 'waiting', 'historical'}
+                    and type(row['sent']) is bool, 'PROPOSAL_TRIAL_TIMELINE_INVALID')
+            identities.add(row['id'])
+            for key in ('type', 'operation', 'provider', 'model', 'request_phase', 'result_code', 'usage_state'):
+                require(row[key] is None and key in {'request_phase', 'result_code', 'usage_state'}
+                        or isinstance(row[key], str) and len(row[key]) <= 200
+                        and not re.search(r'[\x00-\x1f\x7f]', row[key]), 'PROPOSAL_TRIAL_TIMELINE_INVALID')
+            require(row['http_status'] is None or type(row['http_status']) is int and 100 <= row['http_status'] <= 599,
+                    'PROPOSAL_TRIAL_TIMELINE_INVALID')
+            for key in ('round_number', 'worker_attempt', 'actual_input', 'actual_output', 'thinking_tokens', 'reserved_input', 'reserved_output'):
+                require(row[key] is None and key not in {'round_number', 'worker_attempt'}
+                        or type(row[key]) is int and 0 <= row[key] <= 9007199254740991, 'PROPOSAL_TRIAL_TIMELINE_INVALID')
+            started = issuance.timestamp(row['started_at'])
+            require(accepted <= started <= observed, 'PROPOSAL_TRIAL_CLOCK_INVALID')
+            order = (started, int(row['id']))
+            require(prior_order is None or order > prior_order, 'PROPOSAL_TRIAL_TIMELINE_INVALID')
+            prior_order = order
+            if row['finished_at'] is not None:
+                require(started <= issuance.timestamp(row['finished_at']) <= observed, 'PROPOSAL_TRIAL_CLOCK_INVALID')
+            if row['retry_after'] is not None:
+                issuance.timestamp(row['retry_after'])
     package = value.get('package')
     if package is not None:
         require(isinstance(package, dict) and uuid_value(package.get('snapshot_id'))
@@ -229,7 +286,11 @@ def public_receipt(evidence):
             if pending:
                 stage = min(pending, key=STAGE_ORDER.index)
                 break
-    return {'proposal_trial': 'observed', 'outcome': outcome, 'code': code, 'stage': stage,
+    result = {'proposal_trial': 'observed', 'outcome': outcome, 'code': code, 'stage': stage,
             'total_jobs': progress['total'], 'completed_jobs': progress['completed'], 'status_counts': counts,
             'model_attempt_count': value['attempt_progress']['total'], 'whole_package_issued': outcome == 'issued',
             'metadata_only': True, 'authenticated_download_verified': False, 'business_mutations': 0}
+    if 'attempt_timeline' in value:
+        result.update({key: value['attempt_progress'][key]
+                       for key in ('accepted_http_attempts', 'poll_attempts', 'skipped_attempts')})
+    return result
