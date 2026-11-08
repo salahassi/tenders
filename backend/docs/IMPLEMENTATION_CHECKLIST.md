@@ -28,7 +28,7 @@ seven generation HTTP exchanges taking 12.177 seconds, and six poll exchanges
 taking 2.424 seconds. These exchange durations exclude asynchronous provider
 processing, so the remaining request duration is not an idle-time measurement.
 
-Four successful result-to-next-phase gaps measure approximately 52–54 seconds.
+Four successful result-to-next-sent-phase gaps measure approximately 52–55 seconds.
 Graph yield makes the job due immediately. A committed wake precedes the next
 selected generation by 46.958 seconds; the last accepted repair precedes its
 poll wake by 30.100 seconds. Combined with the actual scheduler/wake reproduction,

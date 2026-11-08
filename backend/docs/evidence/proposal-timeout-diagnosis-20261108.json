@@ -31,7 +31,7 @@
     "generation_http_duration_seconds": 12.177444,
     "poll_http_attempts": 6,
     "poll_http_duration_seconds": 2.423614,
-    "same_job_success_to_next_model_phase_gap_seconds": [54.371083, 52.073948, 52.651973, 52.896403],
+    "same_job_success_to_next_sent_model_phase_gap_seconds": [54.506083, 52.21336, 52.732445, 52.896403],
     "queued_wake_to_next_selected_generation_start_seconds": 46.958185,
     "last_background_acceptance_to_wake_seconds": 30.099548,
     "controlled_actual_scheduler_and_wake_helper_reproduction": {
