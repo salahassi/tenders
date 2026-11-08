@@ -230,6 +230,8 @@ CREATE TABLE app_private.k8s_dispatch_timers(due_at timestamptz);
 CREATE VIEW public.pg_stat_statements AS SELECT d.oid AS dbid,x.* FROM pg_database d CROSS JOIN (VALUES
  ('select public.model_graph_store(private_customer_value)',3::bigint,9::float8,5::float8,6::bigint,1::bigint,0::bigint),
  ('select public.model_graph_store_extra(private_customer_value)',1,99,99,0,0,0),
+ ('CREATE FUNCTION public.model_graph_store(private_customer_value)',1,999,999,0,0,0),
+ ('DO $$ BEGIN PERFORM public.model_graph_store(private_customer_value); END $$',1,999,999,0,0,0),
  ('select public.model_graph_store(private_plan_only)',0,0,0,0,0,0),
  ('select public.model_graph_store from pg_stat_statements',7,100,100,0,0,0)
 ) x(query,calls,total_exec_time,max_exec_time,shared_blks_hit,shared_blks_read,temp_blks_written)

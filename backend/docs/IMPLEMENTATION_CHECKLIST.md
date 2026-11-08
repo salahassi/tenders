@@ -19,6 +19,10 @@ checks pass; hosted attribution remains pending. No live call, model request or
 business mutation was performed for this change. Historical aggregate execution
 times and a current wait snapshot cannot alone prove a past lock holder.
 
+The statement aggregate includes SELECT/WITH calls only, excluding migration
+definitions and anonymous blocks that merely contain a routine name. An actual
+PostgreSQL fixture checks those exclusions before hosted inspection.
+
 ## November 8 — admission wake deployed; third real issuance still incomplete
 
 Admission apply [42515903670](https://github.com/salahassi/tenders/actions/runs/42515903670)

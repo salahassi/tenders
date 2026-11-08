@@ -374,7 +374,8 @@ BEGIN
       sum(s.temp_blks_written)::bigint AS temp_blks_written
      FROM %I.pg_stat_statements s CROSS JOIN unnest(ARRAY[{names}]) name
      WHERE s.dbid=(SELECT oid FROM pg_database WHERE datname=current_database())
-      AND s.calls>0 AND s.query ~ ('(^|[^a-zA-Z0-9_])'||name||'([^a-zA-Z0-9_]|$)')
+      AND s.calls>0 AND s.query ~* '^[[:space:]]*(select|with)[[:space:]]'
+      AND s.query ~ ('(^|[^a-zA-Z0-9_])'||name||'([^a-zA-Z0-9_]|$)')
       AND position('pg_stat_statements' in s.query)=0
      GROUP BY name ORDER BY name) x$stats$,stats_schema) INTO statement_rows;
    status:='available';
