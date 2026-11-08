@@ -13620,3 +13620,7 @@ cleanup passed. All 3,491 backend tests / 206 files, typecheck and build pass on
 that source. This followup changes operational observation and documentation;
 production runtime/schema bytes are unchanged, so no replacement deployment or
 second business request is performed.
+
+### November 8 — executor7 native dispatch proof prepared
+
+Added separate worker_dispatch_v7_native Python/Deno harnesses, preserving the frozen executor5 and executor6 fixtures and receipts. The candidate image must boot its original worker entrypoint and pass all nine existing behavioral controls plus exact executor7 claim/local-claim/wake RPC selection. The native container uses network none, a read-only root and only the synthetic harness mount; cleanup follows its verified immutable container ID. Twelve targeted validator/ownership/isolation controls pass locally. Actual candidate-image execution, qualification, publication and hosted acceptance remain pending; this preparation made no external calls.
