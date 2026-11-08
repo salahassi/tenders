@@ -260,15 +260,17 @@ class TrialRunnerBoundaryTests(unittest.TestCase):
             'successor_migration': {'path': 'backend/supabase/migrations/successor.sql', 'sha256': 'a' * 64},
             'source': {'source_entries': {'backend/scripts/runtime/dispatcher.sql': {'sha256': 'e' * 64}}}}
         qualification = Mock()
+        checkpoint_schema = Mock()
         qualification.publication.return_value = (receipt, candidate)
         with patch.object(m.release, 'verify_checkout'), patch.object(m.d.probe, 'validate_cluster'), \
              patch.object(m.release.u, 'deployment', side_effect=lambda name: {'image': expected[name]}), \
              patch.object(m.release.base, 'image_of', side_effect=lambda value: value['image']), \
              patch.object(m.release, 'verify_runtime_contract'), patch.object(m, 'module',
-                side_effect=lambda name, filename: qualification if filename == 'proposal-successor-runtime.py' else schema):
+                side_effect=lambda name, filename: qualification if filename == 'proposal-successor-runtime.py' else checkpoint_schema if filename == 'proposal-checkpoint-schema.py' else schema):
             database = object()
             m.verify_runtime(database)
-            schema.verify.assert_called_once_with(database)
+            checkpoint_schema.verify.assert_called_once_with(database)
+            schema.verify.assert_not_called()
             schema.latency.source_sha256.return_value = 'd' * 64
             with self.assertRaisesRegex(RuntimeError, 'POLL_SOURCE_CHANGED'):
                 m.verify_runtime(database)

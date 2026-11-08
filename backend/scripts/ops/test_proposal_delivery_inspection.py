@@ -1,4 +1,7 @@
+import base64
 import copy
+import gzip
+import hashlib
 import importlib.util
 import json
 from pathlib import Path
@@ -120,6 +123,21 @@ console.log(JSON.stringify({normal,prospective,blocked,refused}));await d.close(
         self.assertIsNone(prospective['prospective_context']['plan']['error_code'])
         self.assertEqual(len(prospective['prospective_context']['accepted_receipts']),2)
         self.assertIn('FORBIDDEN_CANDIDATE',json.dumps(prospective['prospective_context']))
+        # Exceed the previous raw1.25MB threshold without omitting any field.
+        prospective['prospective_context']['private_large']='source prose '*140000
+        expected=copy.deepcopy(prospective['prospective_context'])
+        packed=m.validate(m.pack_context(prospective),SELECTION,include_context=True,packed=True)
+        envelope=packed['prospective_context'];decoded=gzip.decompress(base64.b64decode(envelope['data'],validate=True))
+        self.assertEqual(json.loads(decoded),expected)
+        self.assertGreater(envelope['raw_bytes'],1_250_000)
+        self.assertEqual(len(decoded),envelope['raw_bytes'])
+        self.assertEqual(hashlib.sha256(decoded).hexdigest(),envelope['raw_sha256'])
+        self.assertLess(len(json.dumps(packed).encode()),m.MAX_BYTES)
+        for field in ('raw_bytes','raw_sha256'):
+            bad=copy.deepcopy(packed)
+            bad['prospective_context'][field]=1 if field=='raw_bytes' else '0'*64
+            with self.assertRaises(ValueError):m.validate(bad,SELECTION,include_context=True,packed=True)
+
         blocked=m.validate(values['blocked'],SELECTION,include_context=True)
         self.assertEqual(blocked['context_status'],'source_guard_failed');self.assertIsNone(blocked['prospective_context'])
         for change in ('extra','selection','count'):

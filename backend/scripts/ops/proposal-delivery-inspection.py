@@ -5,18 +5,22 @@ The default report contains identifiers, counts and booleans only. Optional
 prospective context uses the exact existing SELECT projection with decoded
 saved references; it neither leases work nor accepts or changes any result.
 """
+import base64
+import gzip
 import hashlib
 import json
 from pathlib import Path
 import re
 import uuid
+import zlib
 
 ROOT=Path(__file__).resolve().parents[3]
 KIND='private_generated_delivery_receipt_inspection'
 LIMIT=128
 MAX_CHECKPOINT=262_144
 MAX_BYTES=1_750_000
-CONTEXT_BYTES=1_250_000
+CONTEXT_BYTES=8*1024*1024
+SQL_READ_BYTES=10*1024*1024
 SOURCE=ROOT/'backend/supabase/migrations/20261104143632_generated_review_delivery.sql'
 SOURCE_SHA256='8da4bdcbd534b04f62d157bbd49d2aa2a5e0224cdfd7fdd19f18682653dfeeaa'
 BOOL_FIELDS=('graph_accepted','accepted_found','accepted_matches_output','accepted_hash_bound','checkpoint_found',
@@ -181,7 +185,7 @@ ROLLBACK;
 """
 
 
-def validate(value,selection,*,include_context=False):
+def validate(value,selection,*,include_context=False,packed=False):
     require(isinstance(value,dict) and value.get('version')==1 and type(value['version']) is int and value.get('kind')==KIND
         and value.get('selection')==selection and value.get('status') in ('available','not_found'))
     base={'version','kind','selection','status','plan_id','version_id','prepare_job_id','stored_plan_status','stored_plan_stage','stored_plan_error_code'}
@@ -210,12 +214,38 @@ def validate(value,selection,*,include_context=False):
         and sum(value['task_counts'].values())==value['completed_steps']
         and isinstance(value['receipt_counts'],dict) and set(value['receipt_counts'])==set(BOOL_FIELDS)
         and all(type(v) is int and v==sum(row[k] for row in value['steps']) for k,v in value['receipt_counts'].items()))
-    require(value['context_status'] in (('not_requested',) if not include_context else ('available','oversized','source_guard_failed')))
+    require(value['context_status'] in (('not_requested',) if not include_context else ('available','oversized','compressed_oversized','source_guard_failed')))
     if value['context_status']=='available':
-        require(isinstance(value['prospective_context'],dict) and value['source_resolution_current'] and not value['truncated']
-            and len(json.dumps(value['prospective_context'],ensure_ascii=False).encode())<=CONTEXT_BYTES)
+        require(isinstance(value['prospective_context'],dict) and value['source_resolution_current'] and not value['truncated'])
+        if packed:
+            envelope=value['prospective_context']
+            require(set(envelope)=={'encoding','raw_bytes','raw_sha256','data'} and envelope['encoding']=='gzip+base64'
+                and type(envelope['raw_bytes']) is int and 0<envelope['raw_bytes']<=CONTEXT_BYTES
+                and isinstance(envelope['raw_sha256'],str) and re.fullmatch('[a-f0-9]{64}',envelope['raw_sha256'])
+                and isinstance(envelope['data'],str) and len(envelope['data'])<=MAX_BYTES)
+            compressed=base64.b64decode(envelope['data'],validate=True)
+            require(base64.b64encode(compressed).decode('ascii')==envelope['data'])
+            decoder=zlib.decompressobj(16+zlib.MAX_WBITS)
+            raw=decoder.decompress(compressed,CONTEXT_BYTES+1)
+            require(decoder.eof and not decoder.unconsumed_tail and not decoder.unused_data
+                and len(raw)==envelope['raw_bytes'] and hashlib.sha256(raw).hexdigest()==envelope['raw_sha256'])
+        else:
+            require(len(json.dumps(value['prospective_context'],ensure_ascii=False,separators=(',',':'),allow_nan=False).encode())<=CONTEXT_BYTES)
     else:require(value['prospective_context'] is None)
-    require(len(json.dumps(value,ensure_ascii=False).encode())<=MAX_BYTES)
+    require(len(json.dumps(value,ensure_ascii=False,separators=(',',':'),allow_nan=False).encode())<=(MAX_BYTES if packed else SQL_READ_BYTES))
+    return value
+
+
+def pack_context(value):
+    # Lossless transport of every projected field; the hash binds decoded UTF-8 JSON.
+    if value.get('context_status')=='available':
+        raw=json.dumps(value['prospective_context'],ensure_ascii=False,separators=(',',':'),allow_nan=False).encode('utf-8')
+        require(len(raw)<=CONTEXT_BYTES)
+        value['prospective_context']={'encoding':'gzip+base64','raw_bytes':len(raw),
+            'raw_sha256':hashlib.sha256(raw).hexdigest(),
+            'data':base64.b64encode(gzip.compress(raw,compresslevel=6,mtime=0)).decode('ascii')}
+        if len(json.dumps(value,ensure_ascii=False,separators=(',',':'),allow_nan=False).encode())>MAX_BYTES:
+            value['prospective_context']=None;value['context_status']='compressed_oversized'
     return value
 
 
@@ -223,6 +253,7 @@ def capture(database,selection,request,proof,*,include_context=False):
     request.validate_selection(selection)
     try:
         request.validate_proof(proof)
-        return validate(request.read(database,sql(selection,proof,include_context=include_context),max_bytes=MAX_BYTES),selection,include_context=include_context)
+        value=validate(request.read(database,sql(selection,proof,include_context=include_context),max_bytes=SQL_READ_BYTES),selection,include_context=include_context)
+        return validate(pack_context(value),selection,include_context=include_context,packed=True)
     except Exception:
         return {'version':1,'kind':KIND,'status':'unavailable','selection':selection}

@@ -112,7 +112,8 @@ def verify_runtime(database=None):
             'sha256': schema.parent.source_sha256()}, 'PENDING_POLL_SOURCE_CHANGED')
         require(receipt['successor_migration'] == {'path': str(schema.SOURCE.relative_to(schema.ROOT)),
             'sha256': schema.source_sha256()}, 'SUCCESSOR_SOURCE_CHANGED')
-        schema.verify(database)
+        checkpoint_schema = module('trial_checkpoint_schema', 'proposal-checkpoint-schema.py')
+        checkpoint_schema.verify(database)
 
 
 def session_path():

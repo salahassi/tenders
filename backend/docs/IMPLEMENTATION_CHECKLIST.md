@@ -1,5 +1,23 @@
 # Implementation status and continuation plan
 
+## November 8 — bounded full context transport and current schema inspection
+
+Read-only context capture42529513919 returned an explicit oversized status at
+the original1.25MB limit; it sent no command and retained no partial context.
+The private diagnostic now losslessly packs the complete projected context as
+gzip/base64 with exact UTF-8 byte length and SHA256. Raw context is capped at8MiB,
+SQL read at10MiB, the packed diagnostic at1.75MB and the existing whole encrypted
+report at2MiB. The10-second SQL bound is unchanged; oversized raw or packed
+content remains explicit. No context field or source/actor/version guard is
+removed. Decompression validation enforces the cap, complete stream, canonical
+base64 and matching length/hash.
+
+The trial runner now verifies the deployed seventh-child schema while retaining
+all original immutable successor image/source checks. Eighteen focused inspector
+and runner tests pass, including lossless transport above the old limit and
+hash/length rejection. Full private capture and offline actual-content assessment
+are the next read-only checks; no retry or model call occurs in this change.
+
 ## November 8 — checkpoint decoder seventh child deployed
 
 PR56 merged as `fab1bc17`; Pages42530244931 passed. Release42530253700 from
