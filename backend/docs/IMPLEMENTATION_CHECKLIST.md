@@ -1,5 +1,34 @@
 # Implementation status and continuation plan
 
+## November 8 — latency retry reached drafting but still timed out
+
+The actual canonical `generation.retry` in run42512021556 was accepted at
+18:51:38.538224 UTC with its unchanged 600-second clock and the same saved plan.
+Both previously pending analyses recovered without repeating their extraction;
+all twelve analyses and planning completed. Healthy poll intervals now follow
+approximately 5, 11, 16 and 31 seconds, proving the deployed backoff behavior.
+However, two fresh analysis verifications first failed with
+`EVIDENCE_REFERENCE_INVALID` after about 67–68 seconds on gpt-6-luna, then
+succeeded after another 34–37 seconds on gpt-6.1-sol. This remains a material
+verification bottleneck even with smaller evidence transport.
+
+At the drafting observation, seventeen units were scheduled but only two were
+active. The current report alone does not prove the configured concurrency
+value; the Owner contract supports one to four. First draft writer times were
+21.10 and 36.62 seconds. Terminal observation42512878038 proves another
+`PROPOSAL_ISSUANCE_TIMEOUT`: ten current-issuance jobs succeeded, sixteen stopped,
+and no complete file package was issued. Previous seven analysis successes are
+historical jobs, excluded from these issuance-scoped counts. Saved progress is
+retained. The [terminal receipt](evidence/proposal-latency-trial-timeout-20261108-42512878038.json)
+keeps deployment success separate from the still-open customer outcome.
+
+Read-only follow-up will inspect exact persisted validation diagnostics and the
+selected workspace's verification route/concurrency before any further request.
+The source also shows a missing immediate admission wake: an idle durable outbox
+can wait for its 60-second recovery tick. Its exact contribution to the measured
+36.39-second startup remains unproven without claim/outbox timestamps. No third
+paid request or provider setting change has been made for these findings.
+
 ## November 8 — latency correction deployed; saved-work trial started
 
 [Release 42511889721](https://github.com/salahassi/tenders/actions/runs/42511889721)
