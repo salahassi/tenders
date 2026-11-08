@@ -2,7 +2,7 @@ import { createApiHandler } from "../../supabase/functions/api/handler.ts";
 import { createWorkerHandler } from "../../supabase/functions/worker/handler.ts";
 import { createBrowserGateway } from "../../supabase/functions/_shared/browserGateway.ts";
 import { Backend, environment } from "../../supabase/functions/_shared/backend.ts";
-import { DurableScheduler, runScheduler } from "./scheduler.ts";
+import { DurableScheduler, runScheduler, runMaintenanceScheduler } from "./scheduler.ts";
 
 interface RuntimeDeno {
   env: { get(name: string): string | undefined };
@@ -26,7 +26,7 @@ if ((service === "worker" || service === "scheduler") && !env.workerSecret)
 const handlers = {
   api: () => createApiHandler(env),
   worker: () => createWorkerHandler(env, (host) => runtime.resolveDns(host, "A"),
-    () => new Backend(env, 130000)),
+    () => new Backend(env, 130000), undefined, undefined, { persistent: true }),
   "source-browser": () => createBrowserGateway(env),
   scheduler: () => (_request: Request) => new Response(null, { status: 404 }),
 };
@@ -44,10 +44,15 @@ const server = runtime.serve({ hostname: "0.0.0.0", port,
     if (draining) return new Response(null, { status: 503 });
     return handler(request);
   });
-const scheduler = service === "scheduler" && get("APP_SCHEDULER_ENABLED") === "true"
-  ? runScheduler(new DurableScheduler({ gatewayUrl: env.url, serviceKey: env.serviceKey,
-      workerSecret: env.workerSecret, workerUrl: get("APP_WORKER_URL") || "http://worker:8080/functions/v1/worker" }),
-    stopping.signal, (code) => console.warn(code))
+const dispatcher = service === "scheduler" && get("APP_SCHEDULER_ENABLED") === "true"
+  ? new DurableScheduler({ gatewayUrl: env.url, serviceKey: env.serviceKey,
+      workerSecret: env.workerSecret, workerUrl: get("APP_WORKER_URL") || "http://worker:8080/functions/v1/worker" })
+  : null;
+const scheduler = dispatcher
+  ? Promise.all([
+      runScheduler(dispatcher, stopping.signal, (code) => console.warn(code)),
+      runMaintenanceScheduler(dispatcher, stopping.signal, (code) => console.warn(code)),
+    ])
   : Promise.resolve();
 const stop = () => {
   if (draining) return;

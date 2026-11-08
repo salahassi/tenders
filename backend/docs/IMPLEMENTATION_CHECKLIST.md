@@ -1,5 +1,29 @@
 # Implementation status and continuation plan
 
+## November 8 — remove synchronous proposal dispatch waits
+
+Implementation separates persistent worker foreground processing from awaited
+housekeeping. The foreground returns a validated future-poll hint without
+sleeping; the scheduler records that hint in a durable outbox, immediately
+continues after claimed work, and retains the scheduled wake through empty
+follow-ups or process restart. Maintenance has an independent authenticated
+endpoint, durable lease and cadence. Existing business admission, job leases,
+provider request identities, issuance deadline and Edge invocation behavior
+remain authoritative.
+
+Focused worker controls pass 64 tests and scheduler controls pass 24 tests.
+The actual dispatcher SQL passes isolated PostgreSQL tests for due-wake races,
+expired leases, multiple independent future timers, maintenance and role restrictions.
+Both groups pass backend typecheck. Complete package validation, exact-image
+native qualification and production rollout are being collected; none is
+represented by these focused results. Production schema application must precede
+worker readiness and scheduler replacement; rollback restores scheduler first.
+The schema change is additive and legacy dispatch acknowledgement is retained.
+
+This correction addresses the reproduced synchronous wait and maintenance
+coupling. It does not establish a new full-proposal completion time. No new
+customer generation or paid-provider evaluation is started for these tests.
+
 ## November 8 — read-only diagnosis of the ten-minute proposal failure
 
 The follow-up diagnostic adds a timing history bound to the exact selected plan,

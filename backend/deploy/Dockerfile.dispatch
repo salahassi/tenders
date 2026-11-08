@@ -1,0 +1,11 @@
+# Scoped worker/scheduler candidate. Existing API and renderer qualification is
+# retained for their deployed images; this candidate requires its own native gate.
+FROM registry.digitalocean.com/tenderdesk-a6093a76/runtime@sha256:f573e991e622c982e82a4a3b4e6dc6f144e87586ba0f5dd0b3d05381b30dbd6a
+USER root
+COPY --chown=deno:deno backend/supabase/functions/ /app/backend/supabase/functions/
+COPY --chown=deno:deno backend/scripts/runtime/ /app/backend/scripts/runtime/
+COPY --chown=deno:deno frontend/src/lib/renderDocx.ts /app/frontend/src/lib/renderDocx.ts
+COPY --chown=deno:deno frontend/src/lib/docxTableStream.ts /app/frontend/src/lib/docxTableStream.ts
+COPY --chown=deno:deno frontend/public/fonts/ /app/frontend/public/fonts/
+RUN --network=none deno cache --cached-only --frozen --config=supabase/functions/deno.json scripts/runtime/main.ts supabase/functions/_shared/deliveryRender.process.ts supabase/functions/_shared/deliveryVerify.process.ts && chmod -R a+rX /deno-dir
+USER deno

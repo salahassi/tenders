@@ -16,6 +16,7 @@ export async function wakeReadyQueue(
     sleep: (ms: number) =>
       new Promise<void>((resolve) => setTimeout(resolve, ms)),
   },
+  options: { waitForRetry?: boolean } = {},
 ) {
   const args = { job_id: job.id, lease: job.lease_token };
   const result = await backend.internal("wake_backend_queue_status_v5", args);
@@ -29,10 +30,13 @@ export async function wakeReadyQueue(
     !Number.isInteger(delay) ||
     delay < 1 ||
     delay > (remotePoll ? 60000 : 10000) ||
-    (remotePoll && (!Number.isSafeInteger(revision) || revision < 1)) ||
-    !(remaining() > delay + POST_WAKE_MARGIN_MS)
+    (remotePoll && (!Number.isSafeInteger(revision) || revision < 1))
   )
     return;
+  // A persistent dispatcher schedules the future turn durably. Holding its
+  // synchronous worker response here prevents other ready jobs from running.
+  if (options.waitForRetry === false) return delay as number;
+  if (!(remaining() > delay + POST_WAKE_MARGIN_MS)) return;
   await timing.sleep(delay);
   // A suspended invocation may resume later than requested. Let cron recover
   // if the remaining budget no longer leaves time for the second RPC.

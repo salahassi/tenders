@@ -22,7 +22,14 @@ export function createWorkerHandler(
   factory = () => new Backend(env),
   fetcher: typeof fetch = fetch,
   background?: (task: Promise<void>) => void,
+  options: { persistent?: boolean } = {},
 ) {
+  if (options.persistent && background)
+    throw new Error("PERSISTENT_WORKER_REQUIRES_AWAITED_PROCESSING");
+  // A scheduler HTTP timeout cannot cancel an in-flight database/storage call.
+  // Retried requests await that same run on this worker; existing database
+  // operation leases still own coordination between separate worker processes.
+  let maintenanceInFlight: Promise<MaintenanceOperation[]> | undefined;
   return async (request: Request): Promise<Response> => {
     const response = (data: unknown, status = 200) =>
       new Response(JSON.stringify(data), {
@@ -34,6 +41,10 @@ export function createWorkerHandler(
       });
     if (request.method !== "POST")
       return response({ error: "METHOD_NOT_ALLOWED" }, 405);
+    const maintenanceRequest =
+      new URL(request.url).pathname === "/functions/v1/worker/maintenance";
+    if (maintenanceRequest && !options.persistent)
+      return response({ error: "NOT_FOUND" }, 404);
     const supplied = request.headers.get("x-worker-secret") || "";
     if (!supplied) return response({ error: "UNAUTHORIZED" }, 401);
     try {
@@ -42,6 +53,26 @@ export function createWorkerHandler(
         ? await secretMatches(supplied, env.workerSecret)
         : await backend.internal("verify_dispatcher_secret", { supplied });
       if (!allowed) return response({ error: "UNAUTHORIZED" }, 401);
+      // The persistent scheduler awaits this separate lane independently of
+      // business dispatch. Never detach cleanup or claim a generation here.
+      if (maintenanceRequest) {
+        const maintenance = (maintenanceInFlight ??= runWorkerMaintenance(
+          backend,
+          env,
+          fetcher,
+        ));
+        let pending: MaintenanceOperation[];
+        try {
+          pending = await maintenance;
+        } finally {
+          if (maintenanceInFlight === maintenance)
+            maintenanceInFlight = undefined;
+        }
+        return response({
+          data: { maintenance: true },
+          ...(pending.length ? { maintenance_pending: pending } : {}),
+        });
+      }
       const process = async () => {
         let maintenancePending: MaintenanceOperation[] = [];
         let maintenanceRan = false;
@@ -71,6 +102,7 @@ export function createWorkerHandler(
         // time and exclusive lease checks; maintenance never replaces them.
         let job = await backend.claim();
         if (!job) {
+          if (options.persistent) return response({ data: { claimed: false } });
           await maintain();
           // Assessment scheduling/recovery can make work eligible in this tick.
           // One normal re-claim preserves that behavior without draining a loop.
@@ -78,6 +110,7 @@ export function createWorkerHandler(
           if (!job)
             return withMaintenance(response({ data: { claimed: false } }));
         }
+        const claimedJob = job;
         const processClaimed = async () => {
           if (job.type === "prepare_generated_delivery") {
             const saved = await processGeneratedDelivery(backend, job);
@@ -213,12 +246,33 @@ export function createWorkerHandler(
           job = local;
           await processClaimed();
         }
+        let queueRetryAfter: number | undefined;
         try {
-          await wakeReadyQueue(backend, job);
+          // Only the original claim can have accepted a remote model request.
+          // Later local-only work must not replace its future poll identity.
+          queueRetryAfter = await wakeReadyQueue(
+            backend,
+            options.persistent ? claimedJob : job,
+            undefined,
+            { waitForRetry: !options.persistent },
+          );
         } catch {
           // Completion is already durable. Cron remains the fallback when a
           // wake cannot be queued; never turn successful work into a retry.
           console.warn("queue_wakeup_pending");
+        }
+        if (options.persistent) {
+          const body = await result.json();
+          return response(
+            {
+              ...body,
+              data: { ...body.data, claimed: true },
+              ...(queueRetryAfter === undefined
+                ? {}
+                : { queue_retry_after_ms: queueRetryAfter }),
+            },
+            result.status,
+          );
         }
         return withMaintenance(result);
       };
