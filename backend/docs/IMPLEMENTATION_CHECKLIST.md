@@ -36,12 +36,35 @@ calls. This continuation began with 11 remaining sections, compared with 16 in t
 prior trial, and the observation windows differ. Faster drafting is established;
 fresh end-to-end completion and delivery of this package remain open.
 
-## November 8 — separate fifth continuation pending
+## November 8 — fifth continuation timed out; sixth retains its saved verification
 
-Canonical saved-work continuation 42520365005 has started from the same
+Canonical saved-work continuation 42520365005 started from the same
 `bcbd9ae` source with one incomplete commercial job. It uses the retained work
 without an application change or data reset. Its outcome is separate from the
-fourth-trial timeout above and remains pending.
+fourth-trial timeout above. Terminal observation 42521295257 confirms another
+issuance timeout after two saved content repairs and seven newly accepted model
+requests. The final verification was still pending near its deadline. No package
+was issued. Sixth continuation 42521449714 retains the corrected content and
+verification frontier; its separate result remains pending.
+
+## November 8 — optional read-only runtime resource snapshot
+
+Inspection and observation reports can retain fixed worker/REST/gateway pod
+readiness and restart counters, optional Kubernetes CPU/memory metrics and their
+sample window, plus worker cgroup-v2 CPU/throttling and memory-event counters.
+The projection retains only named resource-file counters and metadata. Full pod
+specifications are transient input; environment, credentials, logs, process
+identities and customer content are never retained or output. Pod
+identities are hashed for comparison. Optional-source failure returns a fixed
+unavailable status without changing observation or deployment behavior.
+
+One capture permits at most 7.5 additional seconds with two-second command
+bounds, retaining the existing 70-second cleanup/report reserve and 170-second
+absolute run deadline. It runs only in read-only inspect/observe modes, never
+start, download or settings operations. Local privacy, malformed-input,
+cardinality and budget controls plus trial-runner tests pass. No hosted capture
+was performed for this change. A metrics window and lifetime cgroup counters do
+not by themselves prove which operation caused a historical delay.
 
 ## November 8 — accepted-poll correction deployed
 

@@ -37,6 +37,7 @@ request = module('trial_one_request', 'proposal-trial-request.py')
 observe = module('trial_one_observation', 'proposal-trial-observe.py')
 download = module('trial_existing_download', 'proposal-trial-download.py')
 settings_repair = module('trial_settings_repair', 'proposal-settings-repair.py')
+runtime_snapshot = module('trial_runtime_snapshot', 'proposal-runtime-snapshot.py')
 d = release.d
 transfer = auth.transfer
 BUCKET = auth.BUCKET
@@ -255,6 +256,7 @@ def run(args):
             STAGE = 'read_only_admission_inspection'
             report.update(selection=incoming, proof=request.inspect(database, incoming),
                 admission_diagnostic=request.diagnostic(database, incoming))
+            report['runtime_snapshot'] = runtime_snapshot.capture(d, release.remaining_run_seconds)
             raise InspectionComplete()
         if args.mode == 'start':
             STAGE = 'fresh_target_inspection'
@@ -333,6 +335,8 @@ def run(args):
             client, config, session = open_session(target['actor_id'], target['workspace_id'])
             STAGE = 'authenticated_existing_files'
             report['download'] = download.download(client, config, session, sample)
+        elif args.mode == 'observe':
+            report['runtime_snapshot'] = runtime_snapshot.capture(d, release.remaining_run_seconds)
     except InspectionComplete:
         pass
     except (Exception, release.DeadlineExceeded) as error:

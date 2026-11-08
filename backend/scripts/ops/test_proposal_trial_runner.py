@@ -36,6 +36,8 @@ class TrialRunnerTests(unittest.TestCase):
         self.factory = self.stack.enter_context(patch.object(m.release.base.inventory.observer, 'Client', return_value=self.database))
         self.save = self.stack.enter_context(patch.object(m.release.base, 'save_client'))
         self.cleanup = self.stack.enter_context(patch.object(m, 'cleanup'))
+        self.snapshot = self.stack.enter_context(patch.object(m.runtime_snapshot, 'capture', return_value={
+            'version': 1, 'kind': 'proposal_runtime_snapshot', 'status': 'skipped_budget'}))
         self.inspect = self.stack.enter_context(patch.object(m.request, 'inspect', return_value={'actor_id': 'synthetic-actor'}))
         self.prepared = {'mode': 'send', 'prepared_object': 'diagnostics/synthetic.prepared.bundle'}
         self.prepare = self.stack.enter_context(patch.object(m.request, 'prepare', return_value=self.prepared))
@@ -97,6 +99,7 @@ class TrialRunnerTests(unittest.TestCase):
         reconciled = m.run(self.args('observe', activate=False))
         self.verify.assert_called_once_with(self.database, self.prepared)
         self.sample.assert_called_once_with(self.database, self.target, None)
+        self.snapshot.assert_called_once_with(m.d, m.release.remaining_run_seconds)
         self.send.assert_not_called()
         self.session.assert_not_called()
         self.assertFalse(reconciled['send_attempted'])
@@ -111,6 +114,7 @@ class TrialRunnerTests(unittest.TestCase):
         self.session.assert_not_called()
         self.persist.assert_not_called()
         self.sample.assert_called_once_with(self.database, self.target, None)
+        self.snapshot.assert_not_called()
 
     def test_expected_retry_blocks_fresh_generation_before_session_or_intent(self):
         args = self.args()
@@ -195,6 +199,7 @@ class TrialRunnerTests(unittest.TestCase):
         self.session.assert_not_called()
         self.download.assert_not_called()
         self.send.assert_not_called()
+        self.snapshot.assert_not_called()
 
     def test_inspect_retains_private_admission_evidence_without_command_or_session(self):
         with patch.object(m.request, 'diagnostic', return_value={'reserved': 0, 'unknown': 2}, create=True) as diagnostic:
@@ -202,6 +207,8 @@ class TrialRunnerTests(unittest.TestCase):
         self.assertTrue(result['cleanup_verified'])
         self.assertFalse(result['send_attempted'])
         self.assertEqual(self.reports[-1]['admission_diagnostic'], {'reserved': 0, 'unknown': 2})
+        self.assertEqual(self.reports[-1]['runtime_snapshot']['kind'], 'proposal_runtime_snapshot')
+        self.snapshot.assert_called_once_with(m.d, m.release.remaining_run_seconds)
         diagnostic.assert_called_once_with(self.database, self.incoming)
         self.prepare.assert_not_called()
         self.send.assert_not_called()
