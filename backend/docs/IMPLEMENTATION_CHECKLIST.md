@@ -1,5 +1,22 @@
 # Implementation status and continuation plan
 
+## November 8 — private commercial candidate/verification inspection
+
+Inspect mode captures the selected opportunity's latest proposal plan, latest
+commercial job and exactly that job's checkpoint-pinned graph thread. At most
+three candidate versions, three verification reports and three rejected reports
+retain exact generated text, report quotations, numeric diagnostics and phase
+keys for attribution. This authorized private evidence contains customer content;
+it is not metadata-only. Producer/credential metadata, frozen context and complete
+source files are excluded, and the public summary remains unchanged.
+
+The read-only query has ten-second statement and one-second lock bounds. SQL
+reserves 512 KiB for existing metadata and returns an explicit oversized status
+above 1.5 MiB; the complete encrypted inspection envelope is capped at 2 MiB
+before persistence. Three local PostgreSQL/privacy/bound controls and fifteen
+runner tests pass. No product change, provider call, live inspection or validation
+relaxation was performed. Numeric rejections alone do not prove a validator defect.
+
 ## November 8 — fourth trial accelerated drafting but timed out in commercial repair
 
 Canonical saved-work trial 42519236607 ran from `bcbd9ae` against deployment

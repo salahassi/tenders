@@ -38,6 +38,7 @@ observe = module('trial_one_observation', 'proposal-trial-observe.py')
 download = module('trial_existing_download', 'proposal-trial-download.py')
 settings_repair = module('trial_settings_repair', 'proposal-settings-repair.py')
 runtime_snapshot = module('trial_runtime_snapshot', 'proposal-runtime-snapshot.py')
+commercial_inspection = module('trial_commercial_inspection', 'proposal-commercial-inspection.py')
 d = release.d
 transfer = auth.transfer
 BUCKET = auth.BUCKET
@@ -256,6 +257,7 @@ def run(args):
             STAGE = 'read_only_admission_inspection'
             report.update(selection=incoming, proof=request.inspect(database, incoming),
                 admission_diagnostic=request.diagnostic(database, incoming))
+            report['commercial_snapshot'] = commercial_inspection.capture(database, incoming, request)
             report['runtime_snapshot'] = runtime_snapshot.capture(d, release.remaining_run_seconds)
             raise InspectionComplete()
         if args.mode == 'start':
@@ -357,6 +359,8 @@ def run(args):
     signal.alarm(min(25, remaining - 3))
     try:
         path = Path(os.environ['DOKS_WORKDIR']) / 'proposal-trial-report.json'
+        if args.mode == 'inspect':
+            commercial_inspection.fit_report(report)
         payload = encoded(report)
         require(not any(secret.encode() in payload for secret in PRIVATE_VALUES), 'REPORT_CREDENTIAL_REJECTED')
         transfer.write_private(path, payload)

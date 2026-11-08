@@ -38,6 +38,8 @@ class TrialRunnerTests(unittest.TestCase):
         self.cleanup = self.stack.enter_context(patch.object(m, 'cleanup'))
         self.snapshot = self.stack.enter_context(patch.object(m.runtime_snapshot, 'capture', return_value={
             'version': 1, 'kind': 'proposal_runtime_snapshot', 'status': 'skipped_budget'}))
+        self.commercial = self.stack.enter_context(patch.object(m.commercial_inspection, 'capture', return_value={
+            'version': 1, 'kind': 'private_commercial_inspection', 'status': 'not_found'}))
         self.inspect = self.stack.enter_context(patch.object(m.request, 'inspect', return_value={'actor_id': 'synthetic-actor'}))
         self.prepared = {'mode': 'send', 'prepared_object': 'diagnostics/synthetic.prepared.bundle'}
         self.prepare = self.stack.enter_context(patch.object(m.request, 'prepare', return_value=self.prepared))
@@ -209,6 +211,9 @@ class TrialRunnerTests(unittest.TestCase):
         self.assertEqual(self.reports[-1]['admission_diagnostic'], {'reserved': 0, 'unknown': 2})
         self.assertEqual(self.reports[-1]['runtime_snapshot']['kind'], 'proposal_runtime_snapshot')
         self.snapshot.assert_called_once_with(m.d, m.release.remaining_run_seconds)
+        self.assertEqual(self.reports[-1]['commercial_snapshot']['kind'], 'private_commercial_inspection')
+        self.assertNotIn('commercial_snapshot', result)
+        self.commercial.assert_called_once_with(self.database, self.incoming, m.request)
         diagnostic.assert_called_once_with(self.database, self.incoming)
         self.prepare.assert_not_called()
         self.send.assert_not_called()
