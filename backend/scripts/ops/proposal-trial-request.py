@@ -1,0 +1,307 @@
+#!/usr/bin/env python3
+"""One selected proposal command through the same authenticated API as the UI.
+
+The coordinator owns activation, genuine Owner authentication, encrypted durable
+write/readback, runtime checks and cleanup. This module never opens a session,
+changes providers, cancels saved work, retries HTTP, or exports customer content.
+"""
+from __future__ import annotations
+
+from datetime import datetime, timezone
+import hashlib
+import hmac
+import importlib.util
+import json
+from pathlib import Path
+import re
+import sys
+import uuid
+
+HERE = Path(__file__).resolve().parent
+SPEC = importlib.util.spec_from_file_location('trial_request_auth', HERE / 'proposal-export-acceptance.py')
+auth = importlib.util.module_from_spec(SPEC)
+sys.modules[SPEC.name] = auth
+SPEC.loader.exec_module(auth)
+d = auth.access.d
+REASON = 'User requested continuation of the saved work.'
+OPERATIONS = {'proposal.generate', 'generation.retry'}
+TARGET_KEYS = {'workspace_id', 'opportunity_id', 'proposal_id', 'plan_id', 'issuance_request_id', 'actor_id', 'operation'}
+GUARDS = {'database', 'selected_opportunity', 'unique_active_owner', 'no_restore', 'proposal_identity',
+          'no_other_active_plan', 'no_selected_leases', 'usage_ready'}
+BASE_GUARDS = {'database', 'selected_opportunity', 'unique_active_owner', 'no_restore', 'proposal_identity'}
+PREFIX = "BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY;\nSET LOCAL ROLE tdp_app_owner;\nSET LOCAL statement_timeout='20s';\nSET LOCAL lock_timeout='5s';\n"
+NAMESPACE = uuid.UUID('d8a3b36f-eaad-528d-a4a6-f58a7b612714')
+_ATTEMPTED = set()
+
+
+class TrialRequestError(Exception):
+    pass
+
+
+def require(value, code='PROPOSAL_TRIAL_REQUEST_INVALID'):
+    if not value:
+        raise TrialRequestError(code)
+
+
+def encoded(value):
+    return json.dumps(value, ensure_ascii=False, separators=(',', ':'), allow_nan=False).encode('utf-8')
+
+
+def digest(value):
+    return hashlib.sha256(encoded(value)).hexdigest()
+
+
+def uuid_value(value):
+    try:
+        return isinstance(value, str) and str(uuid.UUID(value)) == value
+    except (ValueError, TypeError, AttributeError):
+        return False
+
+
+def revision(value):
+    return type(value) is int and 0 <= value <= 9007199254740991
+
+
+def validate_selection(value):
+    require(isinstance(value, dict) and set(value) == {'version', 'workspace_id', 'opportunity_id'}
+            and type(value.get('version')) is int and value['version'] == 1
+            and all(uuid_value(value.get(k)) for k in ('workspace_id', 'opportunity_id'))
+            and value['workspace_id'] == auth.access.WORKSPACE, 'PROPOSAL_TRIAL_SELECTION_INVALID')
+    return value
+
+
+def inspection_sql(selection):
+    validate_selection(selection)
+    w, o = selection['workspace_id'], selection['opportunity_id']
+    return PREFIX + f"""
+WITH owners AS MATERIALIZED (
+ SELECT m.user_id FROM public.memberships m JOIN public.identity_allowlist a
+ ON a.workspace_id=m.workspace_id AND a.user_id=m.user_id
+ WHERE m.workspace_id='{w}' AND m.active AND m.role='Owner' AND a.status='active' AND a.role='Owner'
+), opportunity AS MATERIALIZED (
+ SELECT id,revision,archived,decision FROM public.opportunities WHERE workspace_id='{w}' AND id='{o}'
+), proposal AS MATERIALIZED (
+ SELECT id,revision,active_version_id FROM public.proposals WHERE workspace_id='{w}' AND opportunity_id='{o}'
+), plans AS MATERIALIZED (
+ SELECT * FROM public.generation_plans WHERE workspace_id='{w}' AND opportunity_id='{o}' AND kind='proposal'
+), latest AS MATERIALIZED (
+ SELECT * FROM plans ORDER BY created_at DESC,id DESC LIMIT 1
+), selected_jobs AS MATERIALIZED (
+ SELECT j.id,j.status,j.lease_token,j.lease_until FROM public.jobs j WHERE j.workspace_id='{w}' AND
+ (j.entity_id IN (SELECT id FROM plans) OR j.checkpoint->>'issuance_request_id' IN
+  (SELECT r.id::text FROM public.proposal_issuance_requests r JOIN plans p ON r.workspace_id=p.workspace_id AND r.plan_id=p.id))
+)
+SELECT jsonb_build_object('version',1,'kind','proposal_trial_request_proof','observed_at',now(),
+ 'selection',jsonb_build_object('version',1,'workspace_id','{w}','opportunity_id','{o}'),
+ 'actor_id',(SELECT user_id FROM owners ORDER BY user_id LIMIT 1),
+ 'opportunity',(SELECT jsonb_build_object('id',id,'revision',revision) FROM opportunity),
+ 'proposal',(SELECT jsonb_build_object('id',id,'revision',revision,'active_version_id',active_version_id) FROM proposal LIMIT 1),
+ 'workspace_evidence_revision',(SELECT evidence_revision FROM public.workspaces WHERE id='{w}'),
+ 'plan',(SELECT jsonb_build_object('id',id,'proposal_id',proposal_id,'revision',revision,'status',status,'stage',stage,
+  'input_hash',input_hash,'evidence_revision',evidence_revision,'base_version_id',base_version_id,'issuance_request_id',issuance_request_id,
+  'current_contract',coalesce(frozen_context->'generated_delivery_version'='3'::jsonb AND frozen_context->'proposal_consistency_version'='1'::jsonb,false)) FROM latest),
+ 'latest_issuance',(SELECT jsonb_build_object('id',r.id,'plan_id',r.plan_id,'requested_by',r.requested_by,'operation',r.operation,
+  'outcome',r.outcome,'accepted_at',r.accepted_at,'deadline_at',r.deadline_at) FROM public.proposal_issuance_requests r
+  JOIN latest p ON p.workspace_id=r.workspace_id AND p.id=r.plan_id AND p.issuance_request_id=r.id),
+ 'guards',jsonb_build_object(
+  'database',current_database()='tenderdesk_app' AND (SELECT count(*) FROM public.workspaces)=1,
+  'selected_opportunity',(SELECT count(*) FROM opportunity WHERE NOT archived AND decision='shortlisted')=1,
+  'unique_active_owner',(SELECT count(*) FROM owners)=1,
+  'no_restore',NOT EXISTS(SELECT 1 FROM public.restore_sessions WHERE workspace_id='{w}' AND state IN ('staging','committing')),
+  'proposal_identity',(SELECT count(*) FROM proposal)<=1 AND NOT EXISTS(SELECT 1 FROM latest p WHERE NOT EXISTS(SELECT 1 FROM proposal s WHERE s.id=p.proposal_id)),
+  'no_other_active_plan',NOT EXISTS(SELECT 1 FROM plans WHERE status IN ('queued','running','blocked') AND id IS DISTINCT FROM (SELECT id FROM latest)),
+  'no_selected_leases',NOT EXISTS(SELECT 1 FROM selected_jobs WHERE status='running' OR lease_token IS NOT NULL OR lease_until>now()),
+  'usage_ready',NOT EXISTS(SELECT 1 FROM public.provider_usage WHERE workspace_id='{w}' AND (state='reserved' OR
+    (state='unknown' AND NOT EXISTS(SELECT 1 FROM public.model_routing WHERE workspace_id='{w}' AND enabled))))
+  ));
+ROLLBACK;
+"""
+
+
+def read(database, sql):
+    # Unlike the migration helper's five-minute subprocess bound, every read has
+    # a 35-second transport bound inside the coordinator's shorter trial budget.
+    raw = d.command(['exec', '-i', database.pod, '-n', d.NAMESPACE, '--', 'psql', '-X', '--quiet',
+                     '--no-align', '--tuples-only', '--set=ON_ERROR_STOP=1', '--dbname=' + d.DATABASE, '--file=-'],
+                    payload=sql, timeout=35)
+    require(len(raw.encode()) <= 64 * 1024, 'PROPOSAL_TRIAL_PROOF_TOO_LARGE')
+    try:
+        return json.loads(raw)
+    except (ValueError, TypeError):
+        raise TrialRequestError('PROPOSAL_TRIAL_PROOF_INVALID') from None
+
+
+def validate_proof(proof):
+    require(isinstance(proof, dict) and type(proof.get('version')) is int and proof['version'] == 1 and proof.get('kind') == 'proposal_trial_request_proof'
+            and isinstance(proof.get('guards'), dict) and set(proof['guards']) == GUARDS,
+            'PROPOSAL_TRIAL_PROOF_INVALID')
+    validate_selection(proof.get('selection'))
+    for name in sorted(BASE_GUARDS):
+        require(proof['guards'][name] is True, 'PROPOSAL_TRIAL_PRECONDITION_' + name.upper())
+    require(uuid_value(proof.get('actor_id')) and revision(proof.get('workspace_evidence_revision'))
+            and isinstance(proof.get('opportunity'), dict)
+            and proof['opportunity'].get('id') == proof['selection']['opportunity_id']
+            and revision(proof['opportunity'].get('revision')), 'PROPOSAL_TRIAL_PROOF_INVALID')
+    proposal, plan = proof.get('proposal'), proof.get('plan')
+    if proposal is not None:
+        require(isinstance(proposal, dict) and uuid_value(proposal.get('id')) and revision(proposal.get('revision'))
+                and (proposal.get('active_version_id') is None or uuid_value(proposal['active_version_id'])), 'PROPOSAL_TRIAL_PROOF_INVALID')
+    if plan is not None:
+        require(isinstance(plan, dict) and uuid_value(plan.get('id')) and proposal is not None
+                and plan.get('proposal_id') == proposal['id'] and revision(plan.get('revision'))
+                and revision(plan.get('evidence_revision')) and type(plan.get('current_contract')) is bool
+                and plan.get('status') in {'queued', 'running', 'blocked', 'completed', 'failed', 'canceled'}
+                and isinstance(plan.get('input_hash'), str) and re.fullmatch('[a-f0-9]{64}', plan['input_hash'])
+                and (plan.get('issuance_request_id') is None or uuid_value(plan['issuance_request_id'])), 'PROPOSAL_TRIAL_PROOF_INVALID')
+    issuance = proof.get('latest_issuance')
+    if issuance is not None:
+        require(isinstance(issuance, dict) and plan is not None and issuance.get('id') == plan['issuance_request_id']
+                and issuance.get('plan_id') == plan['id'] and uuid_value(issuance.get('requested_by'))
+                and issuance.get('operation') in OPERATIONS and issuance.get('outcome') in {'active', 'issued', 'failed'},
+                'PROPOSAL_TRIAL_PROOF_INVALID')
+    else:
+        require(plan is None or plan['issuance_request_id'] is None, 'PROPOSAL_TRIAL_ISSUANCE_MISSING')
+    return proof
+
+
+def inspect(database, selection):
+    result = validate_proof(read(database, inspection_sql(selection)))
+    require(result['selection'] == selection, 'PROPOSAL_TRIAL_SELECTION_MISMATCH')
+    return result
+
+
+def existing_target(proof):
+    plan, issuance = proof['plan'], proof['latest_issuance']
+    require(plan is not None and issuance is not None, 'PROPOSAL_TRIAL_EXISTING_ISSUANCE_REQUIRED')
+    return {k: proof['selection'][k] for k in ('workspace_id', 'opportunity_id')} | {
+        'proposal_id': plan['proposal_id'], 'plan_id': plan['id'], 'issuance_request_id': issuance['id'],
+        'actor_id': issuance['requested_by'], 'operation': issuance['operation']}
+
+
+def prepare(proof):
+    validate_proof(proof)
+    plan, proposal, issuance = proof.get('plan'), proof.get('proposal'), proof.get('latest_issuance')
+    envelope = {'version': 1, 'kind': 'proposal_trial_prepared_request', 'proof': proof}
+    if plan and (plan['status'] in {'queued', 'running', 'completed'} or issuance and issuance['outcome'] in {'active', 'issued'}):
+        require(proof['guards']['no_other_active_plan'] is True, 'PROPOSAL_TRIAL_PRECONDITION_NO_OTHER_ACTIVE_PLAN')
+        return envelope | {'mode': 'observe_existing', 'target': existing_target(proof)}
+    for name in sorted(GUARDS):
+        require(proof['guards'][name] is True, 'PROPOSAL_TRIAL_PRECONDITION_' + name.upper())
+    if plan and plan.get('stage') == 'completed' and issuance:
+        raise TrialRequestError('PROPOSAL_RENDER_RETRY_REQUIRED')
+    retry = bool(plan and plan['status'] in {'failed', 'canceled', 'blocked'} and plan['current_contract']
+                 and plan['evidence_revision'] == proof['workspace_evidence_revision']
+                 and plan.get('base_version_id') == proposal.get('active_version_id'))
+    if retry:
+        operation = 'generation.retry'
+        input_value = {'id': plan['id'], 'expected_revision': plan['revision'], 'reason': REASON}
+    else:
+        require(not plan or plan['status'] in {'failed', 'canceled'}, 'PROPOSAL_TRIAL_CURRENT_RETRY_REQUIRED')
+        require(not proposal or proposal['active_version_id'] is None, 'PROPOSAL_TRIAL_EXISTING_VERSION_REQUIRES_REVIEW')
+        operation = 'proposal.generate'
+        input_value = {'id': proof['selection']['opportunity_id'], 'expected_revision': proof['opportunity']['revision']}
+    body = {'commands': [{'operation': operation, 'input': input_value}]}
+    # No run ID, runtime image, timestamp or random new key can bypass a prior
+    # uncertain attempt for this target and observed predecessor revision.
+    identity = [proof['selection']['workspace_id'], proof['selection']['opportunity_id'], operation,
+                plan['id'] if plan else None, plan['revision'] if plan else None,
+                plan['input_hash'] if plan else None, input_value['expected_revision']]
+    identity_hash = digest(identity)
+    key = str(uuid.uuid5(NAMESPACE, identity_hash))
+    return envelope | {'mode': 'send', 'operation': operation, 'idempotency_key': key,
+        'command_key': hashlib.sha256(('batch:' + key + ':1').encode()).hexdigest(),
+        'prepared_object': 'diagnostics/proposal-trial-' + identity_hash + '.prepared.bundle',
+        'body': body, 'body_sha256': digest(body)}
+
+
+def validate_prepared(prepared):
+    require(isinstance(prepared, dict) and prepared == prepare(prepared.get('proof')), 'PROPOSAL_TRIAL_PREPARED_MISMATCH')
+    return prepared
+
+
+def recheck(database, selection, prepared):
+    validate_prepared(prepared)
+    fresh = prepare(inspect(database, selection))
+    before = dict(prepared['proof']); before.pop('observed_at', None)
+    after = dict(fresh['proof']); after.pop('observed_at', None)
+    require(before == after and {k: v for k, v in fresh.items() if k != 'proof'} ==
+            {k: v for k, v in prepared.items() if k != 'proof'}, 'PROPOSAL_TRIAL_CHANGED_BEFORE_SEND')
+    return fresh
+
+
+def send(client, session, prepared, persist, before_send=None):
+    validate_prepared(prepared)
+    require(prepared['mode'] == 'send', 'PROPOSAL_TRIAL_OBSERVE_ONLY')
+    require(isinstance(session, dict) and session.get('user', {}).get('id') == prepared['proof']['actor_id']
+            and isinstance(session.get('access_token'), str) and bool(session['access_token']), 'PROPOSAL_TRIAL_SESSION_MISMATCH')
+    require(callable(persist), 'PROPOSAL_TRIAL_PERSISTENCE_REQUIRED')
+    require(prepared['prepared_object'] not in _ATTEMPTED, 'PROPOSAL_TRIAL_ALREADY_ATTEMPTED')
+    expected = hashlib.sha256(encoded(prepared)).hexdigest()
+    persisted = persist(prepared)
+    require(isinstance(persisted, str) and hmac.compare_digest(expected, persisted), 'PROPOSAL_TRIAL_PERSISTENCE_READBACK_FAILED')
+    validate_prepared(prepared)
+    require(hmac.compare_digest(expected, hashlib.sha256(encoded(prepared)).hexdigest()), 'PROPOSAL_TRIAL_PREPARED_CHANGED')
+    if before_send is not None:
+        before_send()
+    require(hmac.compare_digest(expected, hashlib.sha256(encoded(prepared)).hexdigest()), 'PROPOSAL_TRIAL_PREPARED_CHANGED')
+    try:
+        age = (datetime.now(timezone.utc) - datetime.fromisoformat(prepared['proof']['observed_at'])).total_seconds()
+    except (ValueError, TypeError, KeyError):
+        raise TrialRequestError('PROPOSAL_TRIAL_PROOF_TIME_INVALID') from None
+    require(0 <= age <= 120, 'PROPOSAL_TRIAL_PROOF_STALE')
+    # Exactly one request. A network failure is unknown, never permission to
+    # prepare another key or submit a different command in this invocation.
+    _ATTEMPTED.add(prepared['prepared_object'])
+    response = client.request('/functions/v1/api/v1/commands', token=session['access_token'], method='POST',
+                              data=prepared['body'], headers={'Idempotency-Key': prepared['idempotency_key']})
+    error_code = None
+    try:
+        value = json.loads(response.body)
+        candidate = value.get('error', {}).get('code')
+        if isinstance(candidate, str) and re.fullmatch('[A-Z][A-Z0-9_]{0,119}', candidate):
+            error_code = candidate
+    except (ValueError, TypeError, AttributeError):
+        pass
+    return {'sent': True, 'http_status': response.status, 'accepted': 200 <= response.status < 300,
+            'unknown': response.status == 0, 'api_error_code': error_code,
+            'response_sha256': hashlib.sha256(response.body).hexdigest()}
+
+
+def acceptance_sql(prepared):
+    validate_prepared(prepared)
+    require(prepared['mode'] == 'send', 'PROPOSAL_TRIAL_OBSERVE_ONLY')
+    proof, operation = prepared['proof'], prepared['operation']
+    w, o = proof['selection']['workspace_id'], proof['selection']['opportunity_id']
+    plan_guard = ("AND p.id='" + proof['plan']['id'] + "' AND p.input_hash='" + proof['plan']['input_hash'] + "'") if operation == 'generation.retry' else ''
+    return PREFIX + f"""
+WITH accepted AS MATERIALIZED (
+ SELECT r.*,p.opportunity_id,p.proposal_id,p.issuance_request_id AS current_issuance_id FROM public.proposal_issuance_requests r
+ JOIN public.generation_plans p ON p.workspace_id=r.workspace_id AND p.id=r.plan_id
+ JOIN public.proposals prop ON prop.workspace_id=p.workspace_id AND prop.id=p.proposal_id AND prop.opportunity_id=p.opportunity_id
+ WHERE r.workspace_id='{w}' AND p.opportunity_id='{o}' AND p.kind='proposal'
+ AND r.requested_by='{proof['actor_id']}' AND r.operation='{operation}' AND r.idempotency_key='{prepared['command_key']}' {plan_guard}
+)
+SELECT jsonb_build_object('count',(SELECT count(*) FROM accepted),
+ 'bound',coalesce((SELECT current_issuance_id=id AND deadline_at=accepted_at+interval '600 seconds' FROM accepted LIMIT 1),false),
+ 'target',(SELECT jsonb_build_object('workspace_id',workspace_id,'opportunity_id',opportunity_id,'proposal_id',proposal_id,
+  'plan_id',plan_id,'issuance_request_id',id,'actor_id',requested_by,'operation',operation) FROM accepted LIMIT 1));
+ROLLBACK;
+"""
+
+
+def verify_result(database, prepared):
+    result = read(database, acceptance_sql(prepared))
+    require(isinstance(result, dict) and result.get('count') == 1 and result.get('bound') is True,
+            'PROPOSAL_TRIAL_ACCEPTANCE_UNPROVEN')
+    target = result.get('target')
+    require(isinstance(target, dict) and set(target) == TARGET_KEYS and target.get('operation') == prepared['operation']
+            and all(uuid_value(target.get(k)) for k in TARGET_KEYS - {'operation'})
+            and all(target[k] == prepared['proof']['selection'][k] for k in ('workspace_id', 'opportunity_id'))
+            and target['actor_id'] == prepared['proof']['actor_id'], 'PROPOSAL_TRIAL_ACCEPTANCE_MISMATCH')
+    prior = prepared['proof'].get('plan')
+    proposal = prepared['proof'].get('proposal')
+    require((proposal is None or target['proposal_id'] == proposal['id'])
+            and (prepared['operation'] != 'generation.retry' or target['plan_id'] == prior['id'])
+            and (prepared['operation'] != 'proposal.generate' or prior is None or target['plan_id'] != prior['id']),
+            'PROPOSAL_TRIAL_ACCEPTANCE_MISMATCH')
+    return target

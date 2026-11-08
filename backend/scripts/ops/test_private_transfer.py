@@ -11,7 +11,7 @@ import stat
 import sys
 import tempfile
 import unittest
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 
 SPEC = importlib.util.spec_from_file_location("private_transfer", Path(__file__).with_name("private-transfer.py"))
@@ -25,6 +25,47 @@ KEY = transfer.SpacesKey("offlineaccess1234", "offlinesecret-" + "s" * 32)
 
 
 class PrivateTransferTests(unittest.TestCase):
+    def test_optional_http_timeout_caps_both_transports_and_preserves_defaults(self):
+        for setting, expected in [(None, (40, 120)), ("5", (5, 5)), ("120", (40, 120)), ("1", (1, 1))]:
+            environment = dict(os.environ)
+            environment.pop("TENDERDESK_TRANSFER_HTTP_TIMEOUT_SECONDS", None)
+            if setting is not None:
+                environment["TENDERDESK_TRANSFER_HTTP_TIMEOUT_SECONDS"] = setting
+            opener = MagicMock()
+            opener.open.return_value.__enter__.return_value.read.return_value = b"{}"
+            opener.open.return_value.__enter__.return_value.status = 200
+            with self.subTest(setting=setting), patch.dict(os.environ, environment, clear=True), patch.object(
+                transfer.urllib.request, "build_opener", return_value=opener
+            ):
+                transfer.api("offline-token", "spaces/keys")
+                transfer.spaces(KEY, BUCKET, OBJECT, "GET")
+            self.assertEqual([call.kwargs["timeout"] for call in opener.open.call_args_list], list(expected))
+
+    def test_invalid_http_timeout_is_rejected_before_network(self):
+        for setting in ("", "0", "121", "-1", "+5", "5.0", " 5", "5 ", "05", "1e1", "999999999"):
+            with self.subTest(setting=setting), patch.dict(os.environ, {"TENDERDESK_TRANSFER_HTTP_TIMEOUT_SECONDS": setting}), patch.object(
+                transfer.urllib.request, "build_opener"
+            ) as factory:
+                for call in (lambda: transfer.api("offline-token", "spaces/keys"),
+                             lambda: transfer.spaces(KEY, BUCKET, OBJECT, "GET")):
+                    with self.assertRaisesRegex(transfer.TransferError, "INVALID_TRANSFER_HTTP_TIMEOUT"):
+                        call()
+                factory.return_value.open.assert_not_called()
+
+    def test_finally_revocation_uses_the_same_bounded_timeout(self):
+        opener = MagicMock()
+        opener.open.return_value.__enter__.return_value.read.side_effect = [json.dumps({"key": {
+            "access_key": KEY.access_key, "secret_key": KEY.secret_key,
+            "grants": [{"bucket": BUCKET, "permission": "read"}]}}).encode(), b""]
+        with patch.dict(os.environ, {"TENDERDESK_TRANSFER_HTTP_TIMEOUT_SECONDS": "5"}), patch.object(
+            transfer.urllib.request, "build_opener", return_value=opener
+        ):
+            with self.assertRaisesRegex(RuntimeError, "interrupted transfer"):
+                with transfer.temporary_key("offline-token", BUCKET, "read"):
+                    raise RuntimeError("interrupted transfer")
+        self.assertEqual([call.kwargs["timeout"] for call in opener.open.call_args_list], [5, 5])
+        self.assertEqual(opener.open.call_args.args[0].method, "DELETE")
+
     def test_encryption_roundtrip_randomization_and_no_plaintext(self):
         original = b'private migration input: "password_hash":"offline-fixture"'
         first = transfer.encrypt(original, PASSWORD, BUCKET, OBJECT)

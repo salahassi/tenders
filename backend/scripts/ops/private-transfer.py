@@ -65,6 +65,16 @@ def identity(bucket: str, object_name: str | None = None) -> bytes:
     return ("tenderdesk-private-transfer:v1:" + bucket + ":" + (object_name or "")).encode("ascii")
 
 
+def http_timeout(default: int) -> int:
+    """An optional coordinator cap also bounds temporary-key revocation."""
+    value = os.environ.get("TENDERDESK_TRANSFER_HTTP_TIMEOUT_SECONDS")
+    if value is None:
+        return default
+    if not re.fullmatch(r"[1-9][0-9]{0,2}", value) or not 1 <= int(value) <= 120:
+        raise TransferError("INVALID_TRANSFER_HTTP_TIMEOUT")
+    return min(default, int(value))
+
+
 def api(token: str, path: str, *, method: str = "GET", value: dict | None = None) -> dict:
     if not token or not path.startswith(("spaces/keys", "databases/")) or ".." in path:
         raise TransferError("INVALID_DIGITALOCEAN_API_REQUEST")
@@ -75,7 +85,7 @@ def api(token: str, path: str, *, method: str = "GET", value: dict | None = None
                  "Content-Type": "application/json"},
     )
     try:
-        with urllib.request.build_opener(NoRedirect).open(request, timeout=40) as response:
+        with urllib.request.build_opener(NoRedirect).open(request, timeout=http_timeout(40)) as response:
             raw = response.read(1_048_577)
     except urllib.error.HTTPError as error:
         raise TransferError("DO_API_HTTP_" + str(error.code)) from None
@@ -223,7 +233,7 @@ def spaces(key: SpacesKey, bucket: str, object_name: str | None, method: str,
            payload: bytes = b"", *, extra_headers: dict[str, str] | None = None) -> bytes:
     request = signed_request(key, bucket, object_name, method, payload, extra_headers=extra_headers)
     try:
-        with urllib.request.build_opener(NoRedirect).open(request, timeout=120) as response:
+        with urllib.request.build_opener(NoRedirect).open(request, timeout=http_timeout(120)) as response:
             if response.status not in {200, 201, 204}:
                 raise TransferError("SPACES_UNEXPECTED_STATUS")
             raw = response.read(MAX_CIPHERTEXT + 1)

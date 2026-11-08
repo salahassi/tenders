@@ -1,5 +1,39 @@
 # Implementation status and continuation plan
 
+## November 8 — authorized technical and financial proposal trial
+
+The Owner explicitly selected an actual technical/financial proposal generation
+trial after the dispatch correction. The new `proposal-trial.yml` coordinator
+uses the current deployed image/schema baseline and the canonical authenticated
+command API. It resumes eligible saved work, observes existing active/issued work,
+or starts fresh only when the saved contract/evidence cannot be reused and no
+active proposal version exists. It never automatically resubmits an uncertain
+command. An encrypted, read-back-verified stable intent precedes its single send;
+fresh expected revisions, genuine Owner membership and server admission remain
+authoritative. No provider settings, deployment or customer evidence is changed.
+
+Observation and download are separate read-only invocations against the exact
+issuance, including its actual command operation and original 600-second clock.
+Each Actions invocation includes queue/setup in a 170-second bound with reserved
+session logout, owned database-client cleanup and encrypted report transport.
+Only opaque references and content-free progress reach logs. Issued files are
+downloaded through canonical authenticated GETs, checked against unchanged package
+metadata, hashes, sizes and strict DOCX structure. Visual layout is a separate
+acceptance step. This is an operations harness, not an application redeployment.
+
+Local verification: 16 request, 10 observer and 12 download controls pass, including
+full-migration read-only SQL fixtures, exact issuance isolation, unknown-send
+handling, artifact integrity and a reviewed UTF-16 entity regression. Eleven
+coordinator checks and all 15 private-transfer checks pass. The optional transfer
+HTTP cap preserves existing defaults while limiting this runner's key-revocation
+cleanup to five seconds. Independent integration review closed active-state
+polling, ambiguous-send reconciliation and cleanup-reserve findings. Both package
+typechecks/builds and the frontend's 389 tests retain the preceding release's
+evidence because application/dependency/schema inputs are unchanged. The prior
+backend full-suite result remains 3,513/3,514 with the unchanged affected file
+passing 18/18 in isolation; it is not represented as a new green complete run.
+Hosted generation, actual file download and final duration remain pending.
+
 ## November 8 — remove synchronous proposal dispatch waits
 
 **Deployed:** [42499311138](https://github.com/salahassi/tenders/actions/runs/42499311138)

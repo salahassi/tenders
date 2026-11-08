@@ -1,0 +1,223 @@
+import copy
+from datetime import datetime, timezone
+import hashlib
+import importlib.util
+import json
+from pathlib import Path
+import subprocess
+import sys
+import unittest
+from unittest.mock import Mock, patch
+
+HERE = Path(__file__).resolve().parent
+SPEC = importlib.util.spec_from_file_location('trial_request_test_target', HERE / 'proposal-trial-request.py')
+m = importlib.util.module_from_spec(SPEC)
+sys.modules[SPEC.name] = m
+SPEC.loader.exec_module(m)
+W = m.auth.access.WORKSPACE
+O, P, G, A, I, J = ['00000000-0000-4000-8000-%012d' % n for n in range(101, 107)]
+
+
+def fixture():
+    return {'version': 1, 'kind': 'proposal_trial_request_proof', 'observed_at': datetime.now(timezone.utc).isoformat(),
+        'selection': {'version': 1, 'workspace_id': W, 'opportunity_id': O}, 'actor_id': A,
+        'opportunity': {'id': O, 'revision': 12}, 'proposal': {'id': P, 'revision': 4, 'active_version_id': None},
+        'workspace_evidence_revision': 8,
+        'plan': {'id': G, 'proposal_id': P, 'revision': 287, 'status': 'failed', 'stage': 'analysis',
+                 'input_hash': 'a' * 64, 'evidence_revision': 8, 'base_version_id': None,
+                 'issuance_request_id': I, 'current_contract': True},
+        'latest_issuance': {'id': I, 'plan_id': G, 'requested_by': A, 'operation': 'proposal.generate',
+                            'outcome': 'failed', 'accepted_at': '2026-01-01T00:00:00+00:00', 'deadline_at': '2026-01-01T00:10:00+00:00'},
+        'guards': dict.fromkeys(m.GUARDS, True)}
+
+
+class RequestTests(unittest.TestCase):
+    def setUp(self):
+        m._ATTEMPTED.clear()
+        self.proof = fixture()
+        self.prepared = m.prepare(self.proof)
+        self.client = Mock()
+        self.client.request.return_value = Mock(status=200, body=b'{"data":{"results":[]}}')
+        self.session = {'user': {'id': A}, 'access_token': 'private-test-session'}
+        self.persist = Mock(side_effect=lambda value: hashlib.sha256(m.encoded(value)).hexdigest())
+
+    def test_retry_is_exact_ui_single_command_and_stable_identity(self):
+        self.assertEqual(self.prepared['body'], {'commands': [{'operation': 'generation.retry', 'input': {
+            'id': G, 'expected_revision': 287, 'reason': 'User requested continuation of the saved work.'}}]})
+        changed = copy.deepcopy(self.proof)
+        changed['observed_at'] = '2025-01-01T00:00:00+00:00'
+        self.assertEqual(m.prepare(changed)['prepared_object'], self.prepared['prepared_object'])
+        self.assertEqual(m.prepare(changed)['idempotency_key'], self.prepared['idempotency_key'])
+        key = self.prepared['idempotency_key']
+        self.assertEqual(self.prepared['command_key'], hashlib.sha256(('batch:' + key + ':1').encode()).hexdigest())
+
+    def test_failed_noncurrent_or_evidence_changed_uses_fresh_generate(self):
+        for field, value in [('current_contract', False), ('evidence_revision', 7)]:
+            proof = copy.deepcopy(self.proof); proof['plan'][field] = value
+            prepared = m.prepare(proof)
+            self.assertEqual(prepared['body'], {'commands': [{'operation': 'proposal.generate', 'input': {'id': O, 'expected_revision': 12}}]})
+            proof['plan']['status'] = 'blocked'
+            with self.assertRaisesRegex(m.TrialRequestError, 'CURRENT_RETRY_REQUIRED'):
+                m.prepare(proof)
+
+    def test_initial_generate_without_any_saved_plan(self):
+        proof = copy.deepcopy(self.proof)
+        proof.update(plan=None, proposal=None, latest_issuance=None)
+        self.assertEqual(m.prepare(proof)['operation'], 'proposal.generate')
+
+    def test_existing_active_work_is_observation_only(self):
+        proof = copy.deepcopy(self.proof)
+        proof['plan']['status'] = 'running'; proof['latest_issuance']['outcome'] = 'active'
+        proof['guards']['no_selected_leases'] = False; proof['guards']['usage_ready'] = False
+        prepared = m.prepare(proof)
+        self.assertEqual(prepared['mode'], 'observe_existing')
+        self.assertEqual(prepared['target']['operation'], 'proposal.generate')
+        with self.assertRaisesRegex(m.TrialRequestError, 'OBSERVE_ONLY'):
+            m.send(self.client, self.session, prepared, self.persist)
+        self.persist.assert_not_called(); self.client.request.assert_not_called()
+
+    def test_each_authority_and_ambiguity_guard_stops_new_request(self):
+        for guard in m.GUARDS:
+            with self.subTest(guard=guard):
+                proof = copy.deepcopy(self.proof); proof['guards'][guard] = False
+                with self.assertRaisesRegex(m.TrialRequestError, guard.upper()): m.prepare(proof)
+        for changes in [{'version': True}, {'opportunity_id': "';DELETE"}, {'workspace_id': O}, {'plan_id': G}]:
+            with self.assertRaises(m.TrialRequestError): m.validate_selection(self.proof['selection'] | changes)
+
+    def test_completed_stage_requires_local_render_and_existing_version_prevents_fresh(self):
+        proof = copy.deepcopy(self.proof); proof['plan']['stage'] = 'completed'
+        with self.assertRaisesRegex(m.TrialRequestError, 'PROPOSAL_RENDER_RETRY_REQUIRED'): m.prepare(proof)
+        proof = copy.deepcopy(self.proof); proof['plan']['current_contract'] = False; proof['proposal']['active_version_id'] = J
+        with self.assertRaisesRegex(m.TrialRequestError, 'EXISTING_VERSION'): m.prepare(proof)
+
+    def test_durable_readback_and_identity_are_required_before_post(self):
+        for persist in [lambda _: '0' * 64, Mock(side_effect=RuntimeError('persistence unavailable'))]:
+            with self.assertRaises((m.TrialRequestError, RuntimeError)):
+                m.send(self.client, self.session, self.prepared, persist)
+            self.client.request.assert_not_called()
+        with self.assertRaisesRegex(m.TrialRequestError, 'SESSION_MISMATCH'):
+            m.send(self.client, {'user': {'id': O}, 'access_token': 'token'}, self.prepared, self.persist)
+        self.persist.assert_not_called()
+
+    def test_one_post_follows_persistence_and_fresh_check(self):
+        order = []
+        def persist(value):
+            order.append('persist'); return hashlib.sha256(m.encoded(value)).hexdigest()
+        def request(*args, **kwargs):
+            order.append('post'); return Mock(status=200, body=b'{}')
+        self.client.request.side_effect = request
+        receipt = m.send(self.client, self.session, self.prepared, persist, lambda: order.append('fresh'))
+        self.assertEqual(order, ['persist', 'fresh', 'post'])
+        self.assertTrue(receipt['accepted'])
+        self.client.request.assert_called_once_with('/functions/v1/api/v1/commands', token='private-test-session', method='POST',
+            data=self.prepared['body'], headers={'Idempotency-Key': self.prepared['idempotency_key']})
+
+    def test_unknown_is_receipted_and_same_attempt_can_never_post_again(self):
+        self.client.request.return_value = Mock(status=0, body=b'')
+        receipt = m.send(self.client, self.session, self.prepared, self.persist)
+        self.assertTrue(receipt['unknown']); self.assertFalse(receipt['accepted'])
+        with self.assertRaisesRegex(m.TrialRequestError, 'ALREADY_ATTEMPTED'):
+            m.send(self.client, self.session, self.prepared, self.persist)
+        self.client.request.assert_called_once(); self.persist.assert_called_once()
+
+    def test_rejection_returns_only_fixed_code_not_response_details(self):
+        self.client.request.return_value = Mock(status=409, body=b'{"error":{"code":"STALE_INPUT","message":"private customer content"}}')
+        result = m.send(self.client, self.session, self.prepared, self.persist)
+        self.assertEqual(result['api_error_code'], 'STALE_INPUT')
+        self.assertNotIn('private customer', json.dumps(result))
+
+    def test_tampering_and_post_persistence_change_never_send(self):
+        bad = copy.deepcopy(self.prepared); bad['body']['commands'].append({'operation': 'generation.cancel', 'input': {'id': G}})
+        with self.assertRaises(m.TrialRequestError): m.send(self.client, self.session, bad, self.persist)
+        with self.assertRaisesRegex(m.TrialRequestError, 'PREPARED_CHANGED'):
+            m.send(self.client, self.session, self.prepared, self.persist,
+                   lambda: self.prepared['body']['commands'][0]['input'].update(id=O))
+        self.client.request.assert_not_called()
+
+    def test_recheck_binds_revision_input_hash_actor_and_authority(self):
+        for field, value in [('revision', 288), ('input_hash', 'b' * 64)]:
+            fresh = copy.deepcopy(self.proof); fresh['plan'][field] = value
+            with patch.object(m, 'inspect', return_value=fresh):
+                with self.assertRaisesRegex(m.TrialRequestError, 'CHANGED_BEFORE_SEND'):
+                    m.recheck(object(), self.proof['selection'], self.prepared)
+
+    def test_actual_acceptance_uses_per_command_key_and_actor_operation(self):
+        sql = m.acceptance_sql(self.prepared)
+        for text in [self.prepared['command_key'], "r.operation='generation.retry'", "r.requested_by='" + A, "p.input_hash='" + 'a' * 64]:
+            self.assertIn(text, sql)
+        target = m.existing_target(self.proof) | {'operation': 'generation.retry'}
+        with patch.object(m, 'read', return_value={'count': 1, 'bound': True, 'target': target}):
+            self.assertEqual(m.verify_result(object(), self.prepared), target)
+        with patch.object(m, 'read', return_value={'count': 0, 'bound': False, 'target': None}):
+            with self.assertRaisesRegex(m.TrialRequestError, 'ACCEPTANCE_UNPROVEN'): m.verify_result(object(), self.prepared)
+
+    def test_sql_is_read_only_and_every_selection_is_scoped(self):
+        for sql in [m.inspection_sql(self.proof['selection']), m.acceptance_sql(self.prepared)]:
+            self.assertIn('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY;', sql)
+            self.assertIn("statement_timeout='20s'", sql); self.assertTrue(sql.rstrip().endswith('ROLLBACK;'))
+            self.assertNotRegex(sql, r'(?i)\b(insert|update|delete|truncate|grant|revoke)\b|app_command\(|auth\.users|for update')
+
+    def test_read_transport_is_short_and_returns_only_json(self):
+        db = Mock(pod='selected-client')
+        with patch.object(m.d, 'command', return_value=json.dumps(self.proof)) as command:
+            self.assertEqual(m.inspect(db, self.proof['selection']), self.proof)
+        self.assertEqual(command.call_args.kwargs['timeout'], 35)
+
+
+class SQLFixtureTests(unittest.TestCase):
+    def test_actual_queries_owner_ambiguity_usage_and_committed_retry(self):
+        proof = fixture(); prepared = m.prepare(proof)
+        schema = f"""
+CREATE ROLE tdp_app_owner; GRANT ALL ON SCHEMA public TO tdp_app_owner;
+SET ROLE tdp_app_owner;
+CREATE TABLE workspaces(id uuid,evidence_revision bigint);
+CREATE TABLE memberships(workspace_id uuid,user_id uuid,active boolean,role text);
+CREATE TABLE identity_allowlist(workspace_id uuid,user_id uuid,status text,role text);
+CREATE TABLE opportunities(id uuid,workspace_id uuid,revision int,archived boolean,decision text);
+CREATE TABLE proposals(id uuid,workspace_id uuid,opportunity_id uuid,revision int,active_version_id uuid);
+CREATE TABLE generation_plans(id uuid,workspace_id uuid,opportunity_id uuid,proposal_id uuid,revision int,status text,stage text,input_hash text,evidence_revision bigint,base_version_id uuid,issuance_request_id uuid,frozen_context jsonb,kind text,created_at timestamptz);
+CREATE TABLE proposal_issuance_requests(id uuid,workspace_id uuid,plan_id uuid,requested_by uuid,operation text,idempotency_key text,outcome text,accepted_at timestamptz,deadline_at timestamptz);
+CREATE TABLE jobs(id uuid,workspace_id uuid,entity_id uuid,status text,lease_token uuid,lease_until timestamptz,checkpoint jsonb);
+CREATE TABLE provider_usage(workspace_id uuid,state text);
+CREATE TABLE model_routing(workspace_id uuid,enabled boolean);
+CREATE TABLE restore_sessions(workspace_id uuid,state text);
+INSERT INTO workspaces VALUES('{W}',8);
+INSERT INTO memberships VALUES('{W}','{A}',true,'Owner');
+INSERT INTO identity_allowlist VALUES('{W}','{A}','active','Owner');
+INSERT INTO opportunities VALUES('{O}','{W}',12,false,'shortlisted');
+INSERT INTO proposals VALUES('{P}','{W}','{O}',4,null);
+INSERT INTO generation_plans VALUES('{G}','{W}','{O}','{P}',287,'failed','analysis','{'a' * 64}',8,null,'{I}','{{"generated_delivery_version":3,"proposal_consistency_version":1}}','proposal',now());
+INSERT INTO proposal_issuance_requests VALUES('{I}','{W}','{G}','{A}','generation.retry','{prepared['command_key']}','failed','2026-01-01 00:00:00+00','2026-01-01 00:10:00+00');
+RESET ROLE;
+"""
+        inspect_sql = m.inspection_sql(proof['selection']).replace("current_database()='tenderdesk_app'", "current_database()='postgres'")
+        script = """
+import {PGlite} from '@electric-sql/pglite';
+let input=''; for await(const chunk of process.stdin) input+=chunk;
+const x=JSON.parse(input), db=new PGlite(); await db.exec(x.schema);
+async function read(sql){const r=await db.exec(sql);return r.flatMap(v=>v.rows??[]).find(v=>v.jsonb_build_object)?.jsonb_build_object;}
+const normal=await read(x.inspect), accepted=await read(x.acceptance);
+await db.exec(`UPDATE identity_allowlist SET status='disabled'`); const disabled=await read(x.inspect);
+await db.exec(`UPDATE identity_allowlist SET status='active'; INSERT INTO provider_usage VALUES('${x.w}','reserved')`); const reserved=await read(x.inspect);
+await db.exec(`UPDATE provider_usage SET state='unknown'`); const unknown=await read(x.inspect);
+await db.exec(`INSERT INTO model_routing VALUES('${x.w}',true)`); const routed=await read(x.inspect);
+await db.exec(`UPDATE proposal_issuance_requests SET idempotency_key='different'`); const mismatch=await read(x.acceptance);
+console.log(JSON.stringify({normal,accepted,disabled,reserved,unknown,routed,mismatch})); await db.close();
+"""
+        result = subprocess.run(['node', '--input-type=module', '-e', script], input=json.dumps({
+            'schema': schema, 'inspect': inspect_sql, 'acceptance': m.acceptance_sql(prepared), 'w': W}),
+            text=True, capture_output=True, cwd=HERE.parent.parent, timeout=35)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        data = json.loads(result.stdout)
+        self.assertEqual(m.prepare(data['normal'])['operation'], 'generation.retry')
+        self.assertFalse(data['disabled']['guards']['unique_active_owner'])
+        self.assertFalse(data['reserved']['guards']['usage_ready'])
+        self.assertFalse(data['unknown']['guards']['usage_ready'])
+        self.assertTrue(data['routed']['guards']['usage_ready'])
+        self.assertEqual(data['accepted']['count'], 1); self.assertTrue(data['accepted']['bound'])
+        self.assertEqual(data['accepted']['target']['operation'], 'generation.retry')
+        self.assertEqual(data['mismatch']['count'], 0)
+
+
+if __name__ == '__main__':
+    unittest.main()
