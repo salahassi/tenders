@@ -1,6 +1,213 @@
 # Implementation status and continuation plan
 
+## November 8 — latency runtime qualified and published
+
+The frozen source `3ea8899` built offline and passed all nine actual dispatch
+controls and all twelve prompt controls. The latter compares 84 historical
+wire payloads and eleven saved pins against the immutable deployed baseline.
+Both receipts verify owned cleanup and zero external/provider calls. The new
+qualification hash is `12e8e13c`; publication binds image `03c68b58` (configuration
+`228d71a4`) to the exact copied source, original entrypoint and polling migration.
+Registry push/pull and image/source readback passed; temporary credentials were
+removed. The initial build and native dispatch receipt remain preliminary
+history; the final qualification binds the `-v2` receipts. The unfrozen guard's
+test now uses its isolated fixture root so the real publication cannot mask that
+negative test. Full backend 3,582/frontend 389 tests and both typechecks/builds
+passed before publication. SQL rollout and actual saved-work issuance remain
+pending; image qualification does not claim customer completion.
+
+## November 8 — restrict the saved-work trial to canonical retry
+
+The trial workflow accepts an optional expected operation. A start constrained
+to `generation.retry` now rejects a newly prepared `proposal.generate` before
+opening an Owner session, persisting request intent or sending a command. It may
+observe an already active request without sending another command. Inspection,
+observation and download keep their existing private selection/report schemas.
+This guard prevents a failed retry admission from silently starting all twelve
+analysis chunks again after seven completed chunks were saved. Focused tests
+cover rejected fallback, accepted exact retry, observation without sending and
+invalid restrictions. No runtime, database, provider or customer action is part
+of this operational change; the post-release retry remains pending.
+
+## November 8 — actual native prompt proof and inspection normalization
+
+The first prompt probe stopped before container creation because Docker's raw
+inspection includes null `OnBuild`/`Volumes` configuration fields that its
+formatted historical receipt omits. The fixture now normalizes only these
+absent/null fields and the absent/null platform variant. All other frozen
+configuration, labels, environment, layers and image identity remain exact;
+nonempty optional fields, unknown fields and altered platform values fail.
+
+Thirteen focused fixture guards pass. An offline scratch execution against the
+actual `34b00bcc` candidate and immutable `4b04acaa` baseline passes all twelve
+native prompt controls, including all 84 historical wire cases and eleven
+accepted pins, with verified container cleanup. This is preliminary image
+evidence: the final source-bound build, native receipts and qualification capture
+must be repeated after committing the harness fix at the frozen release source.
+No registry publication, production action or provider call was made by this
+fixture correction.
+
+## November 8 — bounded latency release controls prepared
+
+The latency coordinator adds one atomic schema child receipt to the exact
+deployed retry catalog `249d2fe6` and structure `3fea5eec`. The adaptive-poll
+migration may change only the existing deferral routine body. Original ledger
+rows, complete business-row digests, routine attributes, authority and all other
+schema objects must remain identical. The new qualification binds both the
+polling SQL and the original durable-outbox source; inspection is read-only.
+
+Apply requires the original single scheduler replica, pauses that owned
+Deployment using UID/resource-version/full-spec preconditions, and proves its
+pods have drained before replacing the worker. The scheduler template changes
+while replicas remain zero. Worker readiness/authentication, exact schema,
+images and retained configuration must pass before the final scheduler resume.
+Before resume, bounded recovery restores both previous images while paused,
+then restores the original replica count. Any resume attempt is a commitment:
+revision-6 phases may now exist, so failures retain the candidate pair, perform
+a bounded actual-state readback and require forward repair. Read-only inspection
+can inspect a paused mixed pair without enabling it. No provider configuration,
+saved phase pin, business row or persistent scheduler setting is reset.
+
+The workflow binds its deadline to run creation including queue time: at most
+100 seconds of work, with 45 seconds reserved for recovery, 15 for owned-client
+cleanup and five for exit within the 170-second total. Worker resources must
+meet the inherited qualified floor before any database client or mutation.
+Actual customer trials now require the separate latency image proof and exact
+applied child ledger; the required business operation remains separately guarded.
+
+Focused local evidence passes 37 latency operational/qualification tests and
+12 trial-runner tests. This includes actual isolated PostgreSQL execution of
+the dispatch/retry/poll ledger chain and nine mutation fault cases, plus pause,
+ambiguous activation, pre-commit rollback and forward-only recovery cases.
+Python compilation, workflow YAML/shell syntax and diff checks pass. Independent
+review found no remaining pause/rollback blocker. These controls do not change
+application source; native publication, deployment and actual customer issuance
+are separate gates and are not claimed by this implementation entry.
+
+## November 8 — separate latency runtime qualification preparation
+
+The latency candidate has its own build, qualification and publication paths;
+the deployed `c6f7cce5` dispatch receipts remain immutable historical evidence.
+The wrapper reuses source/image/registry validation without overriding historical
+module constants. Qualification requires all nine actual worker/scheduler native
+controls and a separate offline image-bound prompt fixture that compares legacy
+wire bytes and phase pins against the exact deployed image, then exercises the
+new revision-6 contracts. Product files are read from each image, never mounted
+over. The build uses only committed copied roots and supplementary inputs, with
+the verified cached base and no network during dependency compilation.
+
+Eleven focused qualification controls, twelve native-fixture guard controls and
+all 23 reused dispatch release controls pass. Backend typecheck passes. Native
+fixtures also enforce the existing 100-character prompt metadata contract across
+new revision combinations and preserve all 84 historical wire cases. Container
+execution and cleanup use the verified immutable container ID; foreign collisions
+and ambiguous daemon errors cannot count as owned cleanup. Actual image build, native execution,
+receipt capture/freezing, publication and rollout remain pending. Verification
+and publication fail closed while the new qualification hash is unfrozen. This
+runtime proof binds the adaptive-poll migration's exact committed bytes but does
+not qualify SQL behavior; that migration requires its separate database tests
+and child schema ledger. No build, image execution,
+registry publication, live deployment or provider request has been performed for
+this qualification preparation.
+
+## November 8 — reduce measured proposal analysis overhead
+
+The actual proposal trial still progressed too slowly after the dispatch fix.
+Its exact private timeline shows six completed extraction calls returning on
+their first poll after 30.4–31.9 seconds of waiting. Verification is a separate
+phase: three successful verifier calls took approximately 64–96 seconds, and
+two invalid verifier responses needed another model's verification. These are
+measured request-to-observed-result times, not provider completion timestamps.
+The complete proposal has not yet passed hosted issuance acceptance.
+
+New source-contract analysis phases now pin semantic revision 6 and send only
+the declared evidence fields. Redundant row metadata and the duplicate complete
+`source_span` object are omitted from transport; the complete source catalog,
+authority, exact text/IDs, internal manifest and validators remain unchanged.
+Historical revisions 0–5 and already accepted requests retain their exact wire
+identity. Explicit verifier rechecks retain their required revision-4 contract.
+
+A separate pinned verifier revision 6 supplies a locally proved manifest of
+materialized source quotations. Only exact typed requirement-text paths whose
+ordered references, original quotes, authority and content IDs match the source
+contract qualify. The complete candidate hash is checked before pinning/replay.
+This avoids asking a model to enumerate every copied quotation merely to prove
+literal equality; independent review of source selection, buyer relevance,
+completeness, interpretation and every semantic field remains mandatory. No
+candidate unit, coverage ID, output schema, nonempty-claim rule or validator is
+removed. Unproved copies and other tasks retain the previous policy.
+
+The healthy accepted-request polling RPC now uses 5, 10, 15, then 30 seconds,
+bound to that exact reservation's completed healthy polls. A matching current
+lease receipt is required; historical clients without it retain 30 seconds.
+The original lease, cancellation, remote identity, deadline, accounting and
+Retry-After/error checks remain authoritative. Polling never sends a new
+generation request or increases an allowance.
+
+Targeted evidence includes new projection/provenance/phase-identity controls,
+literal-proof and semantic-defect regressions, 19 adaptive-poll database cases,
+90 model-catalog controls, 82 queue controls, all 24 scheduler controls and the
+actual dispatcher SQL with multiple independent timer leases. Backend typecheck
+and build pass. Independent review covered the literal proof and polling scope;
+an explicit recheck-compatibility finding was corrected before handoff. Native
+image qualification, deployment, full package checks and a new actual issuance
+trial remain separate pending gates. No provider setting or customer data was
+changed for these implementation tests.
+
+The first complete backend run on `dd2d489` finished with 3,568 passing tests
+and 13 failures across four files. Seven pipeline failures exposed new prompt
+version labels exceeding the existing 100-character database metadata contract;
+six qualification assertions still expected the older newly selected revisions.
+Only the undeployed revision-6 labels were shortened (`ew1` and
+`tenderdesk-grounding-v6-literal`); no SQL limit or historical prompt was changed.
+The five affected suites now pass 144 tests. Added checks cover the label bound
+for every verifier revision with the new evidence policy and actual SQL metadata
+persistence for both the revision-5 empty-inventory fallback and revision-6
+literal-proof path. On corrected product source `63a1e56`, the fresh complete
+backend run passes all 3,582 tests in 211 files (449 seconds); the separate
+frontend run passes all 389 tests in 61 files. Both packages' typecheck and build
+pass. Each complete test run used at most two workers and unchanged timeouts;
+the earlier failed full result is retained. Native image qualification,
+deployment and actual hosted issuance remain separate pending gates.
+
 ## November 8 — bounded SQL-only retry compatibility release
+
+**Deployed:** [42509645314](https://github.com/salahassi/tenders/actions/runs/42509645314)
+from frozen-runtime source `28e35c4` passed within 45 seconds including queue.
+SQL `fe772e3c`, routine catalog `249d2fe6` and structure `3fea5eec` are recorded in
+their own retry ledger. Atomic apply/readback, all retained images/configuration,
+unchanged business rows and owned cleanup pass. Historical application and
+dispatch ledgers remain intact. No business retry or provider call was initiated.
+The [release receipt](evidence/proposal-retry-passed-20261108-42509645314.json)
+records exact hashes and source. Whole-proposal performance remains separate.
+
+Read-only reconciliation [42509467709](https://github.com/salahassi/tenders/actions/runs/42509467709)
+proved the exact unchanged predecessor catalog and no installed retry ledger
+before the successful apply. Its full row-digest probe completed in 5.516 seconds,
+so a SQL timeout was not established as the earlier cause. Sanitized diagnostics
+and explicit modes were added; no row/authority guard or deadline was weakened.
+The [inspection receipt](evidence/proposal-retry-inspection-20261108-42509467709.json)
+and [initial failure](evidence/proposal-retry-failed-20261108-42508689969.json) retain
+that distinction. All 19 diagnostic/release controls pass.
+
+Hosted attempt [42508689969](https://github.com/salahassi/tenders/actions/runs/42508689969)
+at `9edb0bf` stopped after 56 seconds including queue. Both the apply transport and
+its read-only reconciliation returned the former generic Kubernetes command
+failure; owned cleanup succeeded. That evidence alone did not prove whether COMMIT
+occurred; the subsequent read-only inspection above resolved that uncertainty.
+
+The follow-up adds an explicit inspect mode (the workflow default) which only
+verifies the exact predecessor or child schema receipt. Apply requires the
+explicit `apply` input. SQL transport now captures verbose PostgreSQL diagnostics
+privately and returns only an allowlisted fixed schema/migration error or the
+five-character SQLSTATE. Raw messages, SQL, paths, DETAIL/CONTEXT and customer
+values never reach public output. After schema readback, inspection can run the
+same full-row digest once in a separate read-only transaction with a 20-second
+SQL limit. It reports only completion, elapsed time and a sanitized error code;
+a probe timeout retains the already proven schema state. This checks the suspected
+cost without changing the migration's row-preservation proof. Insufficient time
+skips the probe and preserves cleanup. Read-only commit reconciliation completed
+before the subsequent successful migration attempt.
 
 The new release workflow applies only the reviewed modern-routing retry migration;
 all five deployed images, workload definitions, private configuration and provider

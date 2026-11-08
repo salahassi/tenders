@@ -112,6 +112,48 @@ class TrialRunnerTests(unittest.TestCase):
         self.persist.assert_not_called()
         self.sample.assert_called_once_with(self.database, self.target, None)
 
+    def test_expected_retry_blocks_fresh_generation_before_session_or_intent(self):
+        args = self.args()
+        args.expected_operation = 'generation.retry'
+        self.prepared['operation'] = 'proposal.generate'
+        result = m.run(args)
+        self.assertEqual(result['failure_code'], 'PROPOSAL_TRIAL_EXPECTED_OPERATION_MISMATCH')
+        self.assertFalse(result['send_attempted'])
+        self.assertFalse(result['intent_persisted'])
+        self.assertNotIn('prepared', self.reports[-1])
+        self.session.assert_not_called()
+        self.persist.assert_not_called()
+        self.send.assert_not_called()
+
+    def test_expected_retry_allows_exact_retry_and_observe_existing_only(self):
+        args = self.args()
+        args.expected_operation = 'generation.retry'
+        self.prepared['operation'] = 'generation.retry'
+        def send(_client, _session, prepared, persist, before_send):
+            persist(prepared)
+            before_send()
+            return {'sent': True, 'accepted': True, 'http_status': 200, 'unknown': False}
+        self.send.side_effect = send
+        result = m.run(args)
+        self.assertTrue(result['request_sent'])
+        self.send.assert_called_once()
+        self.send.reset_mock()
+        self.session.reset_mock()
+        self.prepare.return_value = {'mode': 'observe_existing', 'target': self.target}
+        result = m.run(args)
+        self.assertFalse(result['send_attempted'])
+        self.send.assert_not_called()
+        self.session.assert_not_called()
+
+    def test_expected_command_restriction_is_validated_before_access(self):
+        for mode, expected in (('start', 'generation.cancel'), ('observe', 'generation.retry')):
+            args = self.args(mode)
+            args.expected_operation = expected
+            with self.assertRaisesRegex(RuntimeError, 'EXPECTED_OPERATION_INVALID'):
+                m.run(args)
+        self.runtime.assert_not_called()
+        self.input.assert_not_called()
+
     def test_transport_exception_after_send_reconciles_without_second_send(self):
         def uncertain(_client, _session, prepared, persist, before_send):
             persist(prepared)
@@ -188,20 +230,25 @@ class TrialRunnerBoundaryTests(unittest.TestCase):
     def test_runtime_verification_requires_qualified_worker_but_preserves_other_baselines(self):
         candidate = 'registry/synthetic-runtime@sha256:' + 'b' * 64
         expected = m.release.BASELINES | {'worker': candidate, 'scheduler': candidate}
-        schema = Mock(PARENT_SQL='c' * 64)
-        receipt = {'source': {'source_entries': {'backend/scripts/runtime/dispatcher.sql': {'sha256': 'c' * 64}}}}
+        schema = Mock(ROOT=Path('/synthetic'), SOURCE=Path('/synthetic/backend/supabase/migrations/poll.sql'))
+        schema.source_sha256.return_value = 'c' * 64
+        schema.parent.PARENT_SQL = 'e' * 64
+        receipt = {'poll_migration': {'path': 'backend/supabase/migrations/poll.sql', 'sha256': 'c' * 64},
+            'source': {'source_entries': {'backend/scripts/runtime/dispatcher.sql': {'sha256': 'e' * 64}}}}
+        qualification = Mock()
+        qualification.publication.return_value = (receipt, candidate)
         with patch.object(m.release, 'verify_checkout'), patch.object(m.d.probe, 'validate_cluster'), \
-             patch.object(m.release.qualification, 'publication', return_value=(receipt, candidate)), \
              patch.object(m.release.u, 'deployment', side_effect=lambda name: {'image': expected[name]}), \
              patch.object(m.release.base, 'image_of', side_effect=lambda value: value['image']), \
-             patch.object(m.release, 'verify_runtime_contract'), patch.object(m, 'module', return_value=schema):
+             patch.object(m.release, 'verify_runtime_contract'), patch.object(m, 'module',
+                side_effect=lambda name, filename: qualification if filename == 'proposal-latency-runtime.py' else schema):
             database = object()
             m.verify_runtime(database)
-            schema.verify.assert_called_once_with(database, allow_parent=True)
-            schema.PARENT_SQL = 'd' * 64
-            with self.assertRaisesRegex(RuntimeError, 'DISPATCH_SOURCE_CHANGED'):
+            schema.verify.assert_called_once_with(database)
+            schema.source_sha256.return_value = 'd' * 64
+            with self.assertRaisesRegex(RuntimeError, 'POLL_SOURCE_CHANGED'):
                 m.verify_runtime(database)
-            schema.PARENT_SQL = 'c' * 64
+            schema.source_sha256.return_value = 'c' * 64
             expected['api'] = candidate
             with self.assertRaisesRegex(RuntimeError, 'RUNTIME_CHANGED'):
                 m.verify_runtime()

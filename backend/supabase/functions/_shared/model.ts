@@ -23,6 +23,7 @@ import {
 import {
   ANALYSIS_EVIDENCE_INSTRUCTIONS_V1,
   ANALYSIS_EVIDENCE_PROMPT_V1,
+  analysisEvidenceApplies,
   analysisEvidenceContract,
 } from "./modelAnalysisEvidenceInstructions.ts";
 import {
@@ -64,12 +65,14 @@ import {
 import { z } from "zod";
 import {
   sourceTaskOutputSchema,
+  sourceContractContext,
   materializeSourceCandidate,
   validateSourceCandidate,
   collectSourceCandidateDiagnostics,
 } from "./sourceEvidence.ts";
 import { SEMANTIC_PATCH_INSTRUCTIONS } from "./modelSemanticPatch.ts";
 import { validateSourceResolution } from "./sourceResolution.ts";
+import { analysisLiteralCoverage } from "./modelAnalysisLiteralCoverage.ts";
 import { readModelStream, ModelStreamError } from "./modelStream.ts";
 import { serviceScopeSchema, type ServiceScope } from "./discovery.ts";
 import {
@@ -1309,6 +1312,27 @@ export function modelPrompt(
   verificationRevision: VerificationRevision = 1,
   semanticRevision: SemanticRevision = 0,
 ) {
+  const literalCoverage =
+    task === "verify_grounding" && verificationRevision === 6
+      ? analysisLiteralCoverage(context, evidence, requiredIds)
+      : null;
+  if (
+    task === "verify_grounding" &&
+    verificationRevision === 6 &&
+    !literalCoverage
+  )
+    throw new ModelError("MODEL_IDENTITY_CHANGED");
+  if (semanticRevision === 6) {
+    try {
+      if (
+        !analysisEvidenceApplies(task, context) ||
+        !sourceContractContext(context)
+      )
+        throw new Error();
+    } catch {
+      throw new ModelError("MODEL_IDENTITY_CHANGED");
+    }
+  }
   const coverageContract =
     task === "verify_grounding" && verificationRevision >= 4
       ? analysisVerificationCoverage(context, requiredIds)
@@ -1334,6 +1358,9 @@ export function modelPrompt(
           ...(coverageContract
             ? { verification_coverage_contract: coverageContract }
             : {}),
+          ...(literalCoverage
+            ? { analysis_literal_coverage: literalCoverage }
+            : {}),
           writing_guide: writingGuide[language],
           repair_instruction: repair
             ? task === "repair_result" &&
@@ -1349,9 +1376,26 @@ export function modelPrompt(
   const envelope = JSON.parse(original);
   return JSON.stringify({
     ...envelope,
+    // Source-contract analysis already carries the authoritative span catalog
+    // in its context. Raw evidence Rows also contain source_span and storage
+    // metadata, duplicating each complete quote and authority record. Only new
+    // pinned phases project those transport extras; validation retains the full
+    // original evidence and revisions 0–5 retain their exact paid-request bytes.
+    ...(semanticRevision === 6
+      ? {
+          evidence: evidence.map(({ id, text, kind, verified }) => ({
+            id,
+            text,
+            kind,
+            verified,
+          })),
+        }
+      : {}),
     // Keep the semantic suffix recognized by the durable writer handoff. The
     // scope policy is separately versioned without changing older envelopes.
-    prompt_version: `${envelope.prompt_version}${semanticRevision === 3 ? "." + SCOPE_COMPARISON_PROMPT_V1 : ""}${semanticRevision === 4 ? "." + ANALYSIS_EVIDENCE_PROMPT_V1 : ""}${semanticRevision === 5 ? "." + PLANNING_COVERAGE_PROMPT_V1 : ""}.${SEMANTIC_PROMPT_V1}${semanticRevision >= 2 ? ".economy-v1" : ""}`,
+    // ew1 identifies evidence-wire revision 1 within the durable metadata
+    // contract's 100-character limit. Historical revisions keep their labels.
+    prompt_version: `${envelope.prompt_version}${semanticRevision === 3 ? "." + SCOPE_COMPARISON_PROMPT_V1 : ""}${[4, 6].includes(semanticRevision) ? "." + ANALYSIS_EVIDENCE_PROMPT_V1 : ""}${semanticRevision === 6 ? ".ew1" : ""}${semanticRevision === 5 ? "." + PLANNING_COVERAGE_PROMPT_V1 : ""}.${SEMANTIC_PROMPT_V1}${semanticRevision >= 2 ? ".economy-v1" : ""}`,
     ...(semanticRevision >= 2
       ? { output_policy: OUTPUT_ECONOMY_INSTRUCTIONS }
       : {}),
@@ -1359,7 +1403,7 @@ export function modelPrompt(
     ...(semanticRevision === 3
       ? { scope_comparison_policy: SCOPE_COMPARISON_INSTRUCTIONS_V1 }
       : {}),
-    ...(semanticRevision === 4
+    ...([4, 6].includes(semanticRevision)
       ? {
           analysis_evidence_policy: ANALYSIS_EVIDENCE_INSTRUCTIONS_V1,
           analysis_evidence_contract: analysisEvidenceContract(

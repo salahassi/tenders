@@ -5,7 +5,7 @@ import { SCOPE_COMPARISON_INSTRUCTIONS_V1 } from "./modelScopeInstructions.ts";
 import { ANALYSIS_EVIDENCE_INSTRUCTIONS_V1 } from "./modelAnalysisEvidenceInstructions.ts";
 import { PLANNING_COVERAGE_INSTRUCTIONS_V1 } from "./modelPlanningInstructions.ts";
 
-export type SemanticRevision = 0 | 1 | 2 | 3 | 4 | 5;
+export type SemanticRevision = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 export const SEMANTIC_PROMPT_V1 = "tenderdesk-semantic-fidelity-v1";
 export const SEMANTIC_INSTRUCTIONS_V1 =
   "Preserve the meaning of every supplied fact and requirement across extraction, analysis, planning, drafting, review and correction. " +
@@ -18,14 +18,17 @@ export const SEMANTIC_INSTRUCTIONS_V1 =
   "Separate compound assertions when needed, retaining exact quotations for each part and covering every part without omitting negation, quantities, conditions or exceptions. " +
   "Correction must resolve the cited semantic defects while preserving valid content; never hide a contradiction by dropping evidence, relabeling a known rule as an assumption, or declaring an unsupported fact supported.";
 
-/** Revisions 0–4 retain their exact historical wire instructions. */
+/** Revisions 0–5 retain their exact historical wire instructions. Revision 6
+ * keeps the analysis policy and projects redundant transport-only metadata. */
 export function semanticPolicyText(revision: SemanticRevision): string {
   if (revision === 0) return "";
   return (
     SEMANTIC_INSTRUCTIONS_V1 +
     (revision >= 2 ? "\n" + OUTPUT_ECONOMY_INSTRUCTIONS : "") +
     (revision === 3 ? "\n" + SCOPE_COMPARISON_INSTRUCTIONS_V1 : "") +
-    (revision === 4 ? "\n" + ANALYSIS_EVIDENCE_INSTRUCTIONS_V1 : "") +
+    ([4, 6].includes(revision)
+      ? "\n" + ANALYSIS_EVIDENCE_INSTRUCTIONS_V1
+      : "") +
     (revision === 5 ? "\n" + PLANNING_COVERAGE_INSTRUCTIONS_V1 : "")
   );
 }

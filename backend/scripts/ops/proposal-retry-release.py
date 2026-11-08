@@ -52,9 +52,9 @@ def verify_unchanged(before, configuration):
     require(dispatch.runtime.retained_configuration() == configuration, 'PRIVATE_CONFIGURATION_CHANGED')
 
 
-def release():
+def release(*, inspect_only=False):
     STATE.clear()
-    STATE.update(stage='preflight', apply_attempted=False, apply_acknowledged=False,
+    STATE.update(stage='preflight', mode='inspect' if inspect_only else 'apply', apply_attempted=False, apply_acknowledged=False,
                  schema_confirmed=False, reconciled_after_unknown=False, cleanup_verified=False)
     try:
         require(os.environ.get('GITHUB_RUN_ATTEMPT') == '1', 'WORKFLOW_REPLAY_REFUSED')
@@ -74,26 +74,38 @@ def release():
         STATE['stage'] = 'owned_database_client'
         database.prepare()
         verify_unchanged(before, configuration)
-        STATE.update(stage='atomic_schema_apply', apply_attempted=True)
         readback = None
-        try:
-            applied = schema.apply(database)
-            STATE['apply_acknowledged'] = True
-        except (Exception, dispatch.DeadlineExceeded) as error:
-            # A failed transport can hide COMMIT. Read exactly the new ledger,
-            # never apply again or reverse DDL based on an absent response.
-            STATE.update(apply_error=fixed_code(error), stage='read_only_commit_reconciliation')
-            remaining = dispatch.remaining_run_seconds()
-            if remaining < 40:
-                raise
-            signal.alarm(min(20, remaining - 20))
+        if inspect_only:
+            STATE['stage'] = 'read_only_schema_inspection'
+            readback = schema.verify(database, allow_parent=True)
+            applied = readback
+            STATE.update(schema_confirmed=True, schema_readback=readback)
+            STATE['stage'] = 'read_only_row_digest_cost_probe'
+            if dispatch.remaining_run_seconds() >= 60:
+                row_probe = schema.row_digest_probe(database)
+            else:
+                row_probe = {'probe': 'existing_full_row_digest', 'completed': False,
+                    'code': 'PROPOSAL_RETRY_RELEASE_PROBE_BUDGET', 'read_only': True}
+        else:
+            STATE.update(stage='atomic_schema_apply', apply_attempted=True)
             try:
-                readback = schema.verify(database)
-                applied = readback
-            except (Exception, dispatch.DeadlineExceeded) as reconciliation_error:
-                STATE['reconciliation_error'] = fixed_code(reconciliation_error)
-                raise error
-            STATE['reconciled_after_unknown'] = True
+                applied = schema.apply(database)
+                STATE['apply_acknowledged'] = True
+            except (Exception, dispatch.DeadlineExceeded) as error:
+                # A failed transport can hide COMMIT. Read exactly the new ledger,
+                # never apply again or reverse DDL based on an absent response.
+                STATE.update(apply_error=fixed_code(error), stage='read_only_commit_reconciliation')
+                remaining = dispatch.remaining_run_seconds()
+                if remaining < 40:
+                    raise
+                signal.alarm(min(20, remaining - 20))
+                try:
+                    readback = schema.verify(database)
+                    applied = readback
+                except (Exception, dispatch.DeadlineExceeded) as reconciliation_error:
+                    STATE['reconciliation_error'] = fixed_code(reconciliation_error)
+                    raise error
+                STATE['reconciled_after_unknown'] = True
         STATE['stage'] = 'schema_readback'
         if readback is None:
             readback = schema.verify(database)
@@ -101,12 +113,15 @@ def release():
         STATE['stage'] = 'retained_runtime_verification'
         verify_unchanged(before, configuration)
         result = {'release': 'proposal-retry-modern-usage', 'status': 'passed',
+                  'mode': STATE['mode'], 'apply_attempted': STATE['apply_attempted'],
                   'source_revision': revision, 'schema': applied, 'schema_readback': readback,
                   'retained_images': expected, 'artifact_source_revision': qualification['source_revision'],
                   'configuration_preserved': True, 'images_changed': False,
                   'customer_processing_requested': False, 'providers_activated': False,
                   'business_commands_sent': 0, 'apply_acknowledged': STATE['apply_acknowledged'],
                   'reconciled_after_unknown': STATE['reconciled_after_unknown']}
+        if inspect_only:
+            result['row_digest_probe'] = row_probe
     except (Exception, dispatch.DeadlineExceeded):
         STATE['failure_stage'] = STATE['stage']
         raise
@@ -131,10 +146,10 @@ def main():
                 dispatch.cleanup()
             print('{"proposal_retry_cleanup":"confirmed"}', flush=True)
             return 0
-        require(not sys.argv[1:], 'ARGUMENTS')
+        require(sys.argv[1:] in (['--inspect'], ['--apply']), 'EXPLICIT_MODE_REQUIRED')
         signal.alarm(work_budget())
         with redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
-            result = release()
+            result = release(inspect_only=sys.argv[1:] == ['--inspect'])
         print(json.dumps(result), flush=True)
         return 0
     except (Exception, dispatch.DeadlineExceeded) as error:

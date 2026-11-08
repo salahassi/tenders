@@ -1,0 +1,18 @@
+{
+  "workflow_run_id": 42508689969,
+  "workflow_url": "https://github.com/salahassi/tenders/actions/runs/42508689969",
+  "release": "proposal-retry-modern-usage",
+  "status": "failed",
+  "code": "KUBERNETES_COMMAND_FAILED",
+  "state": {
+    "stage": "read_only_commit_reconciliation",
+    "apply_attempted": true,
+    "apply_acknowledged": false,
+    "schema_confirmed": false,
+    "reconciled_after_unknown": false,
+    "cleanup_verified": true,
+    "apply_error": "KUBERNETES_COMMAND_FAILED",
+    "reconciliation_error": "KUBERNETES_COMMAND_FAILED",
+    "failure_stage": "read_only_commit_reconciliation"
+  }
+}

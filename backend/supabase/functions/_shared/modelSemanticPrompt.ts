@@ -15,6 +15,7 @@ import { scopeComparisonApplies } from "./modelScopeInstructions.ts";
 import { analysisEvidenceApplies } from "./modelAnalysisEvidenceInstructions.ts";
 import { planningCoverageApplies } from "./modelPlanningInstructions.ts";
 import type { VerificationRevision } from "./modelVerificationInstructions.ts";
+import { sourceContractContext } from "./sourceEvidence.ts";
 
 const keyFor = async (requestPrefix: string) =>
   `semantic-instructions-${await sha256(requestPrefix)}`;
@@ -22,7 +23,7 @@ function revision(pin: any): SemanticRevision {
   const value = pin.value;
   if (
     !value ||
-    ![0, 1, 2, 3, 4, 5].includes(value.version) ||
+    ![0, 1, 2, 3, 4, 5, 6].includes(value.version) ||
     !/^[a-f0-9]{64}$/.test(value.legacy_input_hash ?? "") ||
     (value.version > 0 &&
       value.instructions !== semanticPolicyText(value.version))
@@ -46,7 +47,11 @@ export async function readSemanticPromptRevision(
 export async function pinSemanticPrompt(o: {
   backend: Pick<Backend, "internal">;
   store: Pick<ModelGraphStore, "action">;
-  job: { id: string; lease_token: string };
+  job: {
+    id: string;
+    lease_token: string;
+    checkpoint?: Record<string, unknown>;
+  };
   requestPrefix: string;
   task: ModelTask;
   context: unknown;
@@ -85,7 +90,10 @@ export async function pinSemanticPrompt(o: {
       : scopeComparisonApplies(o.task, o.context)
         ? 3
         : analysisEvidenceApplies(o.task, o.context)
-          ? 4
+          ? sourceContractContext(o.context) &&
+            !Object.hasOwn(o.job.checkpoint ?? {}, "verifier_recheck")
+            ? 6
+            : 4
           : planningCoverageApplies(o.task, o.context)
             ? 5
             : 2;

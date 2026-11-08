@@ -1523,14 +1523,20 @@ it("keeps a pending remote request pinned to its original model across settings 
   ).toEqual([{ model: "fixture-model-a" }]);
 });
 
-it("makes healthy polls eligible at the next normal cron tick without shortening error waits or generating again", async () => {
+it("backs off healthy polls without shortening error waits or generating again", async () => {
   const { job, backend, envs } = await configure("openai");
   const methods: string[] = [];
   let retryAfter: string | null = null;
+  let healthyPending = true;
   const fetcher: typeof fetch = async (_url, init) => {
     methods.push(init?.method ?? "POST");
     if (init?.method === "POST")
       return Response.json({ id: "fixture-poll-timing", status: "queued" });
+    if (healthyPending)
+      return Response.json({
+        id: "fixture-poll-timing",
+        status: "in_progress",
+      });
     return Response.json(
       { error: { message: "Temporary provider failure" } },
       {
@@ -1564,8 +1570,19 @@ it("makes healthy polls eligible at the next normal cron tick without shortening
   expect(healthy).toEqual({
     status: "retry_wait",
     lease_token: null,
-    delay: 30,
+    delay: 5,
   });
+  for (const expected of [10, 15, 30, 30]) {
+    await f.db.query(
+      "update jobs set next_attempt_at=now()-interval '1 second' where id=$1",
+      [job.id],
+    );
+    const current = await rpc("claim_backend_job_v5");
+    expect(current.id).toBe(job.id);
+    await expect(run(current)).rejects.toBeInstanceOf(ModelDeferred);
+    expect((await timing()).delay).toBe(expected);
+  }
+  healthyPending = false;
   // Check the actual DB interval against a deterministic minute-boundary clock.
   vi.useFakeTimers({ toFake: ["Date"] });
   try {
@@ -1601,7 +1618,7 @@ it("makes healthy polls eligible at the next normal cron tick without shortening
       delay: expected,
     });
   }
-  expect(methods).toEqual(["POST", "GET", "GET"]);
+  expect(methods).toEqual(["POST", "GET", "GET", "GET", "GET", "GET", "GET"]);
   expect(
     (
       await f.db.query<any>(

@@ -5,6 +5,24 @@ The repository-root [AGENTS.md](../../AGENTS.md) points here so the established
 route is available in every checkout, without relying on conversation history.
 Last reviewed: November 8, 2026.
 
+## Modern proposal retry compatibility (November 8, deployed)
+
+Run [42509645314](https://github.com/salahassi/tenders/actions/runs/42509645314)
+from `28e35c4` applied only the reviewed retry-admission SQL. Its new ledger records
+SQL `fe772e3c`, catalog `249d2fe6` and structure `3fea5eec`; original application
+and dispatch receipts remain historical evidence. All images and private settings
+are retained. No customer command or provider request was issued. The exact
+[receipt](evidence/proposal-retry-passed-20261108-42509645314.json) and checklist
+separate this compatibility fix from the still-open full-proposal latency issue.
+
+The first attempt's unknown result was reconciled read-only to the unchanged
+parent before a subsequent apply. `deploy-proposal-retry.yml` now defaults to
+explicit inspection, exposes only fixed SQL error codes, and requires explicit
+apply mode for mutation. Its original c6 image qualification requires a checkout
+with those same runtime inputs; use the frozen inspection source for that release
+while later runtime changes are being qualified. Do not silently relax image or
+schema guards when current code differs from deployed code.
+
 ## Proposal dispatch correction (November 8, deployed)
 
 `deploy-proposal-dispatch.yml` and `proposal-dispatch-release.py` apply the

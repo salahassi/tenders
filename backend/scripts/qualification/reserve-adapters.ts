@@ -133,8 +133,8 @@ export type ReserveAdapter = {
   evidence: Evidence[];
   required: string[];
   manifest: Reference[];
-  semanticRevision: 0 | 1 | 2 | 3 | 4 | 5;
-  verificationRevision: 1 | 2 | 3 | 4 | 5;
+  semanticRevision: 0 | 1 | 2 | 3 | 4 | 5 | 6;
+  verificationRevision: 1 | 2 | 3 | 4 | 5 | 6;
   domainValidate?: (value: unknown) => void;
   repair: boolean;
   wireHooks?: Pick<
