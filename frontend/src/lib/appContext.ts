@@ -27,6 +27,7 @@ export interface AppContextValue {
     input: Record<string, unknown>,
     key?: string,
   ) => Promise<Record<string, unknown>>;
+  modelCatalogRevision?: number;
   userLabel?: string;
   refresh?: () => Promise<void>;
   signOut?: () => Promise<void>;

@@ -1,4 +1,5 @@
 // Real deployed settings startup. Only same-origin GETs; no business writes.
+import { setTimeout as delay } from 'node:timers/promises';
 import { chromium } from 'playwright';
 import { createHash } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
@@ -23,7 +24,7 @@ export async function diagnose(input) {
   const context = await browser.newContext({serviceWorkers:'block'});
   const started = Date.now();
   let active = true;
-  const pending = new Set();
+  const pending = new Set(), observed = [];
   try {
     await context.addInitScript(({origin,session})=>{if(location.origin===origin)localStorage.setItem(`sb-${new URL(origin).hostname.split('.')[0]}-auth-token`,JSON.stringify(session));},input);
     await context.route('**/*', async route=>{
@@ -31,10 +32,11 @@ export async function diagnose(input) {
       if (!active || !allowed(request.url(),request.method(),input.origin) || report.api_requests>=200) {
         report.blocked_requests++;await route.abort();return;
       }
-      if (key!=='static' && key!=='auth') report.api_requests++;
+      if (key!=='static' && key!=='auth') {report.api_requests++;observed.push(new URL(request.url()).pathname.split('/').at(-1));}
       await route.continue();
     });
     const page=await context.newPage();
+    if(input.observe_model_polls)await page.clock.install();
     page.on('pageerror',()=>report.browser_errors++);
     page.on('response',response=>{
       const key=category(response.url(),input.origin);
@@ -52,6 +54,25 @@ export async function diagnose(input) {
     try {await page.getByRole('heading',{name:'Workspace settings',exact:true}).waitFor({state:'visible',timeout:65000});report.settings_ready=true;} catch {}
     if(report.settings_ready){
       try{await page.getByRole('heading',{name:'Models & providers',exact:true}).waitFor({state:'visible',timeout:10000});await page.waitForLoadState('networkidle',{timeout:10000});report.network_settled=true;}catch{report.network_settled=false;}
+    }
+    if(input.observe_model_polls && report.network_settled){
+      report.startup_api_requests=report.api_requests;
+      report.startup_elapsed_ms=Date.now()-started;
+      report.model_poll_checks=[];
+      for(let i=0;i<2;i++){
+        const start=observed.length;
+        await page.clock.runFor(60001);
+        let previous=-1,settled=false;
+        for(let attempt=0;attempt<32;attempt++){
+          await delay(250);
+          if(observed.length>start && previous===observed.length && pending.size===0){settled=true;break;}
+          previous=observed.length;
+        }
+        const reads=observed.slice(start);
+        report.model_poll_checks.push({settled,api_requests:reads.length,status_reads:reads.filter(key=>key==='status').length,
+          catalog_reads:reads.filter(key=>['model-connections','model-configurations','model-task-routes','model-execution-settings','model-catalog-status'].includes(key)).length,
+          business_reads:reads.filter(key=>key!=='status'&&!key.startsWith('model-')).length});
+      }
     }
     report.models_visible=await page.getByRole('heading',{name:'Models & providers',exact:true}).isVisible();
     report.skeleton_visible=await page.locator('.shell-skeleton').isVisible();

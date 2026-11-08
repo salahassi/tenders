@@ -33,7 +33,7 @@ def extract(stream,directory):
                 value=content.read(16*1024*1024+1);require(len(value)==member.size,'ARCHIVE_SIZE_INVALID');output.write(value)
     require((directory/'index.html').is_file(),'INDEX_REQUIRED')
 
-def verified_assets(reference,revision,images,frontend):
+def verified_assets(reference,revision,images,frontend,*,model_settings=False):
     require(images.inspect(reference,revision,'frontend')==reference,'IDENTITY_MISMATCH')
     name='td-frontend-assets-'+uuid.uuid4().hex[:16]
     with tempfile.TemporaryDirectory(prefix='frontend-assets-',dir=os.environ['DOKS_WORKDIR']) as temporary:
@@ -54,7 +54,13 @@ def verified_assets(reference,revision,images,frontend):
             result=subprocess.run(['node',str(frontend.REPOSITORY/'frontend/deploy/verify-workspace-boot.mjs')],
                 env=env,stdout=log,stderr=subprocess.STDOUT,timeout=180,check=False)
             require(result.returncode==0,'WORKSPACE_BROWSER_FAILED')
-            return expected,{'index_sha256':hashlib.sha256(expected['index']).hexdigest(),
+            extra={}
+            if model_settings:
+                result=subprocess.run(['node',str(frontend.REPOSITORY/'frontend/deploy/verify-model-settings.mjs')],
+                    env=env,capture_output=True,text=True,timeout=25,check=False)
+                require(result.returncode==0 and len(result.stdout)<32768,'MODEL_SETTINGS_BROWSER_FAILED')
+                extra['model_settings_browser_fixture']=json.loads(result.stdout)
+            return expected,{**extra,'index_sha256':hashlib.sha256(expected['index']).hexdigest(),
                 'code_assets':len(expected['assets']),'source':'immutable_frontend_image',
                 'container_never_started':True,'inspection_container_removed':True,'workspace_browser_fixture_passed':True}
 
