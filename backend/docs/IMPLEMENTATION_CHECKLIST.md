@@ -1,5 +1,25 @@
 # Implementation status and continuation plan
 
+## November 8 — verified routing diagnosis and final admission gates
+
+Read-only inspection42513550842 from `0c1613d` passed with owned cleanup and no
+command sent. It confirms enabled modern execution at revision3 with exactly two
+parallel requests, no reserved usage and retry admission ready. The explicit
+verifier route inherits the round-robin default. Retained gpt-6-luna failures
+include source-quote mismatch (nine projected findings), candidate-quote mismatch
+(two), numeric-evidence mismatch and an invalid finding reference. The selected
+plan also proves successful gpt-6.1-sol verification. The scoped planned repair
+therefore makes this existing verifier explicit and raises the supported limit
+to four; its canonical Owner batch remains to execute and verify.
+
+The fresh complete backend suite after the admission migration passes all 3,590
+tests in 212 files (454.53 seconds). Both newly added full-schema settings-batch
+tests also pass after integration, as do backend typecheck/build, 16 admission
+release tests, 20 settings controls and 15 trial-runner controls. The unchanged
+frontend retains its fresh 389-test/typecheck/build pass from the latency change.
+Current runtime qualification still passes. Hosted admission release, exact
+settings application and another actual saved-work issuance are pending.
+
 ## November 8 — SQL-only admission-wake release controls prepared
 
 The scoped admission workflow retains the qualified `03c68b58` runtime pair,
