@@ -1,0 +1,736 @@
+{
+  "fixture": "synthetic-only",
+  "level": "real-postgresql-multiple-sessions",
+  "image": "postgres:17.6-alpine@sha256:ef257d85f76e48da1c64832459b59fcaba1a4dac97bf5d7450c77753542eee94",
+  "server_version": "17.6",
+  "container": "tdp-races-e58c84583a41",
+  "database": "races_56e3453b9467",
+  "network": "none",
+  "published_ports": [],
+  "migrations": [
+    {
+      "name": "20261014164945_backend_activation.sql",
+      "sha256": "9077d51c08f7b4c2b80895aead9820c771e1f4298684c34adab5c5ba12e03a72"
+    },
+    {
+      "name": "20261014165050_transactional_commands.sql",
+      "sha256": "4e73d1985ba6791af492fb5bedced4104b8d095a3e507a4784bd47ba617b4d54"
+    },
+    {
+      "name": "20261014165059_private_storage_and_jobs.sql",
+      "sha256": "8a5adf557745b32c0da6a25fdc0270f0b38fda1df28f74062d02d30afaf7f956"
+    },
+    {
+      "name": "20261014165444_harden_rpc_boundary.sql",
+      "sha256": "e7331e3fef66e09a6422847e21bc361cb91a72c384336409d964b0499a57ad9d"
+    },
+    {
+      "name": "20261014224705_connected_workspace_commands.sql",
+      "sha256": "26f6864220985eedf0c400647308ee0e772fae09c0f06845106be1c445068064"
+    },
+    {
+      "name": "20261014224723_email_password_identities.sql",
+      "sha256": "7a122c16e85310acbb69b601b004d284d5f7328a3153b0424c33ef6f36fbb590"
+    },
+    {
+      "name": "20261014224747_owner_invitations.sql",
+      "sha256": "6290359417d546214d623ec69345913eca6086b68c1048726289a6674e89fda0"
+    },
+    {
+      "name": "20261014224757_restricted_owner_setup.sql",
+      "sha256": "c6733b56bea9e6e7359edb7d679c2d8566c6af6a598430a669bfb2508e802bb2"
+    },
+    {
+      "name": "20261015102156_durable_evidence_workflows.sql",
+      "sha256": "39ad9bcf3f8e9c6e9286a73e8997ec6db2d0af6e9378cee4b23f319c76f2f594"
+    },
+    {
+      "name": "20261015103203_collection_and_dispatch.sql",
+      "sha256": "d32587733651e677537c6ebbab64d74484321ecb1d592347d4f88f62b1032daa"
+    },
+    {
+      "name": "20261015104947_model_policy_and_budget.sql",
+      "sha256": "8ec8f5e3dcad81f8682bd023d5b26f109cd635fc02282363f942ecf562fcfb20"
+    },
+    {
+      "name": "20261015181000_persistent_generation.sql",
+      "sha256": "a7bb418a4496c8782d7187e57908bace24a9669b3e67ae51168b020ffc0db7ee"
+    },
+    {
+      "name": "20261015183000_commercial_and_approval.sql",
+      "sha256": "19d73273889ef1f5c9e99b591390f9efa90c542d96cf9ea4967c7337bcf64541"
+    },
+    {
+      "name": "20261015185000_generation_assets.sql",
+      "sha256": "f38be561af789658648fa255e2fcbd492f8c7b0274791bc3636359daadcab5d2"
+    },
+    {
+      "name": "20261015192000_cloud_content_eligibility.sql",
+      "sha256": "4d4a539932c486c07f5ffb68a1115fdd0f10eb3022509b361b389e47b63c60eb"
+    },
+    {
+      "name": "20261015195000_export_authorization.sql",
+      "sha256": "c499539d6588443b092287047aafef8f4c5a4ccd2d72788b7c6cd422b12cc2d0"
+    },
+    {
+      "name": "20261015202000_acquisition_and_submission.sql",
+      "sha256": "0dcbb27a3515a6197b60169e53c034e4cce7fa93c7514c927e311b526d0b2cf7"
+    },
+    {
+      "name": "20261015204000_workspace_recovery.sql",
+      "sha256": "f74a28e4b2564252b93a171d364128800dafe827fd10735f067996dfc31f8d21"
+    },
+    {
+      "name": "20261015210000_operations_and_retention.sql",
+      "sha256": "7a4230f60a7ffde6b6493ca9fde8ea77fb0cb208ec2c279c217c9eefa59ef639"
+    },
+    {
+      "name": "20261015213000_reassessment_and_feedback.sql",
+      "sha256": "ed1b27e9abcbedfb709fceb8beb23710c2fbeeb8298949de8809b1a75712fcce"
+    },
+    {
+      "name": "20261015220000_dispatcher_extension_schema.sql",
+      "sha256": "9602ac60fa95d8f07935f0be75de2a3aa2da7e1e0a2294efd4b55fe6870b4066"
+    },
+    {
+      "name": "20261016013000_claim_designated_owner.sql",
+      "sha256": "bdb9cd8fe8107843bab290b0db7fae30051a5b839d5b622ff745fae9943b810f"
+    },
+    {
+      "name": "20261016120000_model_provider_pool.sql",
+      "sha256": "db8d939f69dded1f3208ab738c384af73e5a6f5b7fd3da591ae3cb1186849b25"
+    },
+    {
+      "name": "20261016130000_optional_free_providers.sql",
+      "sha256": "17b8f32d0c4409b7879bdd0624c8031514ff9fcfcd018c4e80f9afd2bc6c8151"
+    },
+    {
+      "name": "20261016220000_model_pool_runtime_fixes.sql",
+      "sha256": "20852b74f8d5176441b3e91e80e5f263af09d1fe1884aabd558dcc7eeeb8456c"
+    },
+    {
+      "name": "20261017154306_continuous_gemini_free_tier.sql",
+      "sha256": "9411102d2be4eea6325c66e0da791d542a49c8fbaf642a999adb8c9e4f080a48"
+    },
+    {
+      "name": "20261017180227_independent_gemini_requests.sql",
+      "sha256": "83528e2121329005ed2b7693a10ca09fe96eb1b5dce32c5cfd244cf2a193969f"
+    },
+    {
+      "name": "20261017182619_durable_gemini_background.sql",
+      "sha256": "6ce19b247e3fb134d7bd1217a36297746bce821ec06fda4078953ae755a0bf58"
+    },
+    {
+      "name": "20261017191753_round_robin_model_routing.sql",
+      "sha256": "83cd1e2f4b3e82f8b8dba0e6272712446a18941993ea68bafbcc91dbf815009a"
+    },
+    {
+      "name": "20261017212026_preserve_round_robin_cursor_on_poll.sql",
+      "sha256": "b5acf870d48db2819ea79a4c713d00022a9dd809ab37eefe1741ac785fb73d52"
+    },
+    {
+      "name": "20261017212401_deterministic_global_model_rotation.sql",
+      "sha256": "9275522d7452c860f4f7dae2939a9a61f877caaf2bc2e796c79a5c31197e11e5"
+    },
+    {
+      "name": "20261017234946_prioritize_collection_and_cancel_stale_source_jobs.sql",
+      "sha256": "2b241c523ac8bc106ae94840c63e75c8bbf783b7b631fb7e26e213fb3162f94f"
+    },
+    {
+      "name": "20261017235819_keep_generation_progress_and_resumed_sources_moving.sql",
+      "sha256": "335c481fcfa745b8f9d89d38d9af743fc2f0dcfceb30f55a3e8a12126ca3d8b3"
+    },
+    {
+      "name": "20261018075948_software_discovery_and_public_assessment.sql",
+      "sha256": "1efc7a4744900636b2bb920c1b3822308178769fc02f8db9688007553a91e6a2"
+    },
+    {
+      "name": "20261018083848_require_confirmed_software_scope_for_inbox.sql",
+      "sha256": "1bf7f41057106114280ab506cd96a3a15ac61b44afee4acd1de64c6796809a15"
+    },
+    {
+      "name": "20261018085618_notice_detail_evidence.sql",
+      "sha256": "2f7c621e5bbfdf65559bd2a2f9471af5c7ecccb8439f3a28970dfe1afeabdc65"
+    },
+    {
+      "name": "20261018093019_bounded_detail_assessment_queue.sql",
+      "sha256": "988f3928db0c89f76c0777625b813921622721f083d19c2f1ea85e9c8f92ae1d"
+    },
+    {
+      "name": "20261018094600_bounded_assessment_output_repair.sql",
+      "sha256": "fef8439778ef605158663744ed30f403bd060428785de7f16b664dda858ca337"
+    },
+    {
+      "name": "20261018095000_reconcile_superseded_model_usage.sql",
+      "sha256": "51893831dba1697a0cc653705c0bda7cf644d792f1fa7838ac652422bdc0576d"
+    },
+    {
+      "name": "20261018101911_zai_free_provider.sql",
+      "sha256": "180c9015a4a5c67bfe0abd8e2c5414a72c70eb98abef81a33002c2965c0d6dd4"
+    },
+    {
+      "name": "20261018103438_provider_pool_status.sql",
+      "sha256": "d71872d61a65f76e94db723fe9f48653b8b023944d5027ebaeca1b9da89bc882"
+    },
+    {
+      "name": "20261018104130_company_knowledge_processing_policy.sql",
+      "sha256": "b4fa400e9d286dbc5f3e0e19abad3709984f43388f10465527971a6827625a6f"
+    },
+    {
+      "name": "20261018105109_credential_model_routing.sql",
+      "sha256": "dd93f66934763b2661217d90e23f47ae5b2f852c5fd5e09144463aa4955c99bc"
+    },
+    {
+      "name": "20261018112447_model_activity_observability.sql",
+      "sha256": "9655e86ec383ae3e790c3a10bfa17911d8a9d9514573fe1ff3c93c1467b08381"
+    },
+    {
+      "name": "20261018114536_preserve_targeted_probe_identity.sql",
+      "sha256": "de1cc5db2affe6ae78651fb24965dc65abf7c632b3ad046b7837c16cd829e15d"
+    },
+    {
+      "name": "20261018135823_provider_rejection_diagnostics.sql",
+      "sha256": "02c456d1a37fb75e326330889e4406a020f7aa3acd8e7e75899ef552dc6330f5"
+    },
+    {
+      "name": "20261018142401_openai_claude_providers.sql",
+      "sha256": "018676f0af2d3b78148bb31c90eff3eae7cd69849d474301eb519c1f1caffff6"
+    },
+    {
+      "name": "20261018172905_cloudflare_automatic_routing.sql",
+      "sha256": "201b0d16dee7af10f94e46ac3efe836bbc847d43d15fcef933367884c67dab79"
+    },
+    {
+      "name": "20261018210235_configurable_company_scope.sql",
+      "sha256": "5a4846b54753cf6a1063c4761b72b7cc23c8020061a785a9cfc9fe153256f519"
+    },
+    {
+      "name": "20261018210646_configure_scope_command.sql",
+      "sha256": "858bd08f681e568108c9271d4d7e0e0f039947f22204f061c503b81fe1f95575"
+    },
+    {
+      "name": "20261018210648_scope_assessment_visibility.sql",
+      "sha256": "febb80459dbd6e5d50dcc9ae744dd43f2d6166689ddf3a49b1394d7698d63094"
+    },
+    {
+      "name": "20261018223214_rejected_request_reservation_accounting.sql",
+      "sha256": "432fc1c81e6574f07eecd462d8fa582b1850712281f5ccec4cc0439bd421a29a"
+    },
+    {
+      "name": "20261019085418_autonomous_processing.sql",
+      "sha256": "9899492e573491836c0fad085969c225fb87c4c1d951acb57446290cb880cc8a"
+    },
+    {
+      "name": "20261019085420_notification_preferences_schema.sql",
+      "sha256": "082a1fd02bfaad9cd326446aca1858a5ff251a708838419e488c455c8343c162"
+    },
+    {
+      "name": "20261019085421_notification_preferences_commands.sql",
+      "sha256": "04f16876577666f97e0d27ce835843bb618ee6783502934ce902c1f96a95a042"
+    },
+    {
+      "name": "20261019085422_notification_delivery_worker.sql",
+      "sha256": "ee62380580c90a12b876cd104e91d5333175df091be2c9e95a6b0b164fb8e4ec"
+    },
+    {
+      "name": "20261019113019_remove_enabled_source_limit.sql",
+      "sha256": "da7831054b7dcc41c747b894c17e49a44a6717ee0a7bd24ee0876d8da507eb8f"
+    },
+    {
+      "name": "20261019133005_automatic_source_state.sql",
+      "sha256": "6e699e1bebcbab4105620be61f62ec78be89d5a12a10c3fe510f191ae1d116d7"
+    },
+    {
+      "name": "20261019133009_automatic_source_completion.sql",
+      "sha256": "d6e1a84fa5ae224f4c41c4502c07e197aa5f0be227cc1a5201c03ac051ccc107"
+    },
+    {
+      "name": "20261019133012_automatic_source_commands.sql",
+      "sha256": "1db6043ee56a8ae41bf10ae64994612b60cad0f0d11cc1fb3edb7dd065047c16"
+    },
+    {
+      "name": "20261019133813_prevent_source_queue_starvation.sql",
+      "sha256": "ff7e465196b060477f7105c5ec90f960c92b3272af3f4a68a13ca761bcc6d5f8"
+    },
+    {
+      "name": "20261019134558_independent_source_discovery_retry.sql",
+      "sha256": "c69744dbba7fc9ffc0d4525450f101216ff0c3c5cda73a007d67de4f81b15564"
+    },
+    {
+      "name": "20261019141504_grouped_processing_alerts.sql",
+      "sha256": "611db85759f5209b1f11128b0689f577e845ffeeee009fd43f4a1c4bb343dacc"
+    },
+    {
+      "name": "20261019141931_provider_specific_retry_wait.sql",
+      "sha256": "1a32b97ea9bb72d1d0dc54b40f3eedb9e7f6e67798e621950da8e51b30fe0225"
+    },
+    {
+      "name": "20261019182158_incident_aware_failure_notifications.sql",
+      "sha256": "54f270e7447430501bead0fb4b89d4fe069b5a5e3ba2a7d5e5ccca422365903f"
+    },
+    {
+      "name": "20261019182448_provider_outage_backoff.sql",
+      "sha256": "d6ba6606db33b11429ce012a3f2b9990954c144fa4463177b0310a659ea72f81"
+    },
+    {
+      "name": "20261019184444_daily_failure_preferences.sql",
+      "sha256": "39b16599771cd490fb121013dd67384a95db2b090ccf259166ce3ab10aae347c"
+    },
+    {
+      "name": "20261019184446_incident_notification_tick.sql",
+      "sha256": "7f074fbb046bfc263c59b587764fe4fab47a097e3456c8c186d0847b53e1b9b5"
+    },
+    {
+      "name": "20261019184448_incident_notification_claim.sql",
+      "sha256": "e98252c02e482a5b5e3a5dc2cab2a87bb891be14132f353bb51a6ea762eb2ab0"
+    },
+    {
+      "name": "20261019204907_proposal_trial_readiness.sql",
+      "sha256": "d81639ba062200286ec2c77755ea8f15b0acdbcb0ed8b78cb28015dfc9e5cd00"
+    },
+    {
+      "name": "20261019230940_generation_resume_provider_scope.sql",
+      "sha256": "09f392f8fce259b2e26dbc941a50f9fa7d09f02f51b68b0a2025885fa873ff6e"
+    },
+    {
+      "name": "20261020000907_durable_model_round_continuation.sql",
+      "sha256": "ab519a36979c5c5d55aa8d430dfab8e46ef012d5559b276d87b2147058f61eb9"
+    },
+    {
+      "name": "20261020070522_scoped_proposal_evidence_refresh.sql",
+      "sha256": "71ad7f8c09e8d7a55f85eed86a28cd5bfc0d59fedd2dde78737eeee99b30eb85"
+    },
+    {
+      "name": "20261020095212_durable_provider_background_and_worker.sql",
+      "sha256": "70ad1cc05fbd17f89b8bf468d593b45da2df6e63dcabef4025ab56b373af8c7e"
+    },
+    {
+      "name": "20261020141244_model_catalog_and_task_routes.sql",
+      "sha256": "8cef73c01c98cbf517e4ad965030332c454355b8cfbac571f92dcaca36ac5228"
+    },
+    {
+      "name": "20261020141542_model_target_identity_and_execution.sql",
+      "sha256": "97b762602dcfecfd25b910ec558684517acb17c6e29da37ee4312af8547a3a1d"
+    },
+    {
+      "name": "20261020143042_durable_model_graph.sql",
+      "sha256": "7e792cf21220368bd239c5347537e69bb2215e2234cbced653cde057a8bd51c3"
+    },
+    {
+      "name": "20261020150037_model_graph_recovery_and_retention.sql",
+      "sha256": "b162703ae04eb0c3ab5952893b43d4b8fec8a3093b76c2ce73d309468f4cdc43"
+    },
+    {
+      "name": "20261020195225_automatic_model_transport.sql",
+      "sha256": "69a29d26e6a7d9f07719136af59235231f4c6ead8f58e55ef812a59dc75ec797"
+    },
+    {
+      "name": "20261020211500_confidentiality_requirement_labels.sql",
+      "sha256": "f9f4b703e0a74750416db0631d034172dac001b2d8f437e83ba4d5f5c54a4663"
+    },
+    {
+      "name": "20261020212000_accepted_request_observability.sql",
+      "sha256": "8ca91e535bf39ed4bdb526803f2b567709b5cf65e6423fed0ee4164a99104a94"
+    },
+    {
+      "name": "20261020212500_model_capacity_wait.sql",
+      "sha256": "bff5af23b6a6d98307529410e7da247ea82bca994876262c9ed3f533dc2e1680"
+    },
+    {
+      "name": "20261020220700_source_model_capacity_recovery.sql",
+      "sha256": "db2056fa7ef70809e3dc3e6efe47ff7c322cd09374f0b5a06ce5dd15a94b632f"
+    },
+    {
+      "name": "20261021002125_scope_model_resume_to_phase.sql",
+      "sha256": "806c05b3fb62629b68400693efe77098944d646a7606de0ea03ca4ea5fc5a095"
+    },
+    {
+      "name": "20261021003448_reconcile_orphaned_model_reservations.sql",
+      "sha256": "0a07cbadfd60ead6e123cce51595e6d6947760f787950bb9b4e60afed2a3d2c7"
+    },
+    {
+      "name": "20261021005033_scope_unknown_task_reservations_to_phase.sql",
+      "sha256": "df24dbe3a734a4b491c1d22bfca39744a2c91bff7f0c11d8cd5d7c22231d67d4"
+    },
+    {
+      "name": "20261021010317_healthy_model_poll_eligibility.sql",
+      "sha256": "e9f8888f2b8d2337ccd222df18cdd375c12edbe708fc5e88a4084e9b39ac7044"
+    },
+    {
+      "name": "20261021071021_model_continuation_queue_fairness.sql",
+      "sha256": "df72ad9db1536083599a2db9f4859c052be48451e0ce9bde523fb5062f569571"
+    },
+    {
+      "name": "20261021071753_complete_draft_export_context.sql",
+      "sha256": "fba9192b8ee3f4cc3ce02737a956853c1699fc209dad9d645ee715576e7434f2"
+    },
+    {
+      "name": "20261021073417_immutable_model_phase_prompt_pin.sql",
+      "sha256": "99a0c93774665e8d5e65b29502f0d323b8fc72812b6668302fc664ce81dac51b"
+    },
+    {
+      "name": "20261021085510_bounded_queue_wakeup.sql",
+      "sha256": "523907b692ef1e0b3de5a80243725c11dd9f8cefb22e02e096fd678ffd558d61"
+    },
+    {
+      "name": "20261021091037_retained_verification_recovery_guard.sql",
+      "sha256": "2aaab9129c9d8a0b826eee6e6558efe6197713dd7b4f2eca9301c42396e257a6"
+    },
+    {
+      "name": "20261021092435_generation_plan_blocked_status.sql",
+      "sha256": "42c3eab71e42785b4bdb0168f587697c4953e185033f715d9632fdcb00dc7a7e"
+    },
+    {
+      "name": "20261021094701_terminal_queue_wakeup.sql",
+      "sha256": "ab9d70b632a79000b9283fed10a187fc9872df766699d98abfb3466a3f12392b"
+    },
+    {
+      "name": "20261021095309_deferred_queue_wakeup.sql",
+      "sha256": "0f99224c1c62faec97a49f12bf8040c3298fff3ff63b0add8a5b24ef5de696aa"
+    },
+    {
+      "name": "20261021095545_automatic_gemini_reasoning.sql",
+      "sha256": "88241d9f10b57234a73e1ee2d4ebafc9d92dc839883cbab5ae31c4825352a2e6"
+    },
+    {
+      "name": "20261021102512_recover_paid_writer_candidate.sql",
+      "sha256": "441e8accbb23b4030800d094c58bdb28648798e36c5bdfa21c3246dc41a0c16a"
+    },
+    {
+      "name": "20261021120717_retry_one_generation_job.sql",
+      "sha256": "070e7648a89563bbff18c6272d396adbe54f320c8dd1c77dc67ad5a5ef0ce40a"
+    },
+    {
+      "name": "20261021120832_accepted_model_poll_wakeup.sql",
+      "sha256": "9d4fbe5e8912363113dfe9bed2e9764b2a420045ba0f9c6bfc61426fae492c15"
+    },
+    {
+      "name": "20261021123321_preserve_unchanged_notice_details.sql",
+      "sha256": "567aee2700a3fab19d09e17de2f716e258b046e5a0db9029331df5c6f245244a"
+    },
+    {
+      "name": "20261021130940_wake_unchanged_notice_continuations.sql",
+      "sha256": "3df7d9ecb13d65ed5b7cc1ec6ff64caf282cb1ec0213ab332f19675fb19ea162"
+    },
+    {
+      "name": "20261021131353_proposal_section_outline.sql",
+      "sha256": "06b0ea2c4e9ba8622819f64c5c1aa399b9bb633ba39a628e320ec10e1962ff42"
+    },
+    {
+      "name": "20261021131657_recover_alternate_paid_writer.sql",
+      "sha256": "69f581623975a6937c5b576f35ef711edae0f7840fdc7a3d9dc8043c1270f1bc"
+    },
+    {
+      "name": "20261021134321_recover_invalid_verification_for_repair.sql",
+      "sha256": "7d29ad6d75e75b276ddadc30ebddc7124d91c4bf262f2d8137e718dd3d1b10b5"
+    },
+    {
+      "name": "20261021140001_writer_validation_handoff.sql",
+      "sha256": "9200618d2dc236f7ff799c2013ac118a9ba9fbece1072a4264f61df041d791af"
+    },
+    {
+      "name": "20261021194000_unmapped_draft_rfp_context.sql",
+      "sha256": "29fcbdae4b8ba4eb4c482037a86adb349794b545c8590d173dabc164aaf057ea"
+    },
+    {
+      "name": "20261021210000_bounded_parallel_model_requests.sql",
+      "sha256": "b2b23bbef635d2e8bc45c74a0e37fabf975d6ad9721c7580dfc25dd57c05752f"
+    },
+    {
+      "name": "20261021220730_fair_generation_queue.sql",
+      "sha256": "307acff3753ce11f74a4adfe429e606d74ecb37f6d3e64d9d1191af7142e626b"
+    },
+    {
+      "name": "20261021221342_semantic_proposal_workflow.sql",
+      "sha256": "e991702443b3d7dc236e17fc43f736bce187c563ed78453bf7e55bc9f4a0022a"
+    },
+    {
+      "name": "20261022070632_bounded_hierarchical_planning.sql",
+      "sha256": "d46b69d0ecd24bccfe7e1096e49398b0879edc2c26ced06c9530136c9948beef"
+    },
+    {
+      "name": "20261022081448_prioritize_proposal_continuations.sql",
+      "sha256": "6a89e6fe5f1f676933f582cb7af8ab9cca45f6e5cdd707298a851beb0a6944f1"
+    },
+    {
+      "name": "20261022100048_generic_revalidated_scope_recovery.sql",
+      "sha256": "cb4e3186d7b8f14bedf96ba9ee8705c76d1881676171aaec70e0200d4796bddd"
+    },
+    {
+      "name": "20261022102239_transient_database_recovery.sql",
+      "sha256": "cff3c28224a9e00182facac8e61869827975cd89c9b3716be278158b0f899a0f"
+    },
+    {
+      "name": "20261022105324_revalidate_retained_writer.sql",
+      "sha256": "a4856c34681e4e211631535513e5bcd76498badec20cba8ef0ded19b8c725e2f"
+    },
+    {
+      "name": "20261022110839_review_verification_boundary_recheck.sql",
+      "sha256": "a27b32baba3571c9923b33ddf1232f4526bbda07469d2ac3c51d897ebb3b4647"
+    },
+    {
+      "name": "20261022113053_citable_review_context_recovery.sql",
+      "sha256": "796593dd5611dcc03abebf581d7eb1d900f54167efe27983543ecca45bb431b5"
+    },
+    {
+      "name": "20261022142237_recover_legacy_review_on_resume.sql",
+      "sha256": "a72eab36eab95f959c68989290dcbb0b13dbbab1932e44dde37d3fed0308dd59"
+    },
+    {
+      "name": "20261022142238_source_browser_queue.sql",
+      "sha256": "4afd4cdc06312b5b7e0c1390df84249264570f43b68ab455bc6d4a92de2883f9"
+    },
+    {
+      "name": "20261022144816_preserve_frozen_knowledge_on_addition.sql",
+      "sha256": "dae1c381034563b1780f6e33f6a6a740c28e15e75afee66f527fb4673bfbb21d"
+    },
+    {
+      "name": "20261022150402_browser_worker_actions_identity.sql",
+      "sha256": "ff68ed88b1919de07a00f04cacd69a1ecb064411dea5d7caf3af0c517b696b27"
+    },
+    {
+      "name": "20261022195526_prioritize_static_tender_fetches.sql",
+      "sha256": "ecde59c176014fb0509af93aef4a88d90b352de0ee1424a9c3745b1db13deecf"
+    },
+    {
+      "name": "20261022200046_prioritize_ready_browser_continuations.sql",
+      "sha256": "a4dd750ce47db746c9b5b42ef7cba624f737b1d1f234437a26ebc4036deed796"
+    },
+    {
+      "name": "20261022230741_scope_assessment_currentness.sql",
+      "sha256": "cbc989c7e51b5a3bf5ca5991395c513d138404453dbecfb3d84f7b64014ec271"
+    },
+    {
+      "name": "20261022231343_public_notice_ocr_queue.sql",
+      "sha256": "ea094733b47775884b8dafc04920eba89550f846f2e02c4a1daf98d7c24849dc"
+    },
+    {
+      "name": "20261022231428_render_public_notice_details.sql",
+      "sha256": "1d5e15662f0da7ad72e225fc70d059ad1e838682994cfc918e26d1dee2e68929"
+    },
+    {
+      "name": "20261022231840_align_notice_confidentiality_labels.sql",
+      "sha256": "cec57588d6b1038452df3f8edefbf1d1123640eaafb47ae28e2833dc33940674"
+    },
+    {
+      "name": "20261022235500_prioritize_configured_dom_sources.sql",
+      "sha256": "f84e40109a01c085d3cda4bf37dae83172a09ff7fd1873d515535e4e04d89d0c"
+    },
+    {
+      "name": "20261023001313_retry_transient_public_read_receipts.sql",
+      "sha256": "d4f656bfbd2eff4aeef5da0c33df60645ce55154573f20ecae5668e4729f4a89"
+    },
+    {
+      "name": "20261023002056_allow_current_browser_completion_during_parent_resume.sql",
+      "sha256": "c7c6aa25e6fe9158f89dd52d8bc2c404d61788cc923a4cb7f931d58883c058d7"
+    },
+    {
+      "name": "20261023003552_wake_durable_reader_and_graph_handoffs.sql",
+      "sha256": "0e37cd485fa4bad2f27438c1a29febab3a7692eb467f7d5f56f10dc8c08c2943"
+    },
+    {
+      "name": "20261023150859_recover_completed_proposal_draft.sql",
+      "sha256": "d4654615a25d223867d1c9b9d8a258258531623c9b91b227c33d03543bb6e163"
+    },
+    {
+      "name": "20261023160416_isolate_notice_ocr_waits.sql",
+      "sha256": "af867e00102a0f8c903fccbd8ab618caea1618264441190b59e7e9bf5d2b4d37"
+    },
+    {
+      "name": "20261026112011_openrouter_provider.sql",
+      "sha256": "6e7eba1a7a50178add823d7a868a50481e8ff3fcedf74fa7b37e4e0a33512db8"
+    },
+    {
+      "name": "20261031115846_requested_model_processing.sql",
+      "sha256": "3eedc737b3b813e30f802b1ea39d42f8d017e4d06e7f9dada535a23bcb2ed3ac"
+    },
+    {
+      "name": "20261031202143_flexible_proposal_input_drafts.sql",
+      "sha256": "5bac8ff0a8e070688873b2e6c020a3c7ddb51c7dc8e0ad8005735e4e653ccf6c"
+    },
+    {
+      "name": "20261102231710_writer_handoff_usage_blocker.sql",
+      "sha256": "f15bd6dbfea0df624fff79e79c36770ee4625230893379fdb51e6341f09db9a1"
+    },
+    {
+      "name": "20261102231721_terminal_background_request_lifecycle.sql",
+      "sha256": "f7f4d59258ed951d4c2a955ff8cf28245f67411e658b6948fa91e09cec8ebc07"
+    },
+    {
+      "name": "20261103022500_analysis_verifier_recheck.sql",
+      "sha256": "cead30c43776e35822e4fa63476223a5ff4abe8de35218286d66dd5bd8c22382"
+    },
+    {
+      "name": "20261103031500_analysis_recheck_prompt_identity.sql",
+      "sha256": "30f79868deaa94daab1554584aede2545a1611a29f7b19d26503e75f57720f14"
+    },
+    {
+      "name": "20261103032000_model_admission_fairness.sql",
+      "sha256": "3bb13dd60fb4322ac3ba70c534ec6165a668da547318d1ea49232ae1d401c927"
+    },
+    {
+      "name": "20261104121022_partial_document_coverage.sql",
+      "sha256": "7a33a9794c32d398d8fa2740c80f9dce0f9eeac93c7af5616947fb24bcdb9663"
+    },
+    {
+      "name": "20261104121116_proposal_delivery_snapshots.sql",
+      "sha256": "323ae4275ffd64bf61413f961d9a753674154a63241cfc63230f6e2ccf27e6d2"
+    },
+    {
+      "name": "20261104121423_provider_failure_scope.sql",
+      "sha256": "68410a020a500f45587fbf845c947aff491d0f6586a3a1b09be6593b840f715a"
+    },
+    {
+      "name": "20261104121443_automatic_usage_recovery.sql",
+      "sha256": "0121ca91d4cdaea64eaacbce44ee790609ae03278a771ce1773a08e97f6170b8"
+    },
+    {
+      "name": "20261104122015_company_evidence_retrieval.sql",
+      "sha256": "4cf7302d5a137e33741a1369eb65a9563ea37da5b9428a3222ad0566c48fedee"
+    },
+    {
+      "name": "20261104122333_durable_delivery_artifacts.sql",
+      "sha256": "40e413760862579d6caddf79ddbb4c42134f05a4657cef5c15294be5d2aaf128"
+    },
+    {
+      "name": "20261104133930_durable_uploaded_document_ocr.sql",
+      "sha256": "1f189df86545aec22f2d4ee8053912b0edad36fd4fa915caf3e5df3d68638f9d"
+    },
+    {
+      "name": "20261104134540_source_evidence_authority.sql",
+      "sha256": "fba123633c45282cbf12a2f7907768c647032da673d65a7853433fab615bce0e"
+    },
+    {
+      "name": "20261104134646_structured_proposal_authoring.sql",
+      "sha256": "1ee8a3bdc3c5eaa0b698f22565653d8d0a73b4cb4f42d4c36c893cbb4bf46bd5"
+    },
+    {
+      "name": "20261104135306_proposal_consistency_contract.sql",
+      "sha256": "1b8401b675194055d69d78e38ffc3f73f9f4d1036b7ce3fc66fe64cff8a6cdfe"
+    },
+    {
+      "name": "20261104135748_proposal_consistency_review.sql",
+      "sha256": "b31ae1d9dc08e4dea56cd32af49cb2c430f7a8ef18d1d4104c50fcaec5107097"
+    },
+    {
+      "name": "20261104140628_authored_response_adoption.sql",
+      "sha256": "2afe615339f15807baf38ff761df392222de529dac233acaeb81f225506f3404"
+    },
+    {
+      "name": "20261104142525_proposal_issuance_deadline.sql",
+      "sha256": "5d81ed380b3c4c0eb2637cf4e9ebea566b6b86e5a4a42adcc476391e475aca51"
+    },
+    {
+      "name": "20261104143632_generated_review_delivery.sql",
+      "sha256": "8da4bdcbd534b04f62d157bbd49d2aa2a5e0224cdfd7fdd19f18682653dfeeaa"
+    },
+    {
+      "name": "20261104144002_requirement_applicability_binding.sql",
+      "sha256": "dca1898a34571f6ccf88ce57bf24e84f5faed983d81dc5aa348b320155ebfb3b"
+    },
+    {
+      "name": "20261104150228_restored_source_review_assurance.sql",
+      "sha256": "d2e9f7b70f4cf2379d1a488b72612cb07afae9636eeed337b27c2225ecf6659a"
+    },
+    {
+      "name": "20261104151946_current_proposal_issuance_contract.sql",
+      "sha256": "4413206e83a6a19755d969d70b6ca4dc370c76ba79e57159d7f206d96d0a841e"
+    },
+    {
+      "name": "20261104152913_durable_ordinary_export_packages.sql",
+      "sha256": "b174c3c4d569cb508b00615a7f08ef347ac4787fa53161caae636ee2aaae7e50"
+    },
+    {
+      "name": "20261104160125_proposal_issuance_file_capacity.sql",
+      "sha256": "46ba7ddc4c1d004557bd35e7c11c99c89f416349554e1411197c2193f9d16723"
+    },
+    {
+      "name": "20261104163406_serialize_local_document_rendering.sql",
+      "sha256": "6f1a87cff03d035446cce8e8aefab0e09ce23c2d2c1d4d59377f741e89e2f088"
+    },
+    {
+      "name": "20261104170442_durable_storage_write_intents.sql",
+      "sha256": "af8ff6c5a07c946a60b40563549492466387c3d8eb324c67995d80d1a0d10694"
+    },
+    {
+      "name": "20261104172700_storage_write_retirement_proofs.sql",
+      "sha256": "5269599b431da34c3f7ee77d06442441e692c9f2b754d2f2050a42e06dbe1634"
+    },
+    {
+      "name": "20261104212300_structured_section_body_bound.sql",
+      "sha256": "e35c6131b64fd80943b340d1352e072db43ded8f3444885fd082720397b87e37"
+    },
+    {
+      "name": "20261104212818_bounded_command_batch_results.sql",
+      "sha256": "7bb805fefa6584e02ae8ef65fc6117fb86a9c48b2a8fcf4502e1e7783fe2dc22"
+    },
+    {
+      "name": "20261105120000_source_obligation_resolution.sql",
+      "sha256": "d77199d7309e804a6638e46f3169b9eec8cf85f5fd650e9a1f89ab4cd4cba0f1"
+    },
+    {
+      "name": "20261105120100_worker_capability_five.sql",
+      "sha256": "231981048bbaff8b2c8a2e85ed4deb16f68a0ec656fd0b2908b4e84d69f943b3"
+    },
+    {
+      "name": "20261105120200_retirement_catalog_and_retry_scope.sql",
+      "sha256": "504282160eabd9f641b6a4b8bce5a1c654f46f0f9f626517cf485a4adc7c3978"
+    },
+    {
+      "name": "20261108175251_generation_retry_modern_usage_scope.sql",
+      "sha256": "fe772e3c978950d4aa09a0f2ea6625adcb71b52f671f2dd4270e28a8b9de2b61"
+    },
+    {
+      "name": "20261108180821_healthy_model_poll_backoff.sql",
+      "sha256": "d2c683dd7c6b7e9c5b2736f5d07fea1bcdbaea37ddcba20877f5f74b2127cc1a"
+    },
+    {
+      "name": "20261108190052_wake_authorized_proposal_admission.sql",
+      "sha256": "fcde6425b740a60ea9001a4abefea960a4bbe461e3ec27dae70f2099f2f06562"
+    },
+    {
+      "name": "20261108194639_prepare_accepted_model_poll.sql",
+      "sha256": "8d089d8d5237fa96e4903ddc54724318afeaeb457737341e88d7e872f49341af"
+    },
+    {
+      "name": "20261108212048_commercial_uuid_colon_successor.sql",
+      "sha256": "1cab7a1a875b1f7180d9c1ed3faf927bb981183874bdda7463b89b779ab67935"
+    },
+    {
+      "name": "20261108220203_generated_delivery_checkpoint_report_ref.sql",
+      "sha256": "6bf6a506c53bf5113a17dfbb9c12ec09fc4ee0090599931776c34ed8e2614e53"
+    }
+  ],
+  "cases": [
+    {
+      "case": "duplicate-publication-cas",
+      "passed": true,
+      "contenders_observed_waiting": 2,
+      "snapshots": 1,
+      "audit_events": 1,
+      "render_jobs": 1
+    },
+    {
+      "case": "source-edited-while-waiting",
+      "passed": true,
+      "contenders_observed_waiting": 2,
+      "snapshots": 0
+    },
+    {
+      "case": "actor-revoked-while-waiting",
+      "passed": true,
+      "contenders_observed_waiting": 2,
+      "snapshots": 0
+    }
+  ],
+  "qualification": "Synthetic SQL structural publication boundaries using actual ModelGraphStore.put checkpoint serialization; accepted model/verifier records are fixture data, not live model qualification.",
+  "source_files": {
+    "backend/scripts/testing/generated_delivery_fixture.py": "99108d84473540417cccd0737015724263edd546b8d9fef62f585eb1cce9b887",
+    "backend/scripts/testing/generated_delivery_races.py": "b4c9140cde489c518c1af9ce63c2e4709dbb44cfbd8c01e2687e47da4cdee84b",
+    "backend/tests/backend/modelGraphCheckpointFixture.ts": "fd9fda34deeb4d361221fc0a9138db8b09155eb08a206ba8ed03b6d3a8f96b05",
+    "backend/supabase/functions/_shared/modelGraphStore.ts": "dac7fd89af77f78042ab2e6d56e01b95ffb84539f6023f5ef273c31265bde0f2"
+  },
+  "production_calls": 0,
+  "provider_calls": 0,
+  "cleanup_confirmed": true
+}

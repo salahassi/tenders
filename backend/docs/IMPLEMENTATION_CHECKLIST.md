@@ -70,13 +70,18 @@ noncanonical, foreign and missing references remain unavailable. Graph/job,
 accepted-output, coverage, source, actor, lease and version guards stay intact.
 
 Both affected full-schema pipeline fixtures now capture the real
-`ModelGraphStore.put` serializer output. All23 tests pass, including the old
+`ModelGraphStore.put` serializer output. All 23 tests pass, including the old
 join returning zero receipts, the corrected complete receipt set, malformed and
 foreign latest references with no older fallback, unaccepted/mismatched results,
 namespace, source-job, stale input/lease guards, and actual DOCX preparation.
-An isolated PostgreSQL17 helper proof passes29 format/ACL controls. The native
-publication race fixture also uses the real serializer; its recheck and the
-complete package gates remain pending. No hosted database change, provider call,
+The [isolated PostgreSQL17 decoder proof](evidence/generated-delivery-checkpoint-decoder-20261108.json)
+passes 29 format/ACL controls using actual saver output; its committed runner is
+`backend/scripts/testing/generated_delivery_checkpoint.py`. All three
+[real PostgreSQL publication races](evidence/generated-delivery-checkpoint-publication-20261108.json)
+also pass using the real serializer: one
+publication wins duplicate contenders, and source edits or actor revocation
+while waiting publish nothing. Backend typecheck/build pass; the complete
+package gate remains pending. No hosted database change, provider call,
 customer command or generated-file success is claimed by these local tests.
 
 ## November 8 — commercial successor capability deployed
