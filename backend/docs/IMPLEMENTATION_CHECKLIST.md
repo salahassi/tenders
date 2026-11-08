@@ -97,11 +97,21 @@ older pins. Both the existing adaptive-poll SQL and the new accepted-poll helper
 migration are bound to the build receipt. This binds source only; SQL behavior
 and the child schema ledger require separate database qualification.
 
-Eight wrapper guard tests pass. The new native fixture and product source freeze
-are still being prepared. The qualification hash is intentionally unset, so
-verification and publication fail closed. No image build, native execution,
-registry publication, deployment or provider request has been performed for
-this qualification preparation.
+The new native fixture is prepared. It exercises pending queued/in-progress
+responses through the fused RPC, GET, attempt completion and deferred wake;
+completed responses rejoin the original model validation and usage settlement.
+Schema, coverage and quotation failures remain rejected. Identity/one-use
+receipts, closed issuance, remote expiry and legacy fallback are covered, with
+zero generation POSTs or new reservations and explicit successful cleanup.
+
+All 55 combined controls pass: thirteen new native-driver controls, eight new
+wrapper controls and 34 retained qualification/release controls. Backend
+typecheck passes. A separate source-only smoke passes the candidate behavior
+and compares all 28 revision-6 wire combinations/two accepted pins to baseline
+source; this is not native-image evidence. The qualification hash remains
+unset until the frozen release image is actually tested. No image build,
+native execution, registry publication, deployment or provider request has
+been performed for this qualification preparation.
 
 ## November 8 — hosted read-only performance snapshot
 
