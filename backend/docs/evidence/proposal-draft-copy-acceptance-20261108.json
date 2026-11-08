@@ -1,0 +1,133 @@
+{
+  "version": 1,
+  "kind": "proposal_ordinary_draft_copy_acceptance",
+  "status": "unapproved_review_copy_download_and_qa_passed",
+  "source_revision": "dae8d9c46b0a52adab0403a2d4a892d836833c15",
+  "scope": "Ordinary unapproved review copy; generated issuance remains failed.",
+  "runs": [
+    {
+      "mode": "draft-copy-prepare",
+      "run_id": "42536888282",
+      "job_id": "128903060150",
+      "url": "https://github.com/salahassi/tenders/actions/runs/42536888282",
+      "status": "success",
+      "elapsed_seconds_including_queue": 73,
+      "private_report_sha256": "070f9dc8d1abe2923bec7edf780c2b7f349f3c51a20cb023866dcc2cff4646b2",
+      "request_sent": true,
+      "send_attempted": true,
+      "cleanup_verified": true
+    },
+    {
+      "mode": "draft-copy-observe",
+      "run_id": "42537002462",
+      "job_id": "128903417061",
+      "url": "https://github.com/salahassi/tenders/actions/runs/42537002462",
+      "status": "success",
+      "elapsed_seconds_including_queue": 57,
+      "private_report_sha256": "9e36cfc1fa2b095493f0dc02555f16ac956bdc9e9c6c71657ef12f214dee3830",
+      "request_sent": false,
+      "send_attempted": false,
+      "cleanup_verified": true
+    },
+    {
+      "mode": "draft-copy-download",
+      "run_id": "42537097199",
+      "job_id": "128903713246",
+      "url": "https://github.com/salahassi/tenders/actions/runs/42537097199",
+      "status": "success",
+      "elapsed_seconds_including_queue": 57,
+      "private_report_sha256": "baf7ec1b728242e06b710ede50adf98f41da61f927928078ce880d9f59f4dc92",
+      "request_sent": false,
+      "send_attempted": false,
+      "cleanup_verified": true
+    }
+  ],
+  "rendering": {
+    "accepted_at": "2026-11-08T23:48:45.285746+00:00",
+    "ready_at": "2026-11-08T23:49:06.826005+00:00",
+    "elapsed_seconds": 21.540259,
+    "renderer_version": "ordinary-2",
+    "required_volumes": [
+      "combined"
+    ]
+  },
+  "artifacts": [
+    {
+      "volume": "combined",
+      "bytes": 1056806,
+      "sha256": "c5e20e96722d8a1f842c2277337622de851b1529439afc9b122ef86b95f4ebbd",
+      "mime_type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "docx_structure": {
+        "passed": true,
+        "zip_members": 29,
+        "visual_layout_reviewed": false,
+        "scope": "Authenticated download byte and OPC/XML checks only; actual visual review is recorded separately in document_qa."
+      }
+    }
+  ],
+  "verification": {
+    "identical_target_across_reports": true,
+    "preserved_history_hash_count": 17,
+    "history_hashes_unchanged": true,
+    "authenticated_download_verified": true,
+    "actual_bytes_and_sha256_match": true,
+    "all_review_findings_preserved": true,
+    "draft_label_required_in_every_artifact": true,
+    "review_finding_count": 8,
+    "blocking_finding_count": 6,
+    "generated_issuance_passed": false,
+    "final_approval_changed": false,
+    "canonical_prepare_commands": 1,
+    "model_calls": 0,
+    "provider_calls": 0,
+    "all_owned_cleanups_verified": true
+  },
+  "document_qa": {
+    "status": "suitable_as_unapproved_review_copy_only",
+    "private_metadata_sha256": "d658c04c6dac6a8844dc54b951300cdc75ad048ddbd143b7607434452f13028a",
+    "content_reviewed": true,
+    "visual_review_completed": true,
+    "reviewer_type": "assistant",
+    "human_visual_reviewed": false,
+    "final_approval_granted": false,
+    "original_docx_unchanged": true,
+    "preview_renderer": "LibreOffice",
+    "preview_pages": 61,
+    "contact_sheets_reviewed": 6,
+    "contact_sheet_page_coverage": {
+      "first": 1,
+      "last": 61
+    },
+    "full_size_pages_reviewed": [
+      1,
+      2,
+      37,
+      41,
+      59
+    ],
+    "observed_clipping_or_overlap": false,
+    "empty_pages": 0,
+    "outside_page_text_blocks": 0,
+    "all_review_finding_details_retained": true,
+    "blocking_findings": 6,
+    "advisory_findings": 2,
+    "draft_and_input_labels_visible": true,
+    "financial_unknowns_labelled": true,
+    "confirmed_prices_or_totals": false,
+    "limitations": [
+      "Table-of-contents dotted leaders are present, but page numbers are unpopulated in the LibreOffice preview.",
+      "Assistant visual/content review is not human approval and does not clear the six blocking findings."
+    ]
+  },
+  "publication": {
+    "pull_request": 58,
+    "merge_commit": "1c19f3c01a625cba8a666b217fa48feae0b9788c",
+    "pages_run_id": "42536883995",
+    "pages_status": "success",
+    "pages_elapsed_seconds": 26
+  },
+  "limits": [
+    "This review copy does not clear the accepted content findings or approve external use.",
+    "No customer text, names, record identifiers or private report bodies are stored in this receipt."
+  ]
+}

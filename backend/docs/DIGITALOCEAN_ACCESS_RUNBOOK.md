@@ -7,6 +7,18 @@ Last reviewed: November 8, 2026.
 
 ## Ordinary review-copy export after a blocking review (November 8)
 
+Actual preparation42536888282, observation42537002462 and download42537097199
+from `dae8d9c` passed in73/57/57seconds including queue and owned cleanup. The
+ordinary renderer produced one combined DOCX in21.540259seconds. Authenticated
+retrieval verifies1,056,806 bytes / SHA256 `c5e20e96`, all eight findings and all17
+unchanged history hashes. See the [acceptance receipt](evidence/proposal-draft-copy-acceptance-20261108.json).
+Assistant QA covered all61 preview pages in six contact sheets and selected
+full-size pages1,2,37,41,59, with no observed clipping/overlap. DRAFT labels,
+all findings and financial unknowns remain visible. The LibreOffice preview's
+table-of-contents page numbers are unpopulated. This is suitable only as an
+unapproved review copy; the six blockers and failed generated issuance remain
+unchanged, and no human approval is asserted.
+
 The genuine continuation completed its whole-proposal review in241.333seconds,
 but six content findings correctly stopped generated issuance. Preserve that
 failed issuance and its accepted review. A separate ordinary draft copy uses

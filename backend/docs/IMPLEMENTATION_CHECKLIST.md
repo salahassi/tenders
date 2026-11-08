@@ -1,5 +1,30 @@
 # Implementation status and continuation plan
 
+## November 8 — ordinary review copy rendered and authentically downloaded
+
+PR58 merged as `1c19f3c0`; Pages42536883995 passed in26seconds. From source
+`dae8d9c`, one canonical draft-export preparation42536888282 passed in73seconds;
+observation42537002462 and authenticated download42537097199 each passed in
+57seconds including queue and cleanup. Rendering completed in21.540259seconds
+from accepted23:48:45.285746Z to ready23:49:06.826005Z.
+
+One combined DOCX review copy was retrieved:1,056,806 bytes, SHA256 `c5e20e96`.
+Actual bytes, MIME and DOCX structure match the server's bound artifact. All
+three reports identify the same target; all17 retained-history hashes remain
+identical. The eight accepted review findings, including six blockers, remain
+present. The draft-copy flow made no model/provider call or approval change. The generated
+issuance remains failed; this separate file is an unapproved DRAFT review copy.
+See the [sanitized acceptance receipt](evidence/proposal-draft-copy-acceptance-20261108.json).
+Assistant content/visual QA is complete on the unchanged original bytes: all six
+contact sheets cover the61-page LibreOffice preview; full-size pages1,2,37,41
+and59 were inspected. No clipping/overlap was observed, and bounded preview
+checks found no empty pages or text blocks outside page bounds. DRAFT/input
+labels and explicit financial unknowns remain visible, with no confirmed prices
+or totals. The preview's table of contents has dotted leaders but no populated
+page numbers. This is suitable only as an unapproved review copy; assistant QA
+is not human approval. Its private metadata hash is bound in the public receipt.
+No product or schema change is included in this evidence update.
+
 ## November 8 — ordinary review-copy operations integrated
 
 All46 focused controls pass on the integrated source: eight preparation/send,
