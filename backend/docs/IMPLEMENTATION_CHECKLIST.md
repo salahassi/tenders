@@ -1,5 +1,25 @@
 # Implementation status and continuation plan
 
+## November 8 — final whole-review schema guard and source freeze
+
+The final eighth-child SQL is `77631534`. Its only change since the earlier
+release-guard matrix is explicit qualification of the commercial line/task
+aggregate fields inside the new recovery proof. The full isolated guard matrix
+passes again: four tests in39.583seconds,48 rejected payloads and all22 ancestor
+rows challenged on both parent and child. Canonical apply/readback/replay retains
+those rows exactly and yields25 ledger rows. See the
+[bound guard evidence](evidence/proposal-review-schema-guards-20261108.json).
+
+The separate actual PostgreSQL product proof passes all32 cases with confirmed
+cleanup, including canonical owner admission, retained31 accepted steps, a fresh
+accepted whole review through normal reassembly, old and queued mixed-worker
+fences, lock races and canonical lineage archive/restore. Its exact receipt hash
+is bound in the guard evidence. Only after that acceptance, `SOURCE_SHA256` is
+frozen to the tested final SQL. Three lightweight binding/template checks pass;
+generated apply and read-only SQL hashes are identical before and after the
+literal freeze. This change performs no build, publication, hosted release or
+customer command. Deployment and actual customer files remain separate evidence.
+
 ## November 8 — exact whole-review image qualified and published
 
 Artifact source `7c93e7ec9726b46168a30257793a76ee1ced56c5` built offline into

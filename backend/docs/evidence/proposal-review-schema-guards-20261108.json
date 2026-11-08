@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "kind": "proposal_review_schema_release_guards",
+  "status": "passed",
+  "recorded_at": "2026-11-08T23:06:52.681668+00:00",
+  "tested_revision": "d2b20664c333c73662faa3f1f77b00486f90d5a0",
+  "migration": {
+    "path": "backend/supabase/migrations/20261108223554_legacy_zero_inventory_review_recovery.sql",
+    "sha256": "7763153400d9b7420004917b3ec197a7f4d393943da586e3a273f214e7f3a3e8"
+  },
+  "tested_source_sha256": {
+    "backend/scripts/ops/proposal-review-schema.py": "f5cc35df35a5dca2c5165b3bd2b6bf96a5162a9280eead258b364b7fe5cd3926",
+    "backend/scripts/ops/test_proposal_review_schema.py": "b9499a95f373b2c359ba6e6644b1c20fbef073de045aac0dd48a4320c23f9225"
+  },
+  "generated_sql_sha256": {
+    "apply": "4b55e8d4bda7901297232f8f7c4d9eb8e6a37215839a29da898fbf73c1fdd014",
+    "read_only_parent_or_child": "087011adef9b4edb28fb0d84bd45b64c6c85614c88f895dca9e8111442656a4b",
+    "read_only_child": "40cd510b0816d4a8308fa1b6910ff3b474ae14043b7508d1a74e99d4997be212"
+  },
+  "tests": {
+    "command": "python3 -m unittest discover -s backend/scripts/ops -p test_proposal_review_schema.py",
+    "passed": 4,
+    "failed": 0,
+    "errors": 0,
+    "duration_seconds": 39.583,
+    "engine": "PGlite 0.5.10 with complete predecessor migration set",
+    "payload_faults": 48,
+    "full_row_payload_faults": 44,
+    "direct_fast_activity_storage_faults": 4,
+    "ancestor_receipts_challenged_on_parent_and_child": 22
+  },
+  "schema_checks": {
+    "atomic_fault_rollback": true,
+    "existing_rows_authority_attributes_preserved": true,
+    "exact_rename_selfqualification_only": true,
+    "new_lineage_empty_on_apply": true,
+    "predecessor_rows_preserved": 22,
+    "result_ledger_rows": 25,
+    "read_only_parent_and_child": true,
+    "idempotent_child_replay": true
+  },
+  "independent_review": {
+    "blocking_findings": 0,
+    "scope": "Read-only schema, coordinator and workflow review"
+  },
+  "limits": [
+    "Only the frozen production SQL receives the fast row guard; injected payloads retain the full-row proof.",
+    "Exact frozen source bytes bind all new-table types and constraint expressions; the guard checks explicit authority and shape.",
+    "Native business recovery, mixed workers, races and archive proof are separate from release guard tests.",
+    "Synthetic fixture catalog identities are not production fingerprints; hosted deployment and customer completion remain separate."
+  ],
+  "provider_calls": 0,
+  "hosted_calls": 0,
+  "production_mutations": 0,
+  "customer_completion_verified": false,
+  "frozen_guard_source_sha256": "3e7f6a3f01c598d0a0954be350d812274d50dd690eb4fe8010ec929651bfca0c",
+  "freeze_delta": "Only SOURCE_SHA256 changed from None to the already tested migration hash; generated SQL hashes remain identical.",
+  "native_product_proof": {
+    "path": "backend/docs/evidence/legacy-review-recovery-native-20261108.json",
+    "sha256": "5ac942e76f70f6f186e32d3b1cb395bed0f9cb52d8319c66f962ecb38a5a111d",
+    "revision": "234af8caf5229dbd730224f8a55b888c72b86964",
+    "passed_cases": 32,
+    "cleanup_verified": true
+  }
+}
