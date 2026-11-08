@@ -41,7 +41,7 @@ verify_image, docker, sha = dispatch.verify_image, dispatch.docker, dispatch.sha
 RECEIPT = 'backend/docs/evidence/proposal-successor-runtime-20261108.json'
 PUBLICATION = 'backend/docs/evidence/proposal-successor-publication-20261108.json'
 # Set only after actual image/native capture. Preparation cannot authorize release.
-RECEIPT_SHA256 = None
+RECEIPT_SHA256 = 'a5e636e87f125c9f02e838a913b0e1ed05a6691681fd132a34d8e70a9b8d7b41'
 BASELINE_PUBLICATION_SHA256 = 'd2df7901c3cafcc85b193b2a267c51c4334bb8120ccbf0a71abe9a2ab3b9c3ad'
 SUCCESSOR_MIGRATION = 'backend/supabase/migrations/20261108212048_commercial_uuid_colon_successor.sql'
 CHANGED_SOURCES = frozenset('backend/supabase/functions/' + name for name in (

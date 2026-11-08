@@ -1,5 +1,22 @@
 # Implementation status and continuation plan
 
+## November 8 — actual successor image qualification captured
+
+Frozen artifact source `6b3eddc` built image `3cc6c7cb` offline, binding the
+exact successor SQL `1cab7a1a`. Its own 51 native controls pass: ten executor-six
+dispatch, twelve prompt, ten accepted-poll, eight UUID-boundary and eleven
+commercial input/render controls. They preserve 24 legacy prompt wires and
+validate 12 new wires, both actual English/Arabic DOCX archives, all 44 reference
+boundary cases, copied-source identity, isolation and owned cleanup. No provider
+was called. Qualification is frozen to `a5e636e8`; deployed baseline `2097a079`
+and all earlier receipts remain unchanged.
+
+This is image qualification only. Final SQL authority/restore proof, package
+checks, publication, rollout and actual customer issuance remain separate gates.
+The full backend suite is still running; an initial delivery test failed after
+about five seconds during concurrent local qualification. Its cause must be
+confirmed and the affected checks rerun before package acceptance. No live action ran here.
+
 ## November 8 — bounded commercial successor under review
 
 A direct Owner `generation.retry` may replace one exhausted legacy commercial
