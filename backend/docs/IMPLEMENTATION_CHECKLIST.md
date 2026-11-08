@@ -13969,3 +13969,35 @@ reader role are adapted; business SQL and authenticated command authority stay
 unchanged. Exact helper/dependency hashes and read-query hashes are in the
 receipt. Cleanup is confirmed, with no HTTP/provider/hosted calls or document
 rendering, uploading or downloading in this proof.
+
+### November 8 — ordinary DRAFT review-copy helper prepared
+
+Added an ops-only helper for one genuine Owner `export.package.prepare` command
+with `mode=draft`, bound to the current active version, revision, source proof
+and retained failed generated issuance. It persists a stable intent before POST;
+an unknown acknowledgement is reconciled through read-only observation without
+resubmission. Existing packages are observe-only. All 17 selected-plan/history
+hashes and the complete review findings remain unchanged; unrelated workspace
+usage does not prevent this local export. No generation, review, approval,
+provider allowance or product/SQL policy is changed.
+
+The separate authenticated download verifies the canonical ordinary-2 package,
+Owner before and after retrieval, each artifact's API MIME/size/SHA-256 identity,
+safe DOCX structure, a visible DRAFT label in every volume and every retained
+finding. Only the encrypted private report contains file bytes. Public output
+explicitly distinguishes a review copy from successful generated issuance and
+final approval. Authenticated GETs may perform normal expiry/audit bookkeeping.
+
+Validation: eight prepare/proof/send tests pass, including unknown-response
+replay protection, final-mode refusal, currentness and selected-history checks.
+The separate download test patch passes 11 controls, including the per-volume
+DRAFT regression and all eight synthetic findings. The actual PostgreSQL helper
+hook passed 11 controls and cleanup against helper SHA-256
+`6d1360e13cfed14d001549a417e4c969c9003e389c21be39436a40be13751f6c`.
+Final helper `826cf6cb68264432756e24f2f74e932d921eb8e44fa61e1a9c77749c7bb721fc`
+changes only `download()`: AST comparison confirms every other module node is
+identical, and generated inspection, acceptance and observation SQL bytes are
+identical. The final difference is covered by the 11 download tests. Python
+compilation and whitespace checks pass. No hosted request, download or model
+call was performed by this implementation task; actual review-copy acceptance
+and visual/semantic QA remain pending.
