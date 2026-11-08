@@ -1,6 +1,7 @@
 import type { Backend } from "./backend.ts";
 import type { ModelGraphStore } from "./modelGraphStore.ts";
 import { ModelError, modelPrompt, sha256, type Evidence } from "./model.ts";
+import { analysisLiteralCoverage } from "./modelAnalysisLiteralCoverage.ts";
 import {
   verificationPolicyText,
   type VerificationRevision,
@@ -50,7 +51,11 @@ export async function pinVerificationPrompt(o: {
           typeof o.context.candidate === "object" &&
           !Array.isArray(o.context.candidate) &&
           !Object.hasOwn(o.job.checkpoint ?? {}, "verifier_recheck")
-          ? 5
+          ? analysisLiteralCoverage(o.context, o.evidence, o.requiredIds) &&
+            (await sha256(JSON.stringify(o.context.candidate))) ===
+              o.context.candidate_hash
+            ? 6
+            : 5
           : 4
         : o.context?.original_task === "review_proposal"
           ? 3
@@ -67,9 +72,13 @@ export async function pinVerificationPrompt(o: {
   const value = pin.value;
   if (
     value.legacy_input_hash !== legacyInputHash ||
-    ![1, 2, 3, 4, 5].includes(value.version) ||
+    ![1, 2, 3, 4, 5, 6].includes(value.version) ||
     (value.version >= 2 &&
-      value.instructions !== verificationPolicyText(value.version))
+      value.instructions !== verificationPolicyText(value.version)) ||
+    (value.version === 6 &&
+      (!analysisLiteralCoverage(o.context, o.evidence, o.requiredIds) ||
+        (await sha256(JSON.stringify(o.context.candidate))) !==
+          o.context.candidate_hash))
   )
     throw new ModelError("MODEL_IDENTITY_CHANGED");
   return value.version as VerificationRevision;

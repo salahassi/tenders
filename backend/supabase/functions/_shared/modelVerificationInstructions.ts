@@ -1,6 +1,6 @@
 // Immutable application policy. Never interpolate provider, user or document
 // instructions here. New wording requires a new phase-pinned policy version.
-export type VerificationRevision = 1 | 2 | 3 | 4 | 5;
+export type VerificationRevision = 1 | 2 | 3 | 4 | 5 | 6;
 export const VERIFICATION_PROMPT_V2 =
   "tenderdesk-grounding-v2-contiguous-quotes";
 export const VERIFICATION_INSTRUCTIONS_V2 =
@@ -60,6 +60,19 @@ export const VERIFICATION_INSTRUCTIONS_V5 =
   "Do not exclude source_semantics, mandatory, actor, negation, conditions, exceptions, quantities, dates, consequences, scope or any narrative assertion from review. A category label cannot turn an optional buyer clause into a mandatory obligation or establish that the company meets it. " +
   "Report genuine narrative factual claims with exact evidence and retain every justified contradiction or missing-source defect. Keep every processed content ID and required source ID exactly; never invent IDs, silently add missing IDs or remove checks to make a report pass.";
 
+export const VERIFICATION_PROMPT_V6 =
+  "tenderdesk-grounding-v6-materialized-source-fidelity";
+export const VERIFICATION_INSTRUCTIONS_V6 =
+  VERIFICATION_INSTRUCTIONS_V5 +
+  " " +
+  "analysis_literal_coverage identifies only exact requirements[index].text content units whose wording was copied by the application from the listed immutable source spans. " +
+  "Their literal-copy fidelity is checked deterministically. Read them as source quotations in the typed extraction, and include every scoped content ID, but do not expand their copied wording into redundant factual claims merely to prove that the quotation equals itself. " +
+  "For those listed, proved literal paths only, this exact-copy check takes precedence over the general instruction to enumerate their copied wording as factual claims; it changes no semantic, relevance or omission review. " +
+  "This is not a supported-fact verdict, a waiver of buyer relevance, or proof that the extraction is correct. Independently review every requirement's selection and relevance to this buyer, source authority and attribution, interpretation, mandatory flag, actor, modality, negation, conditions, exceptions, quantities, dates, consequences, acceptance_evidence, owner_question, summary and every other generated assertion. " +
+  "Keep source-block checks complete: detect omitted obligations, lost qualifications, wrong-buyer attributions, fabricated requirements and mistaken interpretations even when the copied source quotation is exact. An exact quotation from another project does not become this buyer's obligation. " +
+  "Only the listed typed paths and content IDs have literal-copy fidelity; the same words elsewhere receive ordinary factual review. Do not use word matching or a candidate-supplied claim of quotation to invent exemptions. " +
+  "Keep genuine semantic defects and blocking findings, all processed content IDs, all required source IDs and the complete original candidate hash. The claim schema, source quotation rules and nonempty semantic-claim requirement are unchanged.";
+
 export function analysisVerificationCoverage(
   context: unknown,
   requiredIds: string[],
@@ -85,18 +98,22 @@ export function analysisVerificationCoverage(
   };
 }
 export const verificationPolicyText = (revision: VerificationRevision) =>
-  revision === 5
-    ? VERIFICATION_INSTRUCTIONS_V5
-    : revision === 4
-      ? VERIFICATION_INSTRUCTIONS_V4
-      : revision === 3
-        ? VERIFICATION_INSTRUCTIONS_V3
-        : VERIFICATION_INSTRUCTIONS_V2;
+  revision === 6
+    ? VERIFICATION_INSTRUCTIONS_V6
+    : revision === 5
+      ? VERIFICATION_INSTRUCTIONS_V5
+      : revision === 4
+        ? VERIFICATION_INSTRUCTIONS_V4
+        : revision === 3
+          ? VERIFICATION_INSTRUCTIONS_V3
+          : VERIFICATION_INSTRUCTIONS_V2;
 export const verificationPolicyVersion = (revision: VerificationRevision) =>
-  revision === 5
-    ? VERIFICATION_PROMPT_V5
-    : revision === 4
-      ? VERIFICATION_PROMPT_V4
-      : revision === 3
-        ? VERIFICATION_PROMPT_V3
-        : VERIFICATION_PROMPT_V2;
+  revision === 6
+    ? VERIFICATION_PROMPT_V6
+    : revision === 5
+      ? VERIFICATION_PROMPT_V5
+      : revision === 4
+        ? VERIFICATION_PROMPT_V4
+        : revision === 3
+          ? VERIFICATION_PROMPT_V3
+          : VERIFICATION_PROMPT_V2;

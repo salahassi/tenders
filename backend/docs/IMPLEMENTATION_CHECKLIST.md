@@ -1,5 +1,49 @@
 # Implementation status and continuation plan
 
+## November 8 — reduce measured proposal analysis overhead
+
+The actual proposal trial still progressed too slowly after the dispatch fix.
+Its exact private timeline shows six completed extraction calls returning on
+their first poll after 30.4–31.9 seconds of waiting. Verification is a separate
+phase: three successful verifier calls took approximately 64–96 seconds, and
+two invalid verifier responses needed another model's verification. These are
+measured request-to-observed-result times, not provider completion timestamps.
+The complete proposal has not yet passed hosted issuance acceptance.
+
+New source-contract analysis phases now pin semantic revision 6 and send only
+the declared evidence fields. Redundant row metadata and the duplicate complete
+`source_span` object are omitted from transport; the complete source catalog,
+authority, exact text/IDs, internal manifest and validators remain unchanged.
+Historical revisions 0–5 and already accepted requests retain their exact wire
+identity. Explicit verifier rechecks retain their required revision-4 contract.
+
+A separate pinned verifier revision 6 supplies a locally proved manifest of
+materialized source quotations. Only exact typed requirement-text paths whose
+ordered references, original quotes, authority and content IDs match the source
+contract qualify. The complete candidate hash is checked before pinning/replay.
+This avoids asking a model to enumerate every copied quotation merely to prove
+literal equality; independent review of source selection, buyer relevance,
+completeness, interpretation and every semantic field remains mandatory. No
+candidate unit, coverage ID, output schema, nonempty-claim rule or validator is
+removed. Unproved copies and other tasks retain the previous policy.
+
+The healthy accepted-request polling RPC now uses 5, 10, 15, then 30 seconds,
+bound to that exact reservation's completed healthy polls. A matching current
+lease receipt is required; historical clients without it retain 30 seconds.
+The original lease, cancellation, remote identity, deadline, accounting and
+Retry-After/error checks remain authoritative. Polling never sends a new
+generation request or increases an allowance.
+
+Targeted evidence includes new projection/provenance/phase-identity controls,
+literal-proof and semantic-defect regressions, 19 adaptive-poll database cases,
+90 model-catalog controls, 82 queue controls, all 24 scheduler controls and the
+actual dispatcher SQL with multiple independent timer leases. Backend typecheck
+and build pass. Independent review covered the literal proof and polling scope;
+an explicit recheck-compatibility finding was corrected before handoff. Native
+image qualification, deployment, full package checks and a new actual issuance
+trial remain separate pending gates. No provider setting or customer data was
+changed for these implementation tests.
+
 ## November 8 — bounded SQL-only retry compatibility release
 
 The new release workflow applies only the reviewed modern-routing retry migration;

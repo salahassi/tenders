@@ -655,3 +655,117 @@ it.each([false, true])(
     );
   },
 );
+
+it.each(["analyze_chunk", "verify_grounding", "repair_result"] as const)(
+  "pins compact evidence only for a new source-contract %s phase",
+  async (task) => {
+    const x = await setup();
+    const sourceContext = {
+      source_contract_version: 1,
+      source_evidence: { version: 1, spans: [], reviews: [] },
+    };
+    const phaseContext =
+      task === "analyze_chunk"
+        ? sourceContext
+        : {
+            [task === "verify_grounding" ? "original_task" : "target_task"]:
+              "analyze_chunk",
+            original_context: sourceContext,
+          };
+    const options = { ...x.options, task, context: phaseContext };
+    expect(await pinSemanticPrompt(options)).toBe(6);
+    const prompt = modelPrompt(
+      task,
+      phaseContext,
+      evidence,
+      ["req"],
+      "en",
+      false,
+      1,
+      6,
+    );
+    await usage(x, "reserved", await sha256(prompt));
+    expect(await pinSemanticPrompt(options)).toBe(6);
+    expect(await readSemanticPromptRevision(x.store, x.requestPrefix)).toBe(6);
+    expect(
+      modelPrompt(task, phaseContext, evidence, ["req"], "en", false, 1, 6),
+    ).toBe(prompt);
+  },
+);
+
+it.each(["reserved", "unknown", "settled"])(
+  "retains historical source-contract wire for %s usage and upgrades only its next phase",
+  async (state) => {
+    const x = await setup();
+    const phaseContext = {
+      source_contract_version: 1,
+      source_evidence: { version: 1, spans: [], reviews: [] },
+    };
+    const options = {
+      ...x.options,
+      task: "analyze_chunk" as const,
+      context: phaseContext,
+    };
+    const legacyHash = await sha256(
+      modelPrompt(options.task, phaseContext, evidence, ["req"], "en"),
+    );
+    await x.store.action("result_put", {
+      key: `semantic-instructions-${await sha256(x.requestPrefix)}`,
+      value: {
+        version: 4,
+        legacy_input_hash: legacyHash,
+        instructions: semanticPolicyText(4),
+      },
+    });
+    const historical = modelPrompt(
+      options.task,
+      phaseContext,
+      evidence,
+      ["req"],
+      "en",
+      false,
+      1,
+      4,
+    );
+    await usage(x, state, await sha256(historical));
+    expect(await pinSemanticPrompt(options)).toBe(4);
+    expect(
+      modelPrompt(
+        options.task,
+        phaseContext,
+        evidence,
+        ["req"],
+        "en",
+        false,
+        1,
+        4,
+      ),
+    ).toBe(historical);
+    expect(
+      await pinSemanticPrompt({
+        ...options,
+        requestPrefix: "analysis:next-compact-phase",
+      }),
+    ).toBe(6);
+  },
+);
+
+it("keeps the explicit verifier-recheck contract on its required historical semantic revision", async () => {
+  const x = await setup();
+  const phaseContext = {
+    original_task: "analyze_chunk",
+    original_context: {
+      source_contract_version: 1,
+      source_evidence: { version: 1, spans: [], reviews: [] },
+    },
+  };
+  const options = {
+    ...x.options,
+    task: "verify_grounding" as const,
+    context: phaseContext,
+    job: { ...x.job, checkpoint: { verifier_recheck: {} } },
+    verificationRevision: 4 as const,
+  };
+  expect(await pinSemanticPrompt(options)).toBe(4);
+  expect(await readSemanticPromptRevision(x.store, x.requestPrefix)).toBe(4);
+});
