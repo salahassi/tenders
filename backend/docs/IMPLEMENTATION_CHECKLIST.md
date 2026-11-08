@@ -1,5 +1,21 @@
 # Implementation status and continuation plan
 
+## November 8 — independent accepted-poll authority regressions
+
+A synthetic proposal plan and draft step now exercise the accepted-poll seam
+through the full PostgreSQL fixture and actual guarded model executor. The 28
+cases cover live source permission and requested-processing authority, later
+revocation, canceled/expired/stale leases, issuance and remote deadlines,
+unsupported or altered proof, browser-role denial and accepted disabled models.
+Writer and verifier pending polls each use one database round trip before the
+GET and three total, compared with the measured ordinary writer path's fourteen
+before GET and eighteen total. Ready responses still pass the original draft
+schema, record one candidate and one usage settlement, and await independent
+verification before acceptance; revocation after GET prevents consumption.
+No provider network, production setting, reservation or deadline changed during
+these tests. The count is structural local-fixture evidence, not hosted latency
+or completed-package evidence.
+
 ## November 8 — poll accepted model requests before graph reconstruction
 
 Accepted background requests now have a narrow preparation path before graph
