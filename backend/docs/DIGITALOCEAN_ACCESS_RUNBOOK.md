@@ -5,6 +5,33 @@ The repository-root [AGENTS.md](../../AGENTS.md) points here so the established
 route is available in every checkout, without relying on conversation history.
 Last reviewed: November 8, 2026.
 
+## Ordinary review-copy export after a blocking review (November 8)
+
+The genuine continuation completed its whole-proposal review in241.333seconds,
+but six content findings correctly stopped generated issuance. Preserve that
+failed issuance and its accepted review. A separate ordinary draft copy uses
+the existing canonical `export.package.prepare` command with `mode=draft`;
+it is never evidence of generated issuance success or final approval.
+
+Use only the bounded `proposal-trial.yml` modes `draft-copy-prepare`,
+`draft-copy-observe` and `draft-copy-download`. Read the complete workflow and
+helper before dispatch. Preparation requires the existing encrypted selection,
+explicit activation and `expected_operation=export.package.prepare`. It binds
+the current Owner, selected draft, accepted review and failed issuance, persists
+one stable private intent before transmission, and independently reconciles the
+actual command record. Existing packages are observed without another command.
+Unknown acknowledgment is reconciled from the private report, never resent.
+
+Observation/download take the exact previous encrypted report and plaintext
+SHA-256. They retain all17 generation/review/paid-history hashes and make no
+model call. Download uses only normal authenticated artifact GETs and requires
+matching metadata/bytes, a visible DRAFT label in every document and all accepted
+finding texts. It stores files under the separate `draft_copy_download` field.
+The170-second run-created deadline, original CA, runtime/schema verification,
+private transport and owned cleanup remain mandatory. Monitor each started run
+including queue time and cancel at175seconds. Actual downloadable bytes and
+visual review remain separate from the native SQL and synthetic HTTP proofs.
+
 ## Legacy whole-proposal review release (November 8, deployed)
 
 `deploy-proposal-review.yml` is the bounded eighth-child and executor-seven

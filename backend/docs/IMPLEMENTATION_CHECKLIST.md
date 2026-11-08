@@ -1,5 +1,20 @@
 # Implementation status and continuation plan
 
+## November 8 — ordinary review-copy operations integrated
+
+All46 focused controls pass on the integrated source: eight preparation/send,
+11 authenticated download and27 coordinator tests. The frozen runtime
+qualification still verifies image `8c836993`; product, schema and frontend
+bytes are unchanged. The11 native helper controls apply to the final helper's
+unchanged SQL and preparation/observation functions: independent AST comparison
+confirms only `download()` differs from native-qualified `6d1360e1`, and its
+per-artifact DRAFT check is covered by the11 download controls. Both native
+receipts retain their original exact source hashes and limits.
+
+The permanent access runbook records the three bounded ordinary-copy modes and
+their distinct unapproved status. Hosted preparation, authenticated retrieval
+and actual document QA are next; no ordinary export command has yet been sent.
+
 ## November 8 — ordinary draft-download boundaries verified locally
 
 Eleven focused tests exercise the actual new download helper against synthetic
