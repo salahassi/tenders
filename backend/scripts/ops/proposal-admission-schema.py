@@ -106,14 +106,36 @@ CONTRACT = """
 """
 
 
+# These counters belong to this backend and transaction, including its live
+# subtransactions; concurrent application writers cannot change them. Storage
+# identity also catches TRUNCATE/rewrites, which do not increment tuple counters.
+# No customer values are read, decompressed or aggregated by this proof.
+ROW_ACTIVITY = """
+ IF current_setting('track_counts')<>'on'
+ THEN RAISE EXCEPTION 'ADMISSION_SCHEMA_ROW_TRACKING_DISABLED';END IF;
+ SELECT coalesce(jsonb_object_agg(c.oid::text,jsonb_build_object(
+  'filenode',pg_relation_filenode(c.oid),
+  'inserted',pg_stat_get_xact_tuples_inserted(c.oid),
+  'updated',pg_stat_get_xact_tuples_updated(c.oid),
+  'deleted',pg_stat_get_xact_tuples_deleted(c.oid))),'{}'::jsonb)
+ INTO row_activity FROM pg_class c
+ WHERE c.oid=ANY(relations_before) AND c.relkind IN ('r','p');
+"""
+
+
 def script(*, read_only, allow_parent=False, payload=None):
     """Explicit payload is isolated fault injection; operational paths read SOURCE."""
     require(type(read_only) is bool and type(allow_parent) is bool and (read_only or not allow_parent), 'MODE')
     require(parent.source_sha256() == PARENT_SQL, 'PARENT_SOURCE_CHANGED')
-    payload = source() if payload is None else payload
+    canonical = source()
+    payload = canonical if payload is None else payload
     require(isinstance(payload, str) and payload.strip() and '$admission_schema_payload$' not in payload
             and '$admission_schema_release$' not in payload, 'SOURCE_INVALID')
     checksum = hashlib.sha256(payload.encode()).hexdigest()
+    # Optimize only the exact reviewed function-body replacement. Arbitrary
+    # fault payloads retain the original full-row proof as well as activity
+    # counters; this is not a generic relaxation of migration protections.
+    full_rows = '' if payload == canonical else base.ROWS
     protected = base.structure_snapshot(protected=True).replace("public.k8s_claim_dispatch()", CHANGED)
     contract = base.CONTRACT.replace('__SERVICE_FUNCTIONS__', base.array(
         (base.CHANGED_FUNCTION, base.EXISTING_FUNCTIONS[-1], *base.NEW_FUNCTIONS)))
@@ -131,10 +153,14 @@ def script(*, read_only, allow_parent=False, payload=None):
     WHERE n.nspname IN ('public','app_private') AND p.prokind='f';
    SELECT array_agg(a.attrelid::text||':'||a.attnum) INTO attributes_before FROM pg_attribute a
     WHERE a.attrelid=ANY(relations_before) AND a.attnum>0;
+   __ROW_ACTIVITY__ row_activity_before:=row_activity;
    __ROWS__ rows_before:=state;
    __PROTECTED__ structure_before:=structure;
    SELECT to_jsonb(p)-'prosrc' INTO target_before FROM pg_proc p WHERE p.oid='__CHANGED__'::regprocedure;
    EXECUTE $admission_schema_payload$__PAYLOAD__$admission_schema_payload$;
+   __ROW_ACTIVITY__
+   IF row_activity IS DISTINCT FROM row_activity_before
+   THEN RAISE EXCEPTION 'ADMISSION_SCHEMA_EXISTING_ROWS_CHANGED';END IF;
    __ROWS__
    IF state IS DISTINCT FROM rows_before THEN RAISE EXCEPTION 'ADMISSION_SCHEMA_EXISTING_ROWS_CHANGED';END IF;
    __PROTECTED__
@@ -165,7 +191,7 @@ DO $admission_schema_release$
 DECLARE r record;target text;saved_manifest text;saved_catalog text;saved_structure text;
  catalog_hash text;structure_hash text;row_count bigint;row_digest text;columns_before jsonb;
  relations_before oid[];functions_before oid[];attributes_before text[];state jsonb;rows_before jsonb;
- structure jsonb;structure_before jsonb;target_before jsonb;applied boolean:=false;
+ structure jsonb;structure_before jsonb;target_before jsonb;row_activity jsonb;row_activity_before jsonb;applied boolean:=false;
 BEGIN
  IF current_database()<>'tenderdesk_app' THEN RAISE EXCEPTION 'ADMISSION_SCHEMA_DATABASE_IDENTITY';END IF;
  __LOCK__
@@ -207,6 +233,7 @@ BEGIN
   'sql_sha256','__CHECKSUM__','parent_release','__PARENT_RELEASE__','parent_sql_sha256','__PARENT_SQL__',
   'catalog_sha256',catalog_hash,'structure_sha256',structure_hash,'applied',applied,
   'replayed',saved_manifest IS NOT NULL,'read_only',__READ_ONLY_JSON__,
+  'row_guard','transaction_activity_and_storage_v1',
   'predecessor_receipts_preserved',true,'business_rows_changed',0,'processing_requested',false)::text,true);
 END $admission_schema_release$;
 SELECT current_setting('tenderdesk.admission_schema_receipt');
@@ -216,7 +243,7 @@ COMMIT;
     for key, value in {
         '__READ_ONLY__': 'READ ONLY' if read_only else '', '__READ_ONLY_JSON__': 'true' if read_only else 'false',
         '__LOCK__': '' if read_only else "PERFORM pg_advisory_xact_lock(hashtextextended('tenderdesk.retry-schema.release',0));",
-        '__APPLY__': apply_sql, '__ROWS__': base.ROWS, '__PROTECTED__': protected,
+        '__APPLY__': apply_sql, '__ROW_ACTIVITY__': ROW_ACTIVITY, '__ROWS__': full_rows, '__PROTECTED__': protected,
         '__RETRY_CONTRACT__': CONTRACT, '__DISPATCH_CONTRACT__': contract,
         '__CATALOG__': base.CATALOG, '__FULL_STRUCTURE__': base.structure_snapshot(protected=False),
         '__BASE_RELEASE__': base.BASE_RELEASE, '__BASE_MANIFEST__': base.BASE_MANIFEST,
@@ -243,6 +270,7 @@ def run(database, *, read_only, allow_parent=False):
         and value.get('parent_sql_sha256') == PARENT_SQL and value.get('read_only') is read_only
         and type(value.get('applied')) is bool and (value['applied'] or allow_parent)
         and type(value.get('replayed')) is bool and value.get('predecessor_receipts_preserved') is True
+        and value.get('row_guard') == 'transaction_activity_and_storage_v1'
         and value.get('business_rows_changed') == 0 and value.get('processing_requested') is False
         and all(isinstance(value.get(key), str) and re.fullmatch('[a-f0-9]{64}', value[key])
                 for key in ('catalog_sha256', 'structure_sha256')), 'RESULT_INVALID')
