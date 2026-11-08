@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "source_revision": "f5e4e5a16f802ee48479d322b6f6309dc723cc64",
+  "reference": "registry.digitalocean.com/tenderdesk-a6093a76/frontend@sha256:522ad1b7258f1842bafd94f7f1b8c4c3a4642c098063dea848248f49b3c8e0f3",
+  "image_id": "sha256:8870e1ed4156a347b38c61a4a1473fa1d044c8a492379ee45bd91b2d97b040fb",
+  "status": "published_and_pull_verified",
+  "rootfs_and_config_identical": true,
+  "temporary_credentials_removed": true,
+  "containers_started": 0,
+  "production_mutations": 0,
+  "model_calls": 0,
+  "seconds": 32.06
+}

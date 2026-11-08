@@ -30,8 +30,11 @@ The same fixture against baseline `bd59f7a` reproduces the first-poll waterfall
 fixture also passes. There are no external/provider requests or production
 configuration changes. Twenty-three focused operations controls pass. The first full
 backend run passed 3,498/3,499 tests; an unchanged delivery pipeline test exceeded
-its existing 5-second limit. Its result must be resolved without increasing the
-limit. Final package/build and immutable-image evidence remain pending.
+its existing 5-second limit. The subsequent complete backend run passes all
+3,499 tests without changing that limit, and both package typechecks/builds pass.
+Immutable frontend `522ad1b7` is built from `f5e4e5a`, published and pull-verified
+with identical image configuration/layers and temporary credential cleanup.
+Hosted acceptance remains pending.
 
 Deployment is **pending**. The new three-minute `deploy-model-settings.yml`
 updates only frontend against the observed `b2201c24` baseline. It retains API
