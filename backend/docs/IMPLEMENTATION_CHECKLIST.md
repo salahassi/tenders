@@ -1,5 +1,48 @@
 # Implementation status and continuation plan
 
+## November 8 — model settings saves and repeated workspace reads
+
+**Reopened:** the November 7 acceptance measured startup only. It did not
+exercise a model/connection save or the following minute's status poll. Every
+`runCommand` still refreshed the whole repository before the model component
+read its own five resources; the polling effect also began without a loaded
+change-token baseline. Different cursor values are continuation pages, but
+loading all business history after each catalog edit is unnecessary.
+
+The four catalog commands now retain server revision/idempotency validation and
+refresh their own catalog only. A status token is captured before loading rows,
+so changes concurrent with the load remain detectable. On the models page,
+changed status refreshes catalog data and defers business history until actual
+router navigation; the destination waits for authoritative rows. Unchanged
+polls request status only. Business commands keep their existing full refresh.
+Late catalog reads cannot replace newer results, unsaved forms retain their
+revision, and read failures have an explicit reload action.
+
+Verification: all 389 frontend tests, typecheck and build pass. Integrated
+provider/component regression covers
+connection/model disable and enable, request counts, unchanged/changed polls,
+sidebar navigation, failed writes, business saves and changes during loading.
+The isolated Chromium fixture passes against the built UI: four connection/model
+disable/enable saves each use six requests; first/unchanged polls use one; a
+changed poll uses six catalog/status requests; sidebar navigation reloads once.
+The same fixture against baseline `bd59f7a` reproduces the first-poll waterfall
+(status + bootstrap + all 16 lists). The existing 1,201-job/10,501-audit browser
+fixture also passes. There are no external/provider requests or production
+configuration changes. Twenty-three focused operations controls pass. The first full
+backend run passed 3,498/3,499 tests; an unchanged delivery pipeline test exceeded
+its existing 5-second limit. Its result must be resolved without increasing the
+limit. Final package/build and immutable-image evidence remain pending.
+
+Deployment is **pending**. The new three-minute `deploy-model-settings.yml`
+updates only frontend against the observed `b2201c24` baseline. It retains API
+`f573e991`, the other runtime images `077b06ed`, private configuration and the
+original applied schema. It checks exact image assets and isolated toggles,
+then genuine read-only production settings startup and two clock-advanced
+polls, plus public asset/PDF acceptance, guarded rollback and cleanup. Production
+provider enablement and credentials are not modified. Initial full-workspace
+startup remains a separate cost; this change scopes saves and later polling.
+
+
 ## November 7 — excessive workspace job pagination
 
 **Full settings startup is now deployed and accepted:**

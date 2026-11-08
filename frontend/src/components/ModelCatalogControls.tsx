@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useApp } from "../lib/store";
 import { Badge, Button, Field } from "./ui";
 import { MODEL_PROVIDERS, providerLabel } from "../lib/modelProviders";
@@ -37,7 +37,8 @@ export default function ModelCatalogControls({
 }: {
   legacy: ReactNode;
 }) {
-  const { backend, runCommand, state, notify, saving } = useApp();
+  const { backend, runCommand, state, notify, saving, modelCatalogRevision } =
+    useApp();
   const owner = state.settings.role === "Owner";
   const [data, setData] = useState<{
     connections: Row[];
@@ -49,6 +50,7 @@ export default function ModelCatalogControls({
   const [error, setError] = useState(""),
     [busy, setBusy] = useState(false);
   const [parallelRequests, setParallelRequests] = useState("1");
+  const [parallelRevision, setParallelRevision] = useState(0);
   const [connection, setConnection] = useState<Row | null>(null),
     [model, setModel] = useState<Row | null>(null);
   const [task, setTask] = useState("default"),
@@ -60,7 +62,9 @@ export default function ModelCatalogControls({
       revision: 0,
     });
   const disabled = !owner || busy || saving;
-  async function load() {
+  const loadGeneration = useRef(0);
+  async function load(resetForms = true) {
+    const current = ++loadGeneration.current;
     if (!backend) return;
     const paths = [
       "model-connections",
@@ -78,6 +82,7 @@ export default function ModelCatalogControls({
         ? backend.request<Row>("/v1/model-catalog-status")
         : Promise.resolve({ data: { connections: [], tasks: [] } }),
     ]);
+    if (current !== loadGeneration.current) return;
     if (rows.some((r) => !Array.isArray(r.data.records)))
       throw new Error("Unable to read model configuration.");
     const next = {
@@ -88,7 +93,9 @@ export default function ModelCatalogControls({
       status: status.data,
     };
     setData(next);
+    if (!resetForms && data) return;
     setParallelRequests(String(next.settings.max_parallel_requests ?? 1));
+    setParallelRevision(next.settings.revision);
     setRoute(
       next.routes.find((r) => r.task === task) ?? {
         model_ids: [],
@@ -100,8 +107,11 @@ export default function ModelCatalogControls({
     );
   }
   useEffect(() => {
-    void load().catch((e) => setError(e.message));
-  }, [backend, owner]);
+    void load(false).catch((e) => setError(e.message));
+    return () => {
+      loadGeneration.current++;
+    };
+  }, [backend, owner, modelCatalogRevision]);
   function selectTask(value: string) {
     setTask(value);
     setRoute(
@@ -191,9 +201,18 @@ export default function ModelCatalogControls({
         account and key; models and each task’s fallback order are saved here.
       </p>
       {error && (
-        <p role="alert" className="error-text">
-          {error}
-        </p>
+        <div role="alert" className="error-text">
+          <p>{error}</p>
+          <Button
+            disabled={disabled}
+            onClick={() => {
+              setError("");
+              void load().catch((e) => setError(e.message));
+            }}
+          >
+            Reload model settings
+          </Button>
+        </div>
       )}
       <section className="panel">
         <h3>Connections</h3>
@@ -884,7 +903,7 @@ export default function ModelCatalogControls({
           }
           onClick={() =>
             void save("model.execution.configure", {
-              expected_revision: data.settings.revision,
+              expected_revision: parallelRevision,
               enabled: data.settings.enabled,
               max_parallel_requests: Number(parallelRequests),
             })

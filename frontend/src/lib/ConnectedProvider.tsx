@@ -1,4 +1,11 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
+import { useInRouterContext, useLocation } from "react-router-dom";
 import type { Session } from "@supabase/supabase-js";
 import type { StateMutation } from "../types";
 import { AppContext, type ToastSeverity } from "./appContext";
@@ -23,6 +30,24 @@ import {
   takeRecoveryTokens,
 } from "./authCallback";
 
+const catalogCommands = new Set([
+  "model.connection.save",
+  "model.configuration.save",
+  "model.task_route.save",
+  "model.execution.configure",
+]);
+const onModelSettings = () => {
+  const [path, query] = window.location.hash.slice(1).split("?");
+  return (
+    path === "/settings" &&
+    new URLSearchParams(query).get("section") === "models"
+  );
+};
+function WorkspaceNavigation({ onNavigate }: { onNavigate: () => void }) {
+  const location = useLocation();
+  useLayoutEffect(onNavigate, [location.pathname, location.search, onNavigate]);
+  return null;
+}
 const message = (error: unknown) =>
   error instanceof Error ? error.message : "The workspace request failed.";
 export function ConnectedProvider({
@@ -32,6 +57,7 @@ export function ConnectedProvider({
   client: BackendClient;
   children: ReactNode;
 }) {
+  const inRouter = useInRouterContext();
   const [repository] = useState(() => new ConnectedRepository(client));
   const [session, setSession] = useState<Session | null | undefined>(undefined);
   const [state, setState] = useState(emptyConnectedState);
@@ -45,6 +71,32 @@ export function ConnectedProvider({
   const [saving, setSaving] = useState(false);
   const savingRef = useRef(false);
   const generation = useRef(0);
+  const changeToken = useRef<string | null>(null);
+  const catalogToken = useRef<string | null>(null);
+  const workspaceDirty = useRef(false);
+  const [modelCatalogRevision, setModelCatalogRevision] = useState(0);
+  // Capture before reading rows: a concurrent change must remain visible to
+  // the next poll, even if it occurs during this multi-page load.
+  const loadWorkspace = async () => {
+    const current = generation.current;
+    let token: string | null = null;
+    try {
+      const { data } = await client.request<{ change_token: string }>(
+        "/v1/status",
+      );
+      if (typeof data?.change_token === "string") token = data.change_token;
+    } catch {
+      // Bootstrap remains the authority for access/loading errors. An unknown
+      // baseline causes a conservative retry on the next successful poll.
+    }
+    const next = await repository.refresh();
+    if (current === generation.current) {
+      changeToken.current = token;
+      catalogToken.current = token;
+      workspaceDirty.current = false;
+    }
+    return next;
+  };
   const [retry, setRetry] = useState(0);
   const [invitation, setInvitation] = useState(() => readPendingInvitation());
   useEffect(() => {
@@ -62,7 +114,7 @@ export function ConnectedProvider({
       return;
     }
     const current = generation.current;
-    const next = await repository.refresh();
+    const next = await loadWorkspace();
     if (current === generation.current) {
       stateRef.current = next;
       setState(next);
@@ -88,7 +140,10 @@ export function ConnectedProvider({
           idempotencyKey: key,
         },
       );
-      await refresh();
+      // Catalog rows are owned and re-read by ModelCatalogControls. They are
+      // absent from AppState; draining business history adds no save evidence.
+      if (catalogCommands.has(operation)) workspaceDirty.current = true;
+      else await refresh();
       return data[0];
     } catch (error) {
       setError(message(error));
@@ -114,6 +169,9 @@ export function ConnectedProvider({
     const receive = (next: Session | null) => {
       if (identity !== next?.user.id) {
         generation.current++;
+        changeToken.current = null;
+        catalogToken.current = null;
+        workspaceDirty.current = false;
         setPhase("loading");
         setError(null);
         setToast(null);
@@ -179,10 +237,10 @@ export function ConnectedProvider({
           body: { token: invitation },
         });
         clearPendingInvitation();
-        return repository.refresh();
+        return loadWorkspace();
       }
       try {
-        return await repository.refresh();
+        return await loadWorkspace();
       } catch (cause) {
         if (
           !(cause instanceof BackendRequestError) ||
@@ -200,7 +258,7 @@ export function ConnectedProvider({
           )
         )
           throw claimError;
-        return repository.refresh();
+        return loadWorkspace();
       }
     };
     void open()
@@ -228,8 +286,7 @@ export function ConnectedProvider({
   useEffect(() => {
     if (phase !== "ready" || !session) return;
     let active = true,
-      busy = false,
-      changeToken: string | null = null;
+      busy = false;
     const poll = async () => {
       if (!active || busy || savingRef.current || document.hidden) return;
       busy = true;
@@ -246,13 +303,24 @@ export function ConnectedProvider({
           lastCollection: data.last_source_success_at,
           schedulerEnabled: data.scheduler_enabled,
         };
-        if (changeToken !== data.change_token) {
-          const next = await repository.load();
-          if (active && !savingRef.current) {
-            stateRef.current = next;
-            setState(next);
+        if (changeToken.current !== data.change_token) {
+          if (onModelSettings()) {
+            workspaceDirty.current = true;
+            if (catalogToken.current !== data.change_token) {
+              catalogToken.current = data.change_token;
+              setModelCatalogRevision((value) => value + 1);
+            }
+            setState((current) => ({ ...current }));
+          } else {
+            const next = await repository.load();
+            if (active && !savingRef.current) {
+              stateRef.current = next;
+              setState(next);
+              changeToken.current = data.change_token;
+              catalogToken.current = data.change_token;
+              workspaceDirty.current = false;
+            }
           }
-          changeToken = data.change_token;
         } else setState((current) => ({ ...current }));
       } catch (cause) {
         if (
@@ -276,6 +344,13 @@ export function ConnectedProvider({
       window.clearInterval(timer);
     };
   }, [client, repository, phase, session?.user.id]);
+  const navigate = () => {
+    if (phase === "ready" && workspaceDirty.current && !onModelSettings()) {
+      // React Router uses pushState; hashchange alone misses sidebar navigation.
+      setPhase("loading");
+      setRetry((value) => value + 1);
+    }
+  };
   const update = async (mutation: StateMutation): Promise<boolean> => {
     if (savingRef.current || phase !== "ready" || !session) return false;
     savingRef.current = true;
@@ -412,6 +487,7 @@ export function ConnectedProvider({
         saving,
         backend: client,
         runCommand,
+        modelCatalogRevision,
         storageError: error,
         toast,
         toastSeverity,
@@ -434,6 +510,7 @@ export function ConnectedProvider({
           ),
       }}
     >
+      {inRouter && <WorkspaceNavigation onNavigate={navigate} />}
       {children}
     </AppContext.Provider>
   );

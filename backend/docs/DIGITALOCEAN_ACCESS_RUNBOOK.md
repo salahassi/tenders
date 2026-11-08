@@ -3,7 +3,22 @@
 Use this file before Kubernetes inventory, diagnosis, acceptance or deployment.
 The repository-root [AGENTS.md](../../AGENTS.md) points here so the established
 route is available in every checkout, without relying on conversation history.
-Last reviewed: November 7, 2026.
+Last reviewed: November 8, 2026.
+
+## Model settings refresh correction (November 8)
+
+`deploy-model-settings.yml` and `model-settings-release.py` are the scoped
+frontend-only path for the repeated reads after catalog saves. Read both fully
+before dispatch. The committed publication receipt binds the immutable image
+to its exact source; all frontend/shared build inputs must match that source.
+The baseline requires frontend `b2201c24`, API `f573e991` and retained runtime
+`077b06ed`. Schema, model configuration and private settings remain unchanged.
+The workflow checks the exact image in isolated Chromium, then real authenticated
+settings startup and two accelerated status polls with same-origin GETs only.
+It also compares public code assets and exercises the actual PDF worker. The
+110-second coordinator reserves time for owned rollback/cleanup inside the
+three-minute Actions bound. Monitor queue time too. Deployment is pending;
+use the checklist and final receipt for acceptance, not this planned path alone.
 
 ## Reopened workspace startup: API pagination completion
 
