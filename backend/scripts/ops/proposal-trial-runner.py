@@ -39,6 +39,7 @@ download = module('trial_existing_download', 'proposal-trial-download.py')
 settings_repair = module('trial_settings_repair', 'proposal-settings-repair.py')
 runtime_snapshot = module('trial_runtime_snapshot', 'proposal-runtime-snapshot.py')
 commercial_inspection = module('trial_commercial_inspection', 'proposal-commercial-inspection.py')
+delivery_inspection = module('trial_delivery_inspection', 'proposal-delivery-inspection.py')
 d = release.d
 transfer = auth.transfer
 BUCKET = auth.BUCKET
@@ -259,6 +260,7 @@ def run(args):
             STAGE = 'read_only_admission_inspection'
             report.update(selection=incoming, proof=request.inspect(database, incoming),
                 admission_diagnostic=request.diagnostic(database, incoming))
+            report['delivery_receipt_snapshot'] = delivery_inspection.capture(database, incoming, request, report['proof'])
             report['commercial_snapshot'] = commercial_inspection.capture(database, incoming, request)
             report['runtime_snapshot'] = runtime_snapshot.capture(d, release.remaining_run_seconds)
             raise InspectionComplete()

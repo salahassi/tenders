@@ -1,5 +1,27 @@
 # Implementation status and continuation plan
 
+## November 8 — private generated-delivery receipt diagnosis prepared
+
+The existing encrypted trial inspection now includes one private metadata field
+for the exact current failed `prepare_generated_delivery` job/version. It keeps
+runtime, selected Owner, opportunity, plan, active-version, source-resolution and
+lease-free read checks. The read-only query compares direct checkpoint report
+references with the actual strict JSON/base64 envelope, capped at262144 bytes,
+using the latest empty-namespace checkpoint and exact pinned graph/result.
+It records booleans/counts for output equality, report presence, content hashes,
+coverage, workflow version, requirements and completed tasks. No candidate,
+report, checkpoint body or credential appears in the default snapshot or public
+receipt. The query acquires no lease and issues no retry, model call or write.
+
+Eighteen inspector/trial controls pass, including actual PostgreSQL valid,
+malformed, oversized, wrong-thread, repair-only and hash/output mismatch cases,
+namespace selection, revoked-Owner refusal and public/private report separation.
+Independent query review requested the262144-byte parity adjustment, which is
+included. Optional prospective context projection is prepared but disabled in
+the runner; it retains original source checks and needs actual-context validation
+before use or any local retry. Hosted metadata capture, diagnosis confirmation,
+SQL correction and completed customer files remain pending.
+
 ## November 8 — actual commercial recovery completed; delivery projection failed
 
 Canonical retry42527441822 at `4288562` was accepted21:54:10 UTC. The new
