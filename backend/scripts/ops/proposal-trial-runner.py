@@ -92,7 +92,7 @@ def bind_deadline():
 def verify_runtime(database=None):
     release.verify_checkout()
     d.probe.validate_cluster()
-    qualification = module('trial_latency_qualification', 'proposal-latency-runtime.py')
+    qualification = module('trial_poll_qualification', 'proposal-poll-runtime.py')
     receipt, image = qualification.publication()
     expected = {**release.BASELINES, 'worker': image, 'scheduler': image}
     original = {name: release.u.deployment(name) for name in expected}
@@ -100,14 +100,14 @@ def verify_runtime(database=None):
             'RUNTIME_CHANGED')
     release.verify_runtime_contract(original)
     if database:
-        schema = module('trial_runtime_schema', 'proposal-admission-schema.py')
+        schema = module('trial_runtime_schema', 'proposal-poll-schema.py')
         require(receipt['source']['source_entries']['backend/scripts/runtime/dispatcher.sql']['sha256'] == schema.retry.PARENT_SQL,
                 'DISPATCH_SOURCE_CHANGED')
-        require(receipt['poll_migration'] == {'path': str(schema.parent.SOURCE.relative_to(schema.ROOT)),
-            'sha256': schema.parent.source_sha256()}, 'POLL_SOURCE_CHANGED')
-        # Accept only the exact deployed latency parent or its explicit,
-        # append-only admission child; historical receipts remain unchanged.
-        schema.verify(database, allow_parent=True)
+        require(receipt['poll_migration'] == {'path': str(schema.latency.SOURCE.relative_to(schema.ROOT)),
+            'sha256': schema.latency.source_sha256()}, 'POLL_SOURCE_CHANGED')
+        require(receipt['pending_poll_migration'] == {'path': str(schema.SOURCE.relative_to(schema.ROOT)),
+            'sha256': schema.source_sha256()}, 'PENDING_POLL_SOURCE_CHANGED')
+        schema.verify(database)
 
 
 def session_path():

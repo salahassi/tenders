@@ -1,5 +1,39 @@
 # Implementation status and continuation plan
 
+## November 8 — bounded accepted-poll release controls prepared
+
+The next schema child is bound to the deployed admission catalog `28dc9a60`,
+structure `4ede33bb` and every historical ledger row. Its sole permitted addition
+is `public.prepare_accepted_model_poll(uuid,uuid,text,text,jsonb)`, owned by the
+application owner, with an empty search path and execute rights only for existing
+service roles. All preexisting routine bodies and attributes, schema authority,
+tables and data remain protected. The current reviewed SQL candidate is `8d089d8d`;
+its canonical payload uses the proved transaction-activity/storage guard, while
+noncanonical fault payloads also retain complete row digests.
+
+The additive SQL and exact child readback precede scheduler interruption. An
+uncertain commit is read back once without a second apply. A proved SQL-only
+result with insufficient rollout time leaves the original image pair intact
+for explicit forward continuation. Before image changes, the original single
+scheduler replica is paused and its owned pods drained. Worker readiness and
+authentication, scheduler template, exact schema and retained configuration must
+pass before final resume. Pre-activation rollback retains the additive SQL;
+after any resume attempt, actual-state readback precedes forward recovery.
+Inspection rejects a candidate image without its child RPC. The existing
+170-second total bound, queue-time accounting and recovery/cleanup reserves
+remain unchanged.
+
+Thirty-six focused polling controls pass, including 23 coordinator cases,
+eight qualification guards and an actual five-level PostgreSQL ledger chain
+with 15 row/authority/structure fault cases. Fifteen trial-runner controls,
+Python compilation and workflow YAML/shell checks pass. Independent review's
+inspection-consistency and pre-pause budget findings were corrected and tested.
+Actual trials now require the separate pending-poll image qualification and
+applied child ledger; frozen historical inspection sources remain separate.
+The migration/product commit, native qualification, publication, deployment and
+customer issuance are separate pending gates. No live action was performed for
+these controls, and the historical image/SQL receipts are unchanged.
+
 ## November 8 — accepted-request poll runtime qualification preparation
 
 The new poll qualification wrapper has separate build, native, qualification and
