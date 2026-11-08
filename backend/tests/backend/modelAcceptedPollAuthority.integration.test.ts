@@ -1,5 +1,13 @@
 // @vitest-environment node
-import { beforeAll, afterAll, beforeEach, afterEach, expect, it } from "vitest";
+import {
+  beforeAll,
+  afterAll,
+  beforeEach,
+  afterEach,
+  expect,
+  it,
+  vi,
+} from "vitest";
 import { workflowFixture } from "./workflowFixture";
 import { defaultCapabilities } from "../../supabase/functions/_shared/modelContract";
 import { executeGuardedModel } from "../../supabase/functions/_shared/modelGraph";
@@ -598,7 +606,7 @@ it("retains request-selected source authority without requiring a duplicate per-
   expect(s.methods).toEqual(["POST"]);
 });
 
-it("rejects an expired remote response instead of polling or resubmitting it", async () => {
+it("returns an expired remote response to the normal accounting path without polling", async () => {
   const s = await setup();
   await f.db.query(
     "update provider_usage set remote_deadline=clock_timestamp()-interval '1 second' where id=$1",
@@ -607,13 +615,20 @@ it("rejects an expired remote response instead of polling or resubmitting it", a
   const before = await row("select * from provider_usage where id=$1", [
     s.usage.id,
   ]);
-  await expect(prepare(s)).rejects.toMatchObject({
-    code: "MODEL_RESULT_EXPIRED",
-  });
+  expect(await prepare(s)).toBeNull();
   expect(
     await row("select * from provider_usage where id=$1", [s.usage.id]),
   ).toEqual(before);
   expect(s.methods).toEqual(["POST"]);
+  await expect(
+    executeGuardedModel({ ...s.options, job: s.job }),
+  ).rejects.toBeTruthy();
+  expect(s.methods).toEqual(["POST"]);
+  expect(
+    await row("select state,error_code from provider_usage where id=$1", [
+      s.usage.id,
+    ]),
+  ).toEqual({ state: "unknown", error_code: "MODEL_RESULT_EXPIRED" });
 });
 
 it("rechecks authorization after a ready GET before consuming its receipt", async () => {
@@ -814,4 +829,42 @@ it("uses the same bounded pending path for the verifier after a retained writer 
       )
     ).count,
   ).toBe(1);
+});
+
+it("preserves normal expiration accounting when the remote deadline passes after preparation", async () => {
+  const s = await setup();
+  const internal = s.options.backend.internal;
+  let prepared = false;
+  s.options.backend.internal = async (name: string, args: any) => {
+    const result = await internal.call(s.options.backend, name, args);
+    if (name === "prepare_accepted_model_poll" && result) {
+      prepared = true;
+      vi.spyOn(Date, "now").mockReturnValue(
+        Date.parse(result.pending.remote_deadline) + 1,
+      );
+    }
+    return result;
+  };
+  try {
+    await expect(
+      executeGuardedModel({ ...s.options, job: s.job }),
+    ).rejects.toBeTruthy();
+    expect(prepared).toBe(true);
+    expect(s.methods).toEqual(["POST"]);
+    expect(
+      await row("select state,error_code from provider_usage where id=$1", [
+        s.usage.id,
+      ]),
+    ).toEqual({ state: "unknown", error_code: "MODEL_RESULT_EXPIRED" });
+    expect(
+      (
+        await row(
+          "select count(*)::int count from provider_usage where job_id=$1",
+          [s.job.id],
+        )
+      ).count,
+    ).toBe(1);
+  } finally {
+    vi.restoreAllMocks();
+  }
 });

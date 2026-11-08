@@ -3,7 +3,7 @@
 ## November 8 — independent accepted-poll authority regressions
 
 A synthetic proposal plan and draft step now exercise the accepted-poll seam
-through the full PostgreSQL fixture and actual guarded model executor. The 28
+through the full PostgreSQL fixture and actual guarded model executor. The 29
 cases cover live source permission and requested-processing authority, later
 revocation, canceled/expired/stale leases, issuance and remote deadlines,
 unsupported or altered proof, browser-role denial and accepted disabled models.
@@ -12,6 +12,8 @@ GET and three total, compared with the measured ordinary writer path's fourteen
 before GET and eighteen total. Ready responses still pass the original draft
 schema, record one candidate and one usage settlement, and await independent
 verification before acceptance; revocation after GET prevents consumption.
+Remote expiry before or immediately after preparation returns to the existing
+unknown-usage accounting path without a GET or another reservation.
 No provider network, production setting, reservation or deadline changed during
 these tests. The count is structural local-fixture evidence, not hosted latency
 or completed-package evidence.
