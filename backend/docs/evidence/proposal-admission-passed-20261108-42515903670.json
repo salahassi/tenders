@@ -1,0 +1,62 @@
+{
+  "release": "proposal-admission-wake",
+  "status": "passed",
+  "mode": "apply",
+  "apply_attempted": true,
+  "source_revision": "573c8fb9569c29559dcaeaaa7566bb9021e7487f",
+  "schema": {
+    "applied": true,
+    "release": "proposal-admission-wake-v1-20261108",
+    "replayed": false,
+    "read_only": false,
+    "row_guard": "transaction_activity_and_storage_v1",
+    "sql_sha256": "fcde6425b740a60ea9001a4abefea960a4bbe461e3ec27dae70f2099f2f06562",
+    "catalog_sha256": "28dc9a60c90e6d3dd33550fb37638bf1e7a2f2b1349535a0d381fa339c1b0c1a",
+    "parent_release": "proposal-latency-v1-20261108",
+    "structure_sha256": "4ede33bb5c61761c997c85d37ef2afa645ba503c8220e022db77c359b7f23312",
+    "parent_sql_sha256": "d2c683dd7c6b7e9c5b2736f5d07fea1bcdbaea37ddcba20877f5f74b2127cc1a",
+    "processing_requested": false,
+    "business_rows_changed": 0,
+    "predecessor_receipts_preserved": true
+  },
+  "schema_readback": {
+    "applied": true,
+    "release": "proposal-admission-wake-v1-20261108",
+    "replayed": true,
+    "read_only": true,
+    "row_guard": "transaction_activity_and_storage_v1",
+    "sql_sha256": "fcde6425b740a60ea9001a4abefea960a4bbe461e3ec27dae70f2099f2f06562",
+    "catalog_sha256": "28dc9a60c90e6d3dd33550fb37638bf1e7a2f2b1349535a0d381fa339c1b0c1a",
+    "parent_release": "proposal-latency-v1-20261108",
+    "structure_sha256": "4ede33bb5c61761c997c85d37ef2afa645ba503c8220e022db77c359b7f23312",
+    "parent_sql_sha256": "d2c683dd7c6b7e9c5b2736f5d07fea1bcdbaea37ddcba20877f5f74b2127cc1a",
+    "processing_requested": false,
+    "business_rows_changed": 0,
+    "predecessor_receipts_preserved": true
+  },
+  "retained_images": {
+    "worker": "registry.digitalocean.com/tenderdesk-a6093a76/runtime@sha256:03c68b58ebe05d2d35ee5345df3bad8d9c7a2bc2989bdf78a83d322e1b145a3d",
+    "scheduler": "registry.digitalocean.com/tenderdesk-a6093a76/runtime@sha256:03c68b58ebe05d2d35ee5345df3bad8d9c7a2bc2989bdf78a83d322e1b145a3d",
+    "source-browser": "registry.digitalocean.com/tenderdesk-a6093a76/runtime@sha256:077b06edd81eb58296ef755e7baa8af32a73dd931c6f06097acc513d3f684e3e",
+    "api": "registry.digitalocean.com/tenderdesk-a6093a76/runtime@sha256:f573e991e622c982e82a4a3b4e6dc6f144e87586ba0f5dd0b3d05381b30dbd6a",
+    "frontend": "registry.digitalocean.com/tenderdesk-a6093a76/frontend@sha256:522ad1b7258f1842bafd94f7f1b8c4c3a4642c098063dea848248f49b3c8e0f3"
+  },
+  "artifact_source_revision": "3ea8899b99bb397b672125ca3a909af427aec7bc",
+  "qualification_sha256": "12e8e13ce4f1c3e05f0a4554036a7cc5ae7ac11ddd259d192cf510b4c150e19e",
+  "configuration_preserved": true,
+  "images_changed": false,
+  "customer_processing_requested": false,
+  "providers_activated": false,
+  "business_commands_sent": 0,
+  "apply_acknowledged": true,
+  "reconciled_after_unknown": false,
+  "cleanup_verified": true,
+  "github_run": {
+    "id": 42515903670,
+    "url": "https://github.com/salahassi/tenders/actions/runs/42515903670",
+    "created_at": "2026-11-08T19:36:52Z",
+    "completed_at": "2026-11-08T19:37:20Z",
+    "total_seconds": 28,
+    "conclusion": "success"
+  }
+}

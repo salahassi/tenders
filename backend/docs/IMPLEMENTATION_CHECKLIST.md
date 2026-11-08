@@ -1,5 +1,33 @@
 # Implementation status and continuation plan
 
+## November 8 — admission wake deployed; third real issuance still incomplete
+
+Admission apply [42515903670](https://github.com/salahassi/tenders/actions/runs/42515903670)
+from `573c8fb` passed in 28 seconds including queue and cleanup. Its atomic
+`fcde6425` child is confirmed by separate readback: catalog `28dc9a60`, structure
+`4ede33bb`. Every image, private configuration, prior ledger and business row is
+retained. No provider request or business command was sent by deployment. See the
+[exact receipt](evidence/proposal-admission-passed-20261108-42515903670.json).
+The new immediate admission wake has not yet been exercised by another issuance.
+
+Read-only queue inspection42516030063 confirms the third actual retry failed
+at its unchanged 19:33:56.598872 UTC deadline. The saved plan contains twelve
+successful analyses and six successful draft sections out of seventeen; eleven
+sections stopped, ten before starting. These are plan totals including historical
+successes, not current-issuance totals. New draft verifiers use route revision3
+and execution capacity is four, but observed occupancy remained low. No final
+active proposal version or whole package exists. See the
+[terminal receipt](evidence/proposal-capacity-trial-timeout-20261108-42516030063.json).
+
+A controlled full-schema scheduling experiment does not reproduce starvation:
+with one repeatedly due poll and fourteen fresh jobs, all six fairness cursors
+admit three fresh requests within seven to nine claims. A guarded writer fixture
+instead counts fourteen sequential RPCs before a healthy pending GET and
+21 before a fresh POST, excluding real proposal context/issuance overhead.
+Hosted graph timestamps also show much larger per-operation gaps during drafting
+than analysis. Reducing safe poll preparation and attributing these delays remain
+open; no further paid trial was submitted after this inspection.
+
 ## November 8 — canonical verifier/capacity repair applied
 
 The read-only settings plan42514420334 was reviewed against the selected failed
