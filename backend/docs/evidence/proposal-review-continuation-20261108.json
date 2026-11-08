@@ -1,0 +1,62 @@
+{
+  "kind": "actual_legacy_review_continuation",
+  "runtime": "4470a2fe",
+  "start_run": 42534155723,
+  "start_report_sha256": "043ebcd46b079905f3cd8ba20adf8617f99cf5a586de6926dc166d9e739d388b",
+  "canonical_operation": "generation.retry",
+  "business_commands_sent": 1,
+  "review_succeeded": true,
+  "advance_succeeded": true,
+  "request_accepted_at": "2026-11-08T23:14:37.018157+00:00",
+  "request_completed_at": "2026-11-08T23:18:38.35154+00:00",
+  "elapsed_seconds": 241.333383,
+  "outcome": "failed",
+  "error_code": "GENERATED_DELIVERY_VALIDATION_FAILED",
+  "files_issued": false,
+  "terminal_observation_run": 42534596941,
+  "terminal_report_sha256": "695d85d3b53618a33978bf28da1d91924fd2ff8112213f676fbd93be05107a27",
+  "inspection_run": 42534760575,
+  "inspection_report_sha256": "451105fc469f3e3717961d4bd4f824d756b3bfe6e24b9a4b38dfddcf38cc0c3e",
+  "assessment_source_sha256": {
+    "generatedProposalConsistency.ts": "43d20c78ef4bf45579d263e9ffa800fd1035f5093fa9e862c09b7e4aa2af0d86",
+    "generation.ts": "4862a78fcd2398018a61e6880024b34e487f1ac1aac70ad8311f3b327fb84c48",
+    "modelGrounding.ts": "15c4a4cb06b0a334b138e3ac2acef1af7c1c5d49109d078e6ae5820f266c7f5c",
+    "proposalConsistency.ts": "08f19b247f4691d700afed8f5917af120c943bf93e8cd68d4c53f434da04c625",
+    "sourceResolution.ts": "7945af088fef748c73197a3ffbecc0c23dc73fd040165e1033a9d1e91e51dd91"
+  },
+  "assessment": {
+    "accepted_receipts": 32,
+    "sections": 17,
+    "steps": 39,
+    "blocker_counts": {
+      "WHOLE_PROPOSAL_REVIEW_BLOCKING": 1
+    },
+    "human_gap_counts": {
+      "REQUIREMENT_INVENTORY_REVIEW_REQUIRED": 1,
+      "FINALIZATION_INPUT_REQUIRED": 132,
+      "AUTHORIZED_FINAL_PROPOSAL_REVIEW_REQUIRED": 1
+    },
+    "stored_plan_status": "failed",
+    "prospective_only": true,
+    "database_mutated": false,
+    "model_calls": 0
+  },
+  "review_findings": {
+    "blocking": 6,
+    "advisory": 2,
+    "categories": [
+      "Unsupported reference attribution",
+      "Cross-section schedule inconsistency",
+      "Technical scope and commercial coverage",
+      "Commercial finalization",
+      "Acceptance baseline unresolved",
+      "Support and warranty boundary"
+    ]
+  },
+  "cleanup_verified": true,
+  "limits": [
+    "All32 accepted receipts and reconstruction checks pass; the remaining blocker is genuine accepted whole-review findings.",
+    "No repeated review budget, result rewrite, validator relaxation or fabricated acceptance was performed.",
+    "The actual selected proposal is a combined technical/financial draft; final pricing, quantities, tax and schedule remain unresolved."
+  ]
+}

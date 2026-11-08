@@ -1,5 +1,24 @@
 # Implementation status and continuation plan
 
+## November 8 — actual whole review succeeds; content findings stop issuance
+
+One canonical continuation in run42534155723 was accepted at23:14:37Z. The real
+whole-proposal review and normal reassembly succeeded. Delivery then stopped at
+23:18:38Z after241.333seconds with `GENERATED_DELIVERY_VALIDATION_FAILED`.
+Read-only inspection42534760575 and the unmodified assessor prove all32 accepted
+receipts, source scope and17-section reconstruction pass. The only machine
+blocker is `WHOLE_PROPOSAL_REVIEW_BLOCKING`: six accepted findings cover an
+unsupported attribution, conflicting schedule, technical/commercial allocation,
+pricing finalization, acceptance baseline and support boundaries. Two findings
+are advisory. Business unknowns remain explicit; no complete file is issued.
+
+The [continuation receipt](evidence/proposal-review-continuation-20261108.json)
+keeps this content outcome separate from the passed technical repair. The saved
+review, previous31 results and both versions remain retained. No second review
+budget, result rewrite or validator relaxation is attempted. A legitimate
+ordinary draft-export path is being assessed for a clearly unapproved review
+copy; it must not be reported as passed generated issuance or final approval.
+
 ## November 8 — whole-review capability deployed successfully
 
 [Run42534028969](https://github.com/salahassi/tenders/actions/runs/42534028969)
