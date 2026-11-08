@@ -1,0 +1,9 @@
+
+ RUN  v5.0.4 /workspace/work/tenders-diagnosis/backend
+
+
+ Test Files  1 passed (1)
+      Tests  18 passed (18)
+   Start at  21:45:38
+   Duration  22.59s (tests 96%, import 3%, transform 1%)
+

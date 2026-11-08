@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "kind": "proposal_successor_package_gates",
+  "artifact_source_revision": "6b3eddc0bddae840570af9315efbb148e5f61a42",
+  "migration_sha256": "1cab7a1a875b1f7180d9c1ed3faf927bb981183874bdda7463b89b779ab67935",
+  "backend": {
+    "test_source_revision": "6b3eddc0bddae840570af9315efbb148e5f61a42",
+    "runtime_and_test_sources_unchanged": true,
+    "test_files": 217,
+    "tests": 3664,
+    "full_run": {
+      "passed": 3663,
+      "failed": 1,
+      "failure": "Single delivery test exceeded its unchanged 5000 ms timeout while other local native checks were running.",
+      "duration_seconds": 486.442,
+      "max_workers": 2,
+      "log": {
+        "path": "backend/docs/evidence/proposal-successor-backend-full-20261108.log",
+        "sha256": "cf787c757fec72698d780fda6b012a36bb4f38c4c427cbde1e8508a899f7ef0d"
+      }
+    },
+    "affected_file_recheck": {
+      "file": "tests/backend/generatedDeliveryPipeline.integration.test.ts",
+      "passed": 18,
+      "failed": 0,
+      "duration_seconds": 23.186,
+      "max_workers": 1,
+      "source_unchanged": true,
+      "test_timeout_unchanged": true,
+      "log": {
+        "path": "backend/docs/evidence/proposal-successor-delivery-recheck-20261108.log",
+        "sha256": "c996fdb427071bac845e56c43abc9054563174e14292166f005011fa6a8e8f5e"
+      }
+    },
+    "unresolved_failures": 0,
+    "typecheck": "passed",
+    "build": "passed"
+  },
+  "frontend": {
+    "status": "reused_unchanged_source",
+    "baseline_revision": "47cdca4d115276dfff54ee7ff7e06eb142ee5b5e",
+    "tests": 389,
+    "typecheck": "passed",
+    "build": "passed"
+  },
+  "actual_image_controls": 51,
+  "native_postgresql_cases": 42,
+  "provider_calls": 0,
+  "customer_completion_verified": false
+}

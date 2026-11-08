@@ -1,5 +1,20 @@
 # Implementation status and continuation plan
 
+## November 8 — successor package checks reconciled
+
+The complete backend run covered 3,664 tests in 217 files at source `6b3eddc`:
+3,663 passed and one delivery test hit its unchanged 5,000 ms timeout while
+other local native checks were active. After those checks finished, the affected
+18-test file passed alone with unchanged source and timeouts. Both logs remain
+in the [package receipt](evidence/proposal-successor-package-gates-20261108.json);
+there are no unresolved failures. Backend typecheck/build pass. Frontend bytes
+remain exact to the earlier `47cdca4` 389-test/typecheck/build evidence.
+
+The separate native PostgreSQL proof passed all 42 cases, including canonical
+backup/restore, real lock races and mixed-worker claims; its receipt and fixture
+are committed. Actual image qualification retains all 51 passing controls.
+Publication, hosted rollout and actual customer files remain pending.
+
 ## November 8 — actual successor image qualification captured
 
 Frozen artifact source `6b3eddc` built image `3cc6c7cb` offline, binding the
