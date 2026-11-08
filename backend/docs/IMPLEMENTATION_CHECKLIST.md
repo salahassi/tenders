@@ -15,8 +15,11 @@ unchanged test timeouts (453 seconds). Backend typecheck and build pass. Fronten
 bytes are unchanged from the earlier `47cdca4` 389-test/typecheck/build evidence.
 The [package receipt](evidence/proposal-reference-package-gates-20261108.json)
 records those separate checks. Fifty-nine focused release/qualification/native
-harness/trial-runner controls also pass. Publication and hosted rollout remain
-pending; these results do not establish customer file issuance.
+harness/trial-runner controls also pass. Registry publication and immutable
+pull/readback passed for `2097a079`, image `c74fd450`, with temporary credentials
+removed. The publication binds artifact source `698d80fc` and qualification
+`7e351bc3`. Hosted rollout remains pending; these results do not establish
+customer file issuance.
 
 The private inspection in run42522093176 established ten numeric rejections
 containing only digits from exact supplied UUIDs before colon punctuation. Its
