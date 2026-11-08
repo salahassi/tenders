@@ -1,5 +1,20 @@
 # Implementation status and continuation plan
 
+## November 8 — successor immutable registry publication verified
+
+Qualified image `3cc6c7cb` from artifact source `6b3eddc` is published as
+`de4312a0`, with qualification `a5e636e8` and SQL `1cab7a1a`. Immutable registry
+pull/readback and copied-source verification pass; temporary credentials were
+removed. The [publication receipt](evidence/proposal-successor-publication-20261108.json)
+binds those identities. All 80 integrated non-schema operations/native-harness
+controls pass; the separately recorded four schema tests include 22 native
+fault cases. These are overlapping evidence sets, not additive product checks.
+
+Product/package, 51 image-native controls and 42 authority/archive cases have
+passed with the retained delivery-test timeout and successful unchanged recheck
+recorded. Hosted rollout and actual customer files remain pending. Publication
+sent no business command and invoked no model.
+
 ## November 8 — commercial successor schema source frozen
 
 The operational schema helper now accepts only migration `1cab7a1a` from product
