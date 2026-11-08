@@ -1,5 +1,25 @@
 # Implementation status and continuation plan
 
+## November 8 — distinguish known reference UUID punctuation from factual numbers
+
+Private commercial evidence established that rejected numeric literals were
+digits inside exact supplied source UUIDs followed by colon punctuation; the
+failing spans contained no other numeric assertions. The numeric guard already
+excludes supplied reference identities but incorrectly treated a following colon
+as an identifier continuation even before whitespace, a quote or the end.
+
+The correction recognizes only those colon delimiters. Unknown UUIDs,
+unrecognized namespaces/suffixes, embedded identities and nearby factual numbers
+retain their original validation. Synthetic coverage includes plain, namespaced
+and requirement UUIDs, quote variants, suffix/embedding attacks and Arabic and
+Latin quantities. Prompt text, phase pins, candidate/correction budgets and
+historical results remain unchanged. A separate schema-related review defect
+remains; this correction does not accept it, remove content or replenish budget.
+The 183 focused grounding/structural/typed-candidate tests, backend typecheck,
+backend build and diff checks pass. Full package checks, image qualification,
+deployment and retained-work recovery remain separate evidence gates; no
+deployment or customer request was performed here.
+
 ## November 8 — private commercial candidate/verification inspection
 
 Inspect mode captures the selected opportunity's latest proposal plan, latest

@@ -117,8 +117,10 @@ function withoutReferenceIdentifiers(text: string, referenceIds: Set<string>) {
   // Internal source and requirement UUIDs identify records, not quantities.
   // Only exact supplied UUIDs (including namespaced snapshot IDs) at identifier boundaries are exempt. Keep
   // unknown IDs, embedded substrings and all surrounding factual numbers.
+  // A colon before whitespace, a quotation mark or the end is punctuation;
+  // a colon introducing an identifier suffix remains part of that identifier.
   return text.replace(
-    /(?<![\p{L}\p{N}_:-])(?:[a-zA-Z][a-zA-Z0-9_.-]*:)?[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}(?![\p{L}\p{N}_:-])/gu,
+    /(?<![\p{L}\p{N}_:-])(?:[a-zA-Z][a-zA-Z0-9_.-]*:)?[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}(?![\p{L}\p{N}_-]|:(?![\s"'“”‘’]|$))/gu,
     (id) => (referenceIds.has(id) ? "" : id),
   );
 }
