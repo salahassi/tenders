@@ -1,5 +1,231 @@
 # Implementation status and continuation plan
 
+## November 8 — reference-boundary artifact and package gates captured
+
+Frozen artifact source `698d80fc` built image `c74fd450` offline. The actual image
+passed nine dispatch, twelve prompt, ten accepted-poll and eight boundary controls.
+The boundary harness exercised 44 identical synthetic inputs against both images:
+all 24 known-reference colon cases are corrected and the other 20 outcomes are
+retained. Existing wire hashes and phase pins remain unchanged. Every harness
+confirms owned cleanup and zero provider calls. The independent qualification is
+fixed to `7e351bc3`; the prior deployed image and receipts remain historical.
+
+The full backend suite passed all 3,653 tests in 215 files with two workers and
+unchanged test timeouts (453 seconds). Backend typecheck and build pass. Frontend
+bytes are unchanged from the earlier `47cdca4` 389-test/typecheck/build evidence.
+The [package receipt](evidence/proposal-reference-package-gates-20261108.json)
+records those separate checks. Fifty-nine focused release/qualification/native
+harness/trial-runner controls also pass. Registry publication and immutable
+pull/readback passed for `2097a079`, image `c74fd450`, with temporary credentials
+removed. The publication binds artifact source `698d80fc` and qualification
+`7e351bc3`. Hosted rollout remains pending; these results do not establish
+customer file issuance.
+
+The private inspection in run42522093176 established ten numeric rejections
+containing only digits from exact supplied UUIDs before colon punctuation. Its
+report hash is `bf91fe609f78f8f03cb4be14ca3f4fd94216e1a1560ce1e1ec9c9f967cff784d`.
+The sixth continuation ended with `MODEL_CORRECTION_EXHAUSTED`, and the saved
+commercial candidate still has a separate schema-commentary semantic defect.
+That retained verdict and all paid history remain intact. A bounded authorized
+successor for this failed stage is being prepared separately; no additional
+customer retry is justified by the punctuation fix alone.
+
+## November 8 — runtime-only reference-boundary release controls prepared
+
+The scoped workflow replaces only the worker and scheduler images from the exact
+deployed `b5e14c0e` pair. API, source-browser, frontend and retained configuration
+remain fixed. Database operations are limited to read-only verification of the
+existing polling SQL `8d089d8d`, catalog `36d60b8f`, structure `1b9db070`, and the
+existing null-identity route rejection. There is no SQL apply, migration or
+ledger-write path in the coordinator.
+
+The owned single scheduler replica is paused and drained before replacing the
+worker, then its template is updated while paused. Worker readiness, service
+route visibility, exact schema and configuration checks precede activation.
+Pre-activation failures restore the original pair; any activation attempt uses
+actual-state readback and forward recovery. Read-only inspection can inspect a
+paused known pair without enabling it. The original 170-second deadline includes
+queue time; work, recovery and cleanup reserves are unchanged.
+
+Twenty coordinator tests, eleven separate qualification tests and fifteen trial
+runner tests pass. Every coordinator test asserts that SQL apply is never called;
+schema drift, resource limits, failed readiness, ambiguous mutations, rollback,
+activation, inspection and cleanup failures are covered. Independent review
+reran all 46 controls and found no blocking issue. Python compilation, workflow
+YAML/shell syntax and diff checks pass. The trial runner selects the new immutable
+qualification while retaining existing schema and command guards. Actual native
+candidate qualification, publication, deployment and customer recovery remain
+separate pending gates; no build, publication or live action occurred here.
+
+## November 8 — exact reference-boundary image qualification prepared
+
+The reference correction has separate build, native, qualification and
+publication receipts. Its immutable baseline is deployed worker/scheduler
+`b5e14c0e`, image `492d0716`, qualification `1557117f`. Only the copied
+`modelGrounding.ts` source may differ; every other runtime/supplementary input
+and both existing SQL policy hashes must match that baseline. Historical
+dispatch, latency and accepted-poll receipts remain unchanged.
+
+Qualification retains all nine dispatch, twelve prompt and ten accepted-poll
+native controls. A fourth actual-image receipt must prove the exact 44-case
+reference-boundary map: the previous image rejects 24 valid colon-delimited
+references, the candidate accepts those, and all 20 existing outcomes remain
+unchanged. Candidate/baseline fixture input hashes, source and image identities,
+eight completion checks, harness bytes, offline operation and cleanup are bound.
+
+Eleven focused qualification tests pass, including broadened-source and SQL
+change rejection, every required boundary result, all inherited receipt gates
+and unfrozen publication rejection. The real copied-source comparison against
+the frozen deployed receipt confirms the sole validator delta. Python syntax
+and diff checks pass. Actual candidate build/native execution, capture, hash
+freeze, publication, runtime rollout and customer acceptance remain separate
+pending gates. No image build, publication, database or provider action was
+performed for this wrapper preparation.
+
+## November 8 — separate native grounding-reference boundary regression
+
+The new `boundary_native.py/.ts` harness imports the actual image's exported
+`validateGroundingReport`. It exercises 44 synthetic cases: 24 supplied plain,
+namespaced and requirement UUIDs followed by colon punctuation, ten unknown or
+extended identifiers, six unsupported adjacent quantities/prices, and four
+previously accepted reference/quantity cases. Rejections must retain the exact
+`EVIDENCE_REFERENCE_INVALID` / `numeric_evidence_mismatch` outcome. Every input
+is hashed and checked for mutation; the same input hashes must be exercised in
+the candidate and frozen accepted-poll baseline. No customer text is included.
+
+The original worker entrypoint runs with no container network, a read-only root,
+one read-only fixture mount and a Deno probe without network/write/run permission.
+Receipts bind every copied product file, both actual image identities, both
+harness hashes, all case results and verified owned-container cleanup. The
+existing nine dispatch, twelve prompt and ten accepted-poll controls and their
+historical evidence remain unchanged.
+
+Thirteen Python isolation/negative-receipt controls and backend typecheck pass.
+An actual local probe of frozen production image `492d0716` reproduces all 24
+colon-related numeric rejections and preserves the other 20 outcomes; cleanup
+passes. A separate local source smoke against product `a11352c` passes all 44
+cases with exactly the baseline's input hashes. This source smoke is not a new
+candidate-image receipt. Candidate build/native qualification, publication,
+deployment and actual customer issuance remain separate pending gates.
+
+## November 8 — distinguish known reference UUID punctuation from factual numbers
+
+Private commercial evidence established that rejected numeric literals were
+digits inside exact supplied source UUIDs followed by colon punctuation; the
+failing spans contained no other numeric assertions. The numeric guard already
+excludes supplied reference identities but incorrectly treated a following colon
+as an identifier continuation even before whitespace, a quote or the end.
+
+The correction recognizes only those colon delimiters. Unknown UUIDs,
+unrecognized namespaces/suffixes, embedded identities and nearby factual numbers
+retain their original validation. Synthetic coverage includes plain, namespaced
+and requirement UUIDs, quote variants, suffix/embedding attacks and Arabic and
+Latin quantities. Prompt text, phase pins, candidate/correction budgets and
+historical results remain unchanged. A separate schema-related review defect
+remains; this correction does not accept it, remove content or replenish budget.
+The 183 focused grounding/structural/typed-candidate tests, backend typecheck,
+backend build and diff checks pass. Full package checks, image qualification,
+deployment and retained-work recovery remain separate evidence gates; no
+deployment or customer request was performed here.
+
+## November 8 — private commercial candidate/verification inspection
+
+Inspect mode captures the selected opportunity's latest proposal plan, latest
+commercial job and exactly that job's checkpoint-pinned graph thread. At most
+three candidate versions, three verification reports and three rejected reports
+retain exact generated text, report quotations, numeric diagnostics and phase
+keys for attribution. This authorized private evidence contains customer content;
+it is not metadata-only. Producer/credential metadata, frozen context and complete
+source files are excluded, and the public summary remains unchanged.
+
+The read-only query has ten-second statement and one-second lock bounds. SQL
+reserves 512 KiB for existing metadata and returns an explicit oversized status
+above 1.5 MiB; the complete encrypted inspection envelope is capped at 2 MiB
+before persistence. Three local PostgreSQL/privacy/bound controls and fifteen
+runner tests pass. No product change, provider call, live inspection or validation
+relaxation was performed. Numeric rejections alone do not prove a validator defect.
+
+## November 8 — fourth trial accelerated drafting but timed out in commercial repair
+
+Canonical saved-work trial 42519236607 ran from `bcbd9ae` against deployment
+42519090178 and worker `b5e14c0e`. It was accepted at 20:16:42.372135 UTC and failed
+at its unchanged 20:26:42.372135 deadline. Terminal observation 42520149573 confirms
+`PROPOSAL_ISSUANCE_TIMEOUT`: 23 of 24 current-issuance jobs succeeded, comprising
+11 draft sections, 11 partial renders and one stage advance. The commercial job
+failed; no complete customer package or authenticated download was verified.
+The [fourth-trial receipt](evidence/proposal-poll-trial-timeout-20261108-42520149573.json)
+binds the exact source, deployment and seven private-report hashes using only
+public-safe aggregate metadata.
+
+Measured processing improved. The first model attempt began after 3.154 seconds
+and the first fresh writer after 9.056 seconds, versus 56.397 and 137.127 seconds in
+the preceding trial. The fourth section completed after 105.299 seconds, versus
+515.135 seconds previously. The early snapshot directly shows four distinct
+accepted requests still reserved. Nine unfinished polling attempts took
+0.188–0.390 seconds; the comparable prior observation contained only one such
+attempt at 1.218 seconds. All 11 remaining sections finished after 372.261 seconds
+(6 minutes 12.261 seconds), preserving the earlier saved work.
+
+The commercial writer succeeded. Its first verification was rejected with
+`EVIDENCE_REFERENCE_INVALID`; inspection 42520244758 retained four
+`numeric_evidence_mismatch` diagnostics. The second verifier report passed
+validation at 20:26:14.974020, leaving 27.398 seconds, and the saved graph proceeded
+to `repair_result`. That repair attempt was skipped at the issuance deadline
+without a generation request. Successful verifier-report validation did not mean
+the commercial content was accepted. Terminal inspection found zero reserved
+requests and retained the saved commercial repair state.
+
+These observations combine the corrected admission wake and accepted-poll
+processing; they do not isolate either change or measure individual database
+calls. This continuation began with 11 remaining sections, compared with 16 in the
+prior trial, and the observation windows differ. Faster drafting is established;
+fresh end-to-end completion and delivery of this package remain open.
+
+## November 8 — fifth continuation timed out; sixth retains its saved verification
+
+Canonical saved-work continuation 42520365005 started from the same
+`bcbd9ae` source with one incomplete commercial job. It uses the retained work
+without an application change or data reset. Its outcome is separate from the
+fourth-trial timeout above. Terminal observation 42521295257 confirms another
+issuance timeout after two saved content repairs and seven newly accepted model
+requests. The final verification was still pending near its deadline. No package
+was issued. Sixth continuation 42521449714 retains the corrected content and
+verification frontier; its separate result remains pending.
+
+## November 8 — optional read-only runtime resource snapshot
+
+Inspection and observation reports can retain fixed worker/REST/gateway pod
+readiness and restart counters, optional Kubernetes CPU/memory metrics and their
+sample window, plus worker cgroup-v2 CPU/throttling and memory-event counters.
+The projection retains only named resource-file counters and metadata. Full pod
+specifications are transient input; environment, credentials, logs, process
+identities and customer content are never retained or output. Pod
+identities are hashed for comparison. Optional-source failure returns a fixed
+unavailable status without changing observation or deployment behavior.
+
+One capture permits at most 7.5 additional seconds with two-second command
+bounds, retaining the existing 70-second cleanup/report reserve and 170-second
+absolute run deadline. It runs only in read-only inspect/observe modes, never
+start, download or settings operations. Local privacy, malformed-input,
+cardinality and budget controls plus trial-runner tests pass. No hosted capture
+was performed for this change. A metrics window and lifetime cgroup counters do
+not by themselves prove which operation caused a historical delay.
+
+## November 8 — accepted-poll correction deployed
+
+PR53 merged as `d5f69a31`; redirect-only Pages42519063111 passed within the
+three-minute bound. Release42519090178 from `07c6688` passed in 56 seconds,
+including queue and cleanup. The additive SQL `8d089d8d` is independently read
+back as catalog `36d60b8f`, structure `1b9db070`, with all predecessor ledgers and
+business rows preserved. Worker/scheduler now use qualified `b5e14c0e`; API
+`f573e991`, source-browser `077b06ed`, frontend `522ad1b7` and all private settings
+are retained. Scheduler pause/drain, actual service RPC rejection, readiness,
+resume and final preservation checks passed. See the
+[exact deployment receipt](evidence/proposal-poll-passed-20261108-42519090178.json).
+No business command or new model request was sent by the release. The next
+canonical saved-work trial must bind this image and exact fifth child ledger;
+actual latency and whole-package issuance remain to verify.
+
 ## November 8 — integrated poll package gates reconciled
 
 The full backend run exercised 3,626 tests in 215 files: 3,624 passed and two

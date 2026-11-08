@@ -1,0 +1,254 @@
+{
+  "version": 1,
+  "kind": "proposal_pending_poll_trial_evidence",
+  "metadata_only": true,
+  "source_revision": "bcbd9ae602f27b081baec640c0d8af031304e3f3",
+  "deployment": {
+    "workflow_run_id": 42519090178,
+    "workflow_url": "https://github.com/salahassi/tenders/actions/runs/42519090178",
+    "receipt": "proposal-poll-passed-20261108-42519090178.json",
+    "worker_image_digest": "sha256:b5e14c0e78a3625448bfa7c1a86d27749bfd9649f48859aa0628c0f26c935619",
+    "migration_sha256": "8d089d8d5237fa96e4903ddc54724318afeaeb457737341e88d7e872f49341af"
+  },
+  "trial": {
+    "start_run_id": 42519236607,
+    "terminal_run_id": 42520149573,
+    "inspection_run_id": 42520244758,
+    "operation": "generation.retry",
+    "accepted_at": "2026-11-08T20:16:42.372135+00:00",
+    "deadline_at": "2026-11-08T20:26:42.372135+00:00",
+    "completed_at": "2026-11-08T20:26:42.372135+00:00",
+    "deadline_seconds": 600,
+    "outcome": "failed",
+    "error_code": "PROPOSAL_ISSUANCE_TIMEOUT",
+    "customer_files_issued": false,
+    "authenticated_download_verified": false,
+    "remaining_draft_sections_at_start": 11,
+    "draft_sections_completed": 11,
+    "last_draft_success_at": "2026-11-08T20:22:54.633275+00:00",
+    "last_draft_success_seconds": 372.26114,
+    "completed_jobs": 23,
+    "total_jobs": 24,
+    "terminal_job_groups": [
+      {
+        "type": "advance_plan",
+        "status": "succeeded",
+        "count": 1
+      },
+      {
+        "type": "draft_section",
+        "status": "succeeded",
+        "count": 11
+      },
+      {
+        "type": "plan_commercial",
+        "status": "failed",
+        "count": 1
+      },
+      {
+        "type": "render_delivery",
+        "status": "succeeded",
+        "count": 11
+      }
+    ],
+    "attempt_progress": {
+      "total": 75,
+      "poll_attempts": 50,
+      "accepted_http_attempts": 24,
+      "skipped_attempts": 1
+    },
+    "first_running_job_seconds": 0.701806
+  },
+  "measured_comparison": {
+    "previous_start_run_id": 42514772640,
+    "previous_observation_run_id": 42515552122,
+    "previous_terminal_inspection_run_id": 42516030063,
+    "previous_remaining_draft_sections_at_start": 16,
+    "current_observation_run_id": 42519366376,
+    "previous": {
+      "observed_at": "2026-11-08T19:33:43.068031+00:00",
+      "age_seconds": 586.469159,
+      "first_model_attempt_seconds": 56.39701,
+      "first_fresh_writer_seconds": 137.126951,
+      "fresh_writer_admissions": 4,
+      "draft_sections_succeeded": 4,
+      "fourth_draft_success_seconds": 515.13534,
+      "healthy_unfinished_poll_attempts": 1,
+      "healthy_unfinished_poll_duration_seconds": {
+        "minimum": 1.217896,
+        "median": 1.217896,
+        "maximum": 1.217896
+      },
+      "adjacent_non_skipped_attempt_finish_to_start_seconds": {
+        "count": 16,
+        "minimum": 13.794355,
+        "median": 29.841265,
+        "maximum": 50.197765
+      },
+      "distinct_newly_accepted_jobs_still_reserved": 2,
+      "attempt_timeline_truncated": false
+    },
+    "current": {
+      "observed_at": "2026-11-08T20:18:52.269562+00:00",
+      "age_seconds": 129.897427,
+      "first_model_attempt_seconds": 3.153797,
+      "first_fresh_writer_seconds": 9.05649,
+      "fresh_writer_admissions": 7,
+      "draft_sections_succeeded": 4,
+      "fourth_draft_success_seconds": 105.298912,
+      "healthy_unfinished_poll_attempts": 9,
+      "healthy_unfinished_poll_duration_seconds": {
+        "minimum": 0.187814,
+        "median": 0.369958,
+        "maximum": 0.389883
+      },
+      "adjacent_non_skipped_attempt_finish_to_start_seconds": {
+        "count": 28,
+        "minimum": 1.17405,
+        "median": 2.190527,
+        "maximum": 11.667753
+      },
+      "distinct_newly_accepted_jobs_still_reserved": 4,
+      "attempt_timeline_truncated": false
+    }
+  },
+  "commercial": {
+    "writer": {
+      "started_at": "2026-11-08T20:23:16.853482+00:00",
+      "completed_poll_at": "2026-11-08T20:23:59.401463+00:00",
+      "result_code": "SUCCEEDED",
+      "actual_input_tokens": 34894,
+      "actual_output_tokens": 3123
+    },
+    "verifier_round_1": {
+      "started_at": "2026-11-08T20:24:12.525359+00:00",
+      "finished_at": "2026-11-08T20:24:59.733743+00:00",
+      "result_code": "EVIDENCE_REFERENCE_INVALID",
+      "actual_input_tokens": 39727,
+      "actual_output_tokens": 3073,
+      "validation_reason_counts": {
+        "numeric_evidence_mismatch": 4
+      },
+      "diagnostics_truncated": false
+    },
+    "verifier_round_2": {
+      "started_at": "2026-11-08T20:25:14.800915+00:00",
+      "finished_at": "2026-11-08T20:26:14.97402+00:00",
+      "result_code": "SUCCEEDED",
+      "actual_input_tokens": 42211,
+      "actual_output_tokens": 2577,
+      "seconds_remaining_at_success": 27.398115
+    },
+    "following_repair": {
+      "operation": "repair_result",
+      "status": "skipped",
+      "started_at": "2026-11-08T20:26:40.243403+00:00",
+      "finished_at": "2026-11-08T20:26:43.05407+00:00",
+      "result_code": "PROPOSAL_ISSUANCE_TIMEOUT",
+      "sent": false,
+      "http_status": null
+    },
+    "whole_commercial_job_completed": false
+  },
+  "terminal_inspection": {
+    "observed_at": "2026-11-08T20:28:29.044757+00:00",
+    "reserved_workspace": 0,
+    "reserved_selected_plan": 0,
+    "commercial_saved_task": "repair_result"
+  },
+  "workflow_reports": [
+    {
+      "workflow_run_id": 42519236607,
+      "workflow_url": "https://github.com/salahassi/tenders/actions/runs/42519236607",
+      "mode": "start",
+      "source_revision": "bcbd9ae602f27b081baec640c0d8af031304e3f3",
+      "report_sha256": "b104ae9b36d3a6cbac45c5d3e8cb5bb83bef6bc1c97346336fd7a79bb9e45fa8",
+      "request_sent": true,
+      "cleanup_verified": true,
+      "outcome": "active",
+      "code": null,
+      "observed_at": "2026-11-08T20:16:44.344377+00:00"
+    },
+    {
+      "workflow_run_id": 42519366376,
+      "workflow_url": "https://github.com/salahassi/tenders/actions/runs/42519366376",
+      "mode": "observe",
+      "source_revision": "bcbd9ae602f27b081baec640c0d8af031304e3f3",
+      "report_sha256": "3314038489f1414370c08ef393af5cd17ec21bcceba60153e028e34d168e37a1",
+      "request_sent": false,
+      "cleanup_verified": true,
+      "outcome": "active",
+      "code": null,
+      "observed_at": "2026-11-08T20:18:52.269562+00:00"
+    },
+    {
+      "workflow_run_id": 42519551648,
+      "workflow_url": "https://github.com/salahassi/tenders/actions/runs/42519551648",
+      "mode": "observe",
+      "source_revision": "bcbd9ae602f27b081baec640c0d8af031304e3f3",
+      "report_sha256": "8d77026f3a42eebc7fe6b073c91f072f830d0fc438a21b38c956af0d57f641af",
+      "request_sent": false,
+      "cleanup_verified": true,
+      "outcome": "active",
+      "code": null,
+      "observed_at": "2026-11-08T20:21:05.645675+00:00"
+    },
+    {
+      "workflow_run_id": 42519742773,
+      "workflow_url": "https://github.com/salahassi/tenders/actions/runs/42519742773",
+      "mode": "observe",
+      "source_revision": "bcbd9ae602f27b081baec640c0d8af031304e3f3",
+      "report_sha256": "6c9d81401586df3fc3570e58afc83bf39ee3e0a201c8bcda24a5ee10246ef3a1",
+      "request_sent": false,
+      "cleanup_verified": true,
+      "outcome": "active",
+      "code": null,
+      "observed_at": "2026-11-08T20:23:09.831552+00:00"
+    },
+    {
+      "workflow_run_id": 42519997305,
+      "workflow_url": "https://github.com/salahassi/tenders/actions/runs/42519997305",
+      "mode": "observe",
+      "source_revision": "bcbd9ae602f27b081baec640c0d8af031304e3f3",
+      "report_sha256": "9906f8d79d0a346459121ad917df4129f5f07817f593ca0588a1540d5a6d2d25",
+      "request_sent": false,
+      "cleanup_verified": true,
+      "outcome": "active",
+      "code": null,
+      "observed_at": "2026-11-08T20:26:09.275535+00:00"
+    },
+    {
+      "workflow_run_id": 42520149573,
+      "workflow_url": "https://github.com/salahassi/tenders/actions/runs/42520149573",
+      "mode": "observe",
+      "source_revision": "bcbd9ae602f27b081baec640c0d8af031304e3f3",
+      "report_sha256": "29589fcaf12786dc9420bb901c3ed0a6a8fadf6269f8922e233f7e8c63e3f3a1",
+      "request_sent": false,
+      "cleanup_verified": true,
+      "outcome": "failed",
+      "code": "PROPOSAL_ISSUANCE_TIMEOUT",
+      "observed_at": "2026-11-08T20:27:15.281891+00:00"
+    },
+    {
+      "workflow_run_id": 42520244758,
+      "workflow_url": "https://github.com/salahassi/tenders/actions/runs/42520244758",
+      "mode": "inspect",
+      "source_revision": "bcbd9ae602f27b081baec640c0d8af031304e3f3",
+      "report_sha256": "d40735a7ce601c03b49e594d7f2beb0d98b6cbb551729a18924f3bbcd3be0690",
+      "request_sent": false,
+      "cleanup_verified": true,
+      "observed_at": "2026-11-08T20:28:29.044757+00:00"
+    }
+  ],
+  "limits": [
+    "This was a saved-work continuation, not a fresh end-to-end generation benchmark. It began with 11 remaining draft sections versus 16 in the comparison trial.",
+    "The deployed state includes both corrected admission wake and accepted-poll processing; these observations do not isolate either change.",
+    "Attempt intervals include provider and application work and are not individual SQL call durations.",
+    "The two comparison windows differ in duration. Their unfinished-poll samples contain nine and one observations, respectively.",
+    "Completed-job totals include partial renders and stage advancement; draft-section completions are reported separately.",
+    "A successful verifier attempt means its report passed validation. It does not mean the commercial candidate or entire proposal was accepted.",
+    "The second commercial verification led to a content-repair phase. That phase sent no model request before the unchanged deadline expired.",
+    "No complete customer file package or authenticated download was verified by this fourth trial.",
+    "A later continuation has its own authorization and outcome; it is outside this receipt."
+  ]
+}

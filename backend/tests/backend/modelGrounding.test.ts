@@ -259,7 +259,14 @@ it("never derives proposal identifier exemptions from candidate fields or numeri
   ).toEqual([]);
 });
 const requirementUuid = "abcdef12-abcd-4abc-8abc-abcdef123456";
-it.each([
+it.each<{
+  name: string;
+  text: string;
+  pass: boolean;
+  id?: string;
+  source?: string;
+  requiredId?: string;
+}>([
   {
     name: "a supplied source UUID",
     text: `Confirm the design in source (${sourceUuid}).`,
@@ -270,6 +277,60 @@ it.each([
     id: `proposal-review:${sourceUuid}`,
     text: `Review the saved draft in proposal-review:${sourceUuid}.`,
     pass: true,
+  },
+  ...[' ', '"', "'", '“', '‘', ''].flatMap((delimiter) => [
+    {
+      name: `a supplied UUID with colon punctuation before ${JSON.stringify(delimiter)}`,
+      text: `Source ${sourceUuid}:${delimiter}`,
+      pass: true,
+    },
+    {
+      name: `a supplied namespaced UUID with colon punctuation before ${JSON.stringify(delimiter)}`,
+      id: `proposal-review:${sourceUuid}`,
+      text: `Source proposal-review:${sourceUuid}:${delimiter}`,
+      pass: true,
+    },
+  ]),
+  {
+    name: "a supplied requirement UUID with colon punctuation",
+    text: `Requirement ${requirementUuid}: "Documented review."`,
+    requiredId: requirementUuid,
+    pass: true,
+  },
+  ...[
+    `Unknown 87654321-abcd-4abc-8abc-abcdef123456: "Review."`,
+    `Unknown invented:${sourceUuid}: "Review."`,
+    `Unknown ${sourceUuid}:suffix`,
+    `Unknown ${sourceUuid}:v2`,
+    `Unknown ${sourceUuid}_suffix: "Review."`,
+    `Unknown prefix-${sourceUuid}: "Review."`,
+    `Unknown ${sourceUuid}:: "Review."`,
+    `Source ${sourceUuid}: 50 engineers.`,
+    `Source ${sourceUuid}:"50 engineers."`,
+    `USD 50000 before source ${sourceUuid}: "Review."`,
+    `Source ${sourceUuid}: ٥٠ مهندسًا.`,
+  ].map((text, index) => ({
+    name: `colon punctuation preserves unknown identifiers and unsupported facts ${index}`,
+    text,
+    pass: false,
+  })),
+  {
+    name: "a supplied namespaced UUID keeps an unknown identifier suffix",
+    id: `proposal-review:${sourceUuid}`,
+    text: `Source proposal-review:${sourceUuid}:v2`,
+    pass: false,
+  },
+  {
+    name: "a supplied namespaced UUID keeps an adjacent unsupported quantity",
+    id: `proposal-review:${sourceUuid}`,
+    text: `Source proposal-review:${sourceUuid}: 50 engineers.`,
+    pass: false,
+  },
+  {
+    name: "an unknown namespace cannot wrap a supplied namespaced UUID before punctuation",
+    id: `proposal-review:${sourceUuid}`,
+    text: `Source invented:proposal-review:${sourceUuid}: "Review."`,
+    pass: false,
   },
   {
     name: "a quantity beside a supplied namespaced snapshot ID",

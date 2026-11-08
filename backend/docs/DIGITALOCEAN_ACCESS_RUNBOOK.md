@@ -5,7 +5,25 @@ The repository-root [AGENTS.md](../../AGENTS.md) points here so the established
 route is available in every checkout, without relying on conversation history.
 Last reviewed: November 8, 2026.
 
-## Proposal admission wake (November 8, current schema)
+## Accepted model polling (November 8, current runtime and schema)
+
+[Run42519090178](https://github.com/salahassi/tenders/actions/runs/42519090178)
+from `07c6688` passed in 56 seconds. Worker/scheduler now run `b5e14c0e`, qualified
+image `492d0716` from artifact source `82d42820`, qualification `1557117f`.
+API `f573e991`, source-browser `077b06ed` and frontend `522ad1b7` are retained.
+The additive RPC ledger is SQL `8d089d8d`, catalog `36d60b8f`, structure
+`1b9db070`. All previous ledgers remain exact historical evidence. See the
+[receipt](evidence/proposal-poll-passed-20261108-42519090178.json).
+
+The actual service gateway rejected null identities with the expected stale-lease
+response before scheduler activation. Rollout, cleanup and retained configuration
+checks passed. `proposal-trial-runner.py` now requires this exact image and schema.
+The release's old-image guard rejects another unchanged apply; after activation,
+use explicit read-only inspection and forward recovery. Customer completion is
+still a separate trial, not a deployment claim.
+
+## Proposal admission wake (November 8, prior schema)
+
 
 [Run42515903670](https://github.com/salahassi/tenders/actions/runs/42515903670)
 from `573c8fb` passed in 28 seconds including queue. The additive admission child

@@ -1,0 +1,16 @@
+
+> tenderdesk-backend@0.2.0 test
+> vitest run tests/backend --maxWorkers=2
+
+
+ RUN  v5.0.4 /workspace/work/tenders-diagnosis/backend
+
+
+ Test Files  215 passed (215)
+      Tests  3653 passed (3653)
+   Start at  20:58:15
+   Duration  453.00s (tests 93%, import 6%)
+
+    Isolate  215 workers spawned · ~101ms startup each (spawn + environment, per file)
+             at least ~10.71s faster with isolate: false — reuses workers across files instead of one per file
+
