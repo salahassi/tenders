@@ -1,5 +1,21 @@
 # Implementation status and continuation plan
 
+## November 8 — checkpoint decoder seventh child deployed
+
+PR56 merged as `fab1bc17`; Pages42530244931 passed. Release42530253700 from
+`3422503` passed in28seconds including queue. Exact SQL `6bf6a506` is applied;
+independent readback confirms catalog `37e48b5e`, structure `5dfdc428` and all19
+predecessor ledger rows preserved (22 total). Worker/scheduler `de4312a0`, other
+images and private configuration remain unchanged. Atomic apply, readback and
+owned cleanup pass with zero business-row mutations or customer commands.
+See the [deployment receipt](evidence/proposal-checkpoint-passed-20261108-42530253700.json).
+
+The31 saved verification receipts can now be selected through their actual
+checkpoint format. The separate legacy empty-inventory review defect remains
+under repair; no new paid request or local projection retry was made by this
+release, and no complete customer file package is claimed. Trial observers must
+use the seventh-child schema verifier before further inspection or continuation.
+
 ## November 8 — checkpoint decoder complete backend package gates pass
 
 The complete backend suite passes217 files and3667 tests with two workers and
