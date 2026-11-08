@@ -1,5 +1,30 @@
 # Implementation status and continuation plan
 
+## November 8 — bounded commercial successor under review
+
+A direct Owner `generation.retry` may replace one exhausted legacy commercial
+step only when retained application diagnostics prove the known UUID-colon
+numeric false positive. The predecessor remains linked to its original step,
+graph, candidates, reports, budgets and provider usage; completed draft and
+analysis steps remain unchanged. A private immutable lineage receipt bounds the
+replacement to once per plan and records the authorizing command. The successor
+uses a new input version and normal new-job accounting, with full grounding and
+the same newly authorized 600-second issuance deadline.
+
+New commercial input version 2 requires worker executor 6. Historical flag-absent
+steps retain their original prompt, and older workers cannot claim new-version
+steps during migration or rollback. SQL changes create no business records;
+replacement occurs only in the later authorized command transaction. The worker
+clarification and operational rollout are separate changes.
+
+The twelve existing full-schema retry/accounting checks pass. Native PostgreSQL
+development checks now pass the actual successor transaction, same-key lock race,
+replay, preserved history, current authority/source/usage guards, partial-write
+rollback, revocation while waiting for the lock, refusal of another successor,
+and ordinary or nested retry regression cases. Final native receipt, mixed
+worker-5/worker-6 claims, archive roundtrip, package gates, image qualification,
+deployment and successful customer file issuance remain pending.
+
 ## November 8 — active commercial pipeline fixture uses installed worker capability
 
 The current full-pipeline synthetic fixture now chooses the real worker-six
