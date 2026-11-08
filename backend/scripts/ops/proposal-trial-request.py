@@ -32,6 +32,12 @@ BASE_GUARDS = {'database', 'selected_opportunity', 'unique_active_owner', 'no_re
 PREFIX = "BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY;\nSET LOCAL ROLE tdp_app_owner;\nSET LOCAL statement_timeout='20s';\nSET LOCAL lock_timeout='5s';\n"
 NAMESPACE = uuid.UUID('d8a3b36f-eaad-528d-a4a6-f58a7b612714')
 _ATTEMPTED = set()
+VALIDATION_CODES = {'EVIDENCE_REFERENCE_INVALID', 'MODEL_COVERAGE_INCOMPLETE', 'UNSUPPORTED_COMPANY_CLAIM'}
+VALIDATION_REASONS = {'source_missing', 'quote_empty', 'source_quote_mismatch', 'source_kind_mismatch',
+    'company_not_verified', 'candidate_quote_mismatch', 'requirement_quote_mismatch', 'numeric_evidence_mismatch',
+    'required_ids_mismatch', 'content_ids_mismatch', 'candidate_hash_mismatch', 'duplicate_claim_ids',
+    'missing_content_claims', 'unexpected_content_claims', 'declared_claim_uncovered', 'required_content_missing',
+    'invalid_finding_reference', 'unsupported_company_claim', 'invalid_scope'}
 
 
 class TrialRequestError(Exception):
@@ -212,7 +218,24 @@ WITH pending AS MATERIALIZED (
  FROM public.provider_usage u LEFT JOIN public.jobs j ON j.workspace_id=u.workspace_id AND j.id=u.job_id
  LEFT JOIN public.generation_plans p ON p.workspace_id=j.workspace_id AND p.id=j.entity_id
  WHERE u.workspace_id='{w}' AND u.state IN ('reserved','unknown')
-), bounded AS (SELECT * FROM pending ORDER BY (state='reserved') DESC,created_at,id LIMIT 100)
+), bounded AS (SELECT * FROM pending ORDER BY (state='reserved') DESC,created_at,id LIMIT 100),
+latest AS MATERIALIZED (
+ SELECT id FROM public.generation_plans WHERE workspace_id='{w}' AND opportunity_id='{o}' AND kind='proposal'
+ ORDER BY created_at DESC,id DESC LIMIT 1
+), selected_jobs AS MATERIALIZED (
+ SELECT j.id FROM public.jobs j JOIN latest p ON p.id=j.entity_id WHERE j.workspace_id='{w}'
+), invalid_reports AS MATERIALIZED (
+ SELECT r.id,t.job_id,r.created_at,r.value FROM app_private.model_graph_results r
+ JOIN app_private.model_graph_threads t ON t.id=r.thread_id AND t.workspace_id=r.workspace_id
+ JOIN selected_jobs j ON j.id=t.job_id
+ WHERE r.workspace_id='{w}' AND r.result_key LIKE 'invalid-report-%'
+), reports AS (
+ SELECT * FROM invalid_reports ORDER BY created_at DESC,id DESC LIMIT 8
+), verifier_attempts AS MATERIALIZED (
+ SELECT a.id,a.job_id,a.model,a.model_config_id,a.result_code FROM public.model_attempts a JOIN selected_jobs j ON j.id=a.job_id
+ WHERE a.workspace_id='{w}' AND a.operation='verify_grounding' AND a.result_code IN
+ ('EVIDENCE_REFERENCE_INVALID','MODEL_COVERAGE_INCOMPLETE','UNSUPPORTED_COMPANY_CLAIM','SUCCEEDED')
+), attempts AS (SELECT * FROM verifier_attempts ORDER BY id DESC LIMIT 32)
 SELECT jsonb_build_object('version',1,'kind','proposal_trial_usage_diagnostic','observed_at',now(),
  'selection',jsonb_build_object('version',1,'workspace_id','{w}','opportunity_id','{o}'),
  'total',(SELECT count(*) FROM pending),'truncated',(SELECT count(*) FROM pending)>100,
@@ -220,12 +243,41 @@ SELECT jsonb_build_object('version',1,'kind','proposal_trial_usage_diagnostic','
  'unknown_count',(SELECT count(*) FROM pending WHERE state='unknown'),
  'routing_count',(SELECT count(*) FROM public.model_routing WHERE workspace_id='{w}'),
  'routing_enabled',EXISTS(SELECT 1 FROM public.model_routing WHERE workspace_id='{w}' AND enabled),
- 'modern_execution',(SELECT jsonb_build_object('enabled',enabled,'admitted_after',admitted_after) FROM public.model_execution_settings WHERE workspace_id='{w}'),
+ 'modern_execution',(SELECT jsonb_build_object('enabled',enabled,'revision',revision,
+  'max_parallel_requests',max_parallel_requests,'admitted_after',admitted_after)
+  FROM public.model_execution_settings WHERE workspace_id='{w}'),
  'enabled_connection_count',(SELECT count(*) FROM public.model_connections WHERE workspace_id='{w}' AND enabled),
  'enabled_configuration_count',(SELECT count(*) FROM public.model_configurations c JOIN public.model_connections n
    ON n.workspace_id=c.workspace_id AND n.id=c.connection_id WHERE c.workspace_id='{w}' AND c.enabled AND n.enabled),
  'task_route_count',(SELECT count(*) FROM public.model_task_routes WHERE workspace_id='{w}'),
  'selected_latest_plan_created_at',(SELECT max(created_at) FROM public.generation_plans WHERE workspace_id='{w}' AND opportunity_id='{o}' AND kind='proposal'),
+ 'verifier_diagnostics',jsonb_build_object('plan_id',(SELECT id FROM latest),
+  'report_count',(SELECT count(*) FROM invalid_reports),'reports_truncated',(SELECT count(*) FROM invalid_reports)>8,
+  'attempt_count',(SELECT count(*) FROM verifier_attempts),'attempts_truncated',(SELECT count(*) FROM verifier_attempts)>32,
+  'attempts',coalesce((SELECT jsonb_agg(jsonb_build_object('attempt_id',id::text,'job_id',job_id,
+   'model',model,'model_config_id',model_config_id,'code',result_code) ORDER BY id DESC) FROM attempts),'[]'::jsonb),
+  'reports',coalesce((SELECT jsonb_agg(jsonb_build_object('report_id',r.id,'job_id',r.job_id,
+   'model',r.value#>>'{{producer,model}}','code',r.value->>'code',
+   'diagnostics_truncated',coalesce(jsonb_array_length(r.value->'validation_diagnostics'),0)>8
+    OR coalesce((r.value->>'omitted_diagnostic_count')::integer,0)>0
+    OR EXISTS(SELECT 1 FROM jsonb_array_elements(coalesce(r.value->'validation_diagnostics','[]')) d
+       WHERE jsonb_array_length(coalesce(d->'paths','[]'))>4),
+   'diagnostics',coalesce((SELECT jsonb_agg(jsonb_build_object('code',d->>'code','reason',d->>'reason',
+     'paths',coalesce((SELECT jsonb_agg(p ORDER BY pn) FROM jsonb_array_elements(d->'paths') WITH ORDINALITY x(p,pn)
+       WHERE pn<=4),'[]'::jsonb)) ORDER BY dn)
+    FROM jsonb_array_elements(coalesce(r.value->'validation_diagnostics','[]')) WITH ORDINALITY x(d,dn)
+    WHERE dn<=8),'[]'::jsonb)) ORDER BY r.created_at DESC,r.id DESC) FROM reports r),'[]'::jsonb)),
+ 'verifier_routes',coalesce((SELECT jsonb_agg(jsonb_build_object('task',r.task,'revision',r.revision,
+  'inherit_default',r.inherit_default,'strategy',r.strategy,'next_position',r.next_position,
+  'profile',CASE WHEN r.profile IS NULL OR r.profile='null'::jsonb THEN NULL ELSE jsonb_build_object(
+   'revision',r.profile->'revision','max_output_tokens',r.profile->'max_output_tokens',
+   'reasoning',r.profile->'reasoning','require_native_strict',r.profile->'require_native_strict') END,
+  'models',coalesce((SELECT jsonb_agg(jsonb_build_object('position',ids.n,'id',ids.id,'model',c.model,
+    'enabled',c.enabled,'revision',c.revision,'connection_enabled',n.enabled,'connection_revision',n.revision)
+    ORDER BY ids.n) FROM unnest(r.model_ids) WITH ORDINALITY ids(id,n)
+    LEFT JOIN public.model_configurations c ON c.workspace_id=r.workspace_id AND c.id=ids.id
+    LEFT JOIN public.model_connections n ON n.workspace_id=c.workspace_id AND n.id=c.connection_id),'[]'::jsonb))
+  ORDER BY r.task) FROM public.model_task_routes r WHERE r.workspace_id='{w}' AND r.task IN ('default','verify_grounding')),'[]'::jsonb),
  'rows',coalesce((SELECT jsonb_agg(to_jsonb(bounded) ORDER BY (state='reserved') DESC,created_at,id) FROM bounded),'[]'::jsonb));
 ROLLBACK;
 """
@@ -239,7 +291,69 @@ def diagnostic(database, selection):
             and all(revision(value.get(k)) for k in ('total', 'reserved_count', 'unknown_count', 'routing_count'))
             and type(value.get('truncated')) is bool and type(value.get('routing_enabled')) is bool,
             'PROPOSAL_TRIAL_USAGE_DIAGNOSTIC_INVALID')
+    validate_verifier_diagnostic(value)
     return value
+
+
+def validate_verifier_diagnostic(value):
+    """Reject extra/private fields and malformed projected metadata at readback."""
+    code = 'PROPOSAL_TRIAL_USAGE_DIAGNOSTIC_INVALID'
+    report = value.get('verifier_diagnostics')
+    require(isinstance(report, dict) and set(report) == {'plan_id', 'report_count', 'reports_truncated',
+        'attempt_count', 'attempts_truncated', 'attempts', 'reports'}, code)
+    require(report['plan_id'] is None or uuid_value(report['plan_id']), code)
+    for name, limit in [('reports', 8), ('attempts', 32)]:
+        count_key = 'report_count' if name == 'reports' else 'attempt_count'
+        require(isinstance(report[name], list) and len(report[name]) <= limit and revision(report[count_key])
+                and len(report[name]) == min(report[count_key], limit)
+                and type(report[name + '_truncated']) is bool
+                and report[name + '_truncated'] == (report[count_key] > limit), code)
+    model = lambda text: isinstance(text, str) and re.fullmatch(r'[a-zA-Z0-9._@/:-]{1,120}', text)
+    for row in report['attempts']:
+        require(isinstance(row, dict) and set(row) == {'attempt_id', 'job_id', 'model', 'model_config_id', 'code'}
+                and isinstance(row['attempt_id'], str) and re.fullmatch(r'[1-9][0-9]{0,19}', row['attempt_id'])
+                and uuid_value(row['job_id']) and model(row['model'])
+                and (row['model_config_id'] is None or uuid_value(row['model_config_id']))
+                and row['code'] in VALIDATION_CODES | {'SUCCEEDED'}, code)
+    for row in report['reports']:
+        require(isinstance(row, dict) and set(row) == {'report_id', 'job_id', 'model', 'code',
+            'diagnostics_truncated', 'diagnostics'} and uuid_value(row['report_id']) and uuid_value(row['job_id'])
+            and (row['model'] is None or model(row['model'])) and row['code'] in VALIDATION_CODES
+            and type(row['diagnostics_truncated']) is bool and isinstance(row['diagnostics'], list)
+            and len(row['diagnostics']) <= 8, code)
+        for item in row['diagnostics']:
+            require(isinstance(item, dict) and set(item) == {'code', 'reason', 'paths'}
+                    and item['code'] in VALIDATION_CODES and item['reason'] in VALIDATION_REASONS
+                    and isinstance(item['paths'], list) and len(item['paths']) <= 4
+                    and all(isinstance(p, str) and len(p) <= 240 and re.fullmatch(
+                        r'\$(?:\.[a-z][a-z0-9_]*|\[(?:0|[1-9][0-9]{0,5})\])*', p) for p in item['paths']), code)
+    routes = value.get('verifier_routes')
+    require(isinstance(routes, list) and len(routes) <= 2, code)
+    require(len({r.get('task') for r in routes if isinstance(r, dict)}) == len(routes), code)
+    for route in routes:
+        require(isinstance(route, dict) and set(route) == {'task', 'revision', 'inherit_default', 'strategy',
+                'next_position', 'models', 'profile'} and route['task'] in {'default', 'verify_grounding'}
+                and revision(route['revision']) and revision(route['next_position'])
+                and type(route['inherit_default']) is bool and route['strategy'] in {'priority', 'round_robin'}
+                and isinstance(route['models'], list) and len(route['models']) <= 32, code)
+        profile = route['profile']
+        require(profile is None or isinstance(profile, dict) and set(profile) == {'revision', 'max_output_tokens',
+            'reasoning', 'require_native_strict'} and revision(profile['revision']) and profile['revision'] > 0
+            and type(profile['max_output_tokens']) is int and 1024 <= profile['max_output_tokens'] <= 131072
+            and profile['reasoning'] in {'none', 'minimal', 'low', 'medium', 'high'}
+            and type(profile['require_native_strict']) is bool, code)
+        for index, config in enumerate(route['models'], 1):
+            require(isinstance(config, dict) and set(config) == {'position', 'id', 'model', 'enabled', 'revision',
+                'connection_enabled', 'connection_revision'} and type(config['position']) is int
+                and config['position'] == index and uuid_value(config['id']) and model(config['model'])
+                and all(type(config[k]) is bool for k in ('enabled', 'connection_enabled'))
+                and all(revision(config[k]) for k in ('revision', 'connection_revision')), code)
+    settings = value.get('modern_execution')
+    require(settings is None or isinstance(settings, dict) and set(settings) == {'enabled', 'revision',
+        'max_parallel_requests', 'admitted_after'} and type(settings['enabled']) is bool
+        and revision(settings['revision']) and type(settings['max_parallel_requests']) is int
+        and 1 <= settings['max_parallel_requests'] <= 4
+        and (settings['admitted_after'] is None or isinstance(settings['admitted_after'], str)), code)
 
 
 def existing_target(proof):

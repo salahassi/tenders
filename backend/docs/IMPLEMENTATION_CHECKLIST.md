@@ -60,6 +60,23 @@ or transaction blocker. This is local implementation evidence; deployment and a
 measured hosted admission improvement remain pending. No live action or model
 request was performed for this change.
 
+## November 8 — bounded verifier failure and routing inspection
+
+The existing read-only, encrypted trial inspector now projects the selected
+latest plan's retained verifier diagnostic codes, reasons and field paths,
+with bounded counts and explicit truncation. Real attempt IDs and model
+configuration IDs are reported separately; no inferred attempt/report linkage
+is asserted. Quotes, result bodies, numeric literals and producer project data
+are excluded. Selected-workspace default/verifier route order, configuration
+revisions/enabled flags, exact nullable execution profiles and concurrency
+settings support a later revision-bound Owner decision. The inspector does not
+change routes, settings, accepted requests or allowances.
+
+Focused Python controls cover strict readback, privacy and bounds; the actual
+PGlite query fixture exercises nonempty diagnostic/model/route projection.
+Runtime files and deployment inputs are unchanged. Live inspection, any Owner
+configuration decision and actual completed issuance remain separate evidence.
+
 ## November 8 — latency correction deployed; saved-work trial started
 
 [Release 42511889721](https://github.com/salahassi/tenders/actions/runs/42511889721)

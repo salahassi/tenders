@@ -195,6 +195,11 @@ class RequestTests(unittest.TestCase):
 class SQLFixtureTests(unittest.TestCase):
     def test_actual_queries_owner_ambiguity_usage_and_committed_retry(self):
         proof = fixture(); prepared = m.prepare(proof)
+        diagnostic_value = json.dumps({'code': 'EVIDENCE_REFERENCE_INVALID',
+            'producer': {'model': 'gpt-6-luna', 'project': 'private-project'},
+            'result': {'quote': 'private-customer-content'}, 'validation_diagnostics': [{
+                'code': 'EVIDENCE_REFERENCE_INVALID', 'reason': 'source_quote_mismatch',
+                'paths': ['$.claims[0].source_refs[0].quote'], 'numeric_literals': ['99999']}]})
         schema = f"""
 CREATE ROLE tdp_app_owner; GRANT ALL ON SCHEMA public TO tdp_app_owner;
 CREATE SCHEMA app_private AUTHORIZATION tdp_app_owner;
@@ -209,13 +214,15 @@ CREATE TABLE proposal_issuance_requests(id uuid,workspace_id uuid,plan_id uuid,r
 CREATE TABLE jobs(id uuid,workspace_id uuid,entity_id uuid,status text,lease_token uuid,lease_until timestamptz,checkpoint jsonb,type text,error_code text,cancel_requested boolean,next_attempt_at timestamptz);
 CREATE TABLE provider_usage(workspace_id uuid,state text,id uuid DEFAULT gen_random_uuid(),job_id uuid,error_code text,created_at timestamptz DEFAULT now(),updated_at timestamptz DEFAULT now(),remote_deadline timestamptz,reconciliation_after timestamptz,remote_request_id text,provider text,model text,connection_id uuid,model_config_id uuid);
 CREATE TABLE generation_steps(workspace_id uuid,job_id uuid,plan_id uuid,status text);
-CREATE TABLE model_attempts(workspace_id uuid,job_id uuid,usage_id uuid,provider text,model text,connection_id uuid,model_config_id uuid,status text,result_code text,response_id text,finish_reason text);
+CREATE TABLE model_attempts(id bigserial,operation text,workspace_id uuid,job_id uuid,usage_id uuid,provider text,model text,connection_id uuid,model_config_id uuid,status text,result_code text,response_id text,finish_reason text);
 CREATE TABLE model_routing(workspace_id uuid,enabled boolean);
-CREATE TABLE model_execution_settings(workspace_id uuid,enabled boolean,admitted_after timestamptz);
-CREATE TABLE model_connections(id uuid,workspace_id uuid,enabled boolean);
-CREATE TABLE model_configurations(id uuid,workspace_id uuid,connection_id uuid,enabled boolean);
-CREATE TABLE model_task_routes(workspace_id uuid);
+CREATE TABLE model_execution_settings(workspace_id uuid,enabled boolean,admitted_after timestamptz,revision int DEFAULT 1,max_parallel_requests int DEFAULT 1);
+CREATE TABLE model_connections(id uuid,workspace_id uuid,enabled boolean,revision int DEFAULT 1);
+CREATE TABLE model_configurations(id uuid,workspace_id uuid,connection_id uuid,enabled boolean,revision int DEFAULT 1,model text);
+CREATE TABLE model_task_routes(workspace_id uuid,task text,revision int DEFAULT 1,inherit_default boolean DEFAULT false,strategy text DEFAULT 'priority',next_position int DEFAULT 0,model_ids uuid[] DEFAULT '{{}}',profile jsonb);
 CREATE TABLE restore_sessions(workspace_id uuid,state text);
+CREATE TABLE app_private.model_graph_threads(id uuid,workspace_id uuid,job_id uuid);
+CREATE TABLE app_private.model_graph_results(id uuid,workspace_id uuid,thread_id uuid,result_key text,value jsonb,created_at timestamptz DEFAULT now());
 INSERT INTO workspaces VALUES('{W}',8);
 INSERT INTO memberships VALUES('{W}','{A}',true,'Owner');
 INSERT INTO identity_allowlist VALUES('{W}','{A}','active','Owner');
@@ -223,6 +230,17 @@ INSERT INTO opportunities VALUES('{O}','{W}',12,false,'shortlisted');
 INSERT INTO proposals VALUES('{P}','{W}','{O}',4,null);
 INSERT INTO generation_plans VALUES('{G}','{W}','{O}','{P}',287,'failed','analysis','{'a' * 64}',8,null,'{I}','{{"generated_delivery_version":3,"proposal_consistency_version":1}}','proposal',now());
 INSERT INTO proposal_issuance_requests VALUES('{I}','{W}','{G}','{A}','generation.retry','{prepared['command_key']}','failed','2026-01-01 00:00:00+00','2026-01-01 00:10:00+00');
+INSERT INTO jobs(id,workspace_id,entity_id,status,type) VALUES('00000000-0000-4000-8000-000000000900','{W}','{G}','succeeded','analyze_chunk');
+INSERT INTO app_private.model_graph_threads VALUES('00000000-0000-4000-8000-000000000901','{W}','00000000-0000-4000-8000-000000000900');
+INSERT INTO app_private.model_graph_results(id,workspace_id,thread_id,result_key,value) VALUES
+ ('00000000-0000-4000-8000-000000000902','{W}','00000000-0000-4000-8000-000000000901','invalid-report-fixture','{diagnostic_value}');
+INSERT INTO model_attempts(workspace_id,job_id,operation,model,result_code,model_config_id) VALUES
+ ('{W}','00000000-0000-4000-8000-000000000900','verify_grounding','gpt-6-luna','EVIDENCE_REFERENCE_INVALID','00000000-0000-4000-8000-000000000903');
+INSERT INTO model_connections(id,workspace_id,enabled,revision) VALUES('00000000-0000-4000-8000-000000000904','{W}',true,3);
+INSERT INTO model_configurations(id,workspace_id,connection_id,enabled,revision,model) VALUES
+ ('00000000-0000-4000-8000-000000000903','{W}','00000000-0000-4000-8000-000000000904',true,5,'gpt-6-luna');
+INSERT INTO model_task_routes(workspace_id,task,revision,model_ids) VALUES
+ ('{W}','verify_grounding',7,ARRAY['00000000-0000-4000-8000-000000000903'::uuid]);
 RESET ROLE;
 """
         inspect_sql = m.inspection_sql(proof['selection']).replace("current_database()='tenderdesk_app'", "current_database()='postgres'")
@@ -252,7 +270,7 @@ await db.exec(`INSERT INTO provider_usage(workspace_id,state,remote_request_id) 
 const bounded=await read(x.diagnostic);
 await db.exec(`UPDATE model_routing SET enabled=false;
  UPDATE provider_usage SET state='unknown',remote_request_id=null,created_at=now()-interval '20 minutes',remote_deadline=null;
- INSERT INTO model_execution_settings VALUES('${x.w}',true,now()-interval '1 day');
+ INSERT INTO model_execution_settings(workspace_id,enabled,admitted_after) VALUES('${x.w}',true,now()-interval '1 day');
  INSERT INTO jobs(id,workspace_id,entity_id,status,checkpoint,type) VALUES('${x.j}','${x.w}','${x.g}','failed','{}','analyze_chunk');
  INSERT INTO generation_steps VALUES('${x.w}','${x.j}','${x.g}','queued')`);
 const parentModern=await read(x.inspect);
@@ -290,6 +308,18 @@ console.log(JSON.stringify({normal,accepted,disabled,reserved,unknown,routed,mis
         self.assertEqual(data['mismatch']['count'], 0)
         self.assertEqual(data['diagnostic']['unknown_count'], 1)
         self.assertTrue(data['diagnostic']['routing_enabled'])
+        m.validate_verifier_diagnostic(data['diagnostic'])
+        projected = data['diagnostic']['verifier_diagnostics']
+        self.assertEqual(projected['plan_id'], G)
+        self.assertEqual(projected['report_count'], 1)
+        self.assertEqual(projected['reports'][0]['diagnostics'], [{
+            'code': 'EVIDENCE_REFERENCE_INVALID', 'reason': 'source_quote_mismatch',
+            'paths': ['$.claims[0].source_refs[0].quote']}])
+        self.assertEqual(projected['attempts'][0]['model_config_id'], '00000000-0000-4000-8000-000000000903')
+        route = data['diagnostic']['verifier_routes'][0]
+        self.assertEqual((route['revision'], route['models'][0]['revision'], route['models'][0]['connection_revision']), (7, 5, 3))
+        for private in ['private-project', 'private-customer-content', '99999', 'numeric_literals']:
+            self.assertNotIn(private, json.dumps(data['diagnostic']))
         self.assertEqual(data['bounded']['total'], 102)
         self.assertTrue(data['bounded']['truncated'])
         self.assertEqual(len(data['bounded']['rows']), 100)
