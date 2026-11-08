@@ -29,6 +29,37 @@ can wait for its 60-second recovery tick. Its exact contribution to the measured
 36.39-second startup remains unproven without claim/outbox timestamps. No third
 paid request or provider setting change has been made for these findings.
 
+## November 8 — wake newly authorized proposal admissions immediately
+
+The live fresh request and saved-work retry did not start model activity for
+42.8 and 36.39 seconds respectively. Source inspection found that canonical
+admission enqueues/requeues jobs without signaling the durable dispatcher, whose
+idle recovery tick is 60 seconds. The one-second scheduler loop does not itself
+make an idle outbox runnable. Exact attribution of the measured gap still needs
+an outbox periodic timestamp and initial claim timestamp; these are absent from
+the existing private observation projection.
+
+The migration changes only the existing private `admit_proposal_issuance()`
+trigger body. After its existing authorization, deduplication and pending-job
+binding, a newly admitted `proposal.generate` or `generation.retry` writes the
+normal durable dispatch hint in the same transaction. Replay exits remain before
+the hook. The installed durable outbox is required; installations without it do
+not invoke the legacy HTTP dispatcher from admission. Deployment must separately
+verify the exact durable dispatcher source/catalog. Enabled state, due work,
+leases, provider accounting, immutable inputs and the 600-second issuance limit
+remain governed by their existing checks. No global recovery interval changes.
+
+Eight new actual PostgreSQL tests install the complete application schema and
+real runtime dispatcher SQL. They prove immediate outbox claiming with periodic
+recovery suppressed, replay/rejection/rollback behavior, saved-work retry,
+existing lease exclusion, retention behind an older acknowledgement, paused
+configuration and legacy-dispatch isolation. Together with existing issuance and
+queue controls, 105 tests pass; all 12 retry-accounting controls also pass.
+Backend typecheck and build pass. Independent review found no remaining hook
+or transaction blocker. This is local implementation evidence; deployment and a
+measured hosted admission improvement remain pending. No live action or model
+request was performed for this change.
+
 ## November 8 — latency correction deployed; saved-work trial started
 
 [Release 42511889721](https://github.com/salahassi/tenders/actions/runs/42511889721)
