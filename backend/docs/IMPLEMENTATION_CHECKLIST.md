@@ -26,13 +26,23 @@ full-migration read-only SQL fixtures, exact issuance isolation, unknown-send
 handling, artifact integrity and a reviewed UTF-16 entity regression. Eleven
 coordinator checks and all 15 private-transfer checks pass. The optional transfer
 HTTP cap preserves existing defaults while limiting this runner's key-revocation
-cleanup to five seconds. Independent integration review closed active-state
+cleanup to ten seconds. Independent integration review closed active-state
 polling, ambiguous-send reconciliation and cleanup-reserve findings. Both package
 typechecks/builds and the frontend's 389 tests retain the preceding release's
 evidence because application/dependency/schema inputs are unchanged. The prior
 backend full-suite result remains 3,513/3,514 with the unchanged affected file
 passing 18/18 in isolation; it is not represented as a new green complete run.
 Hosted generation, actual file download and final duration remain pending.
+
+The first harness run [42506306648](https://github.com/salahassi/tenders/actions/runs/42506306648)
+at `e4c4e81` stopped after 37 seconds including queue, before any generation send:
+the privately recovered encrypted report confirms `send_attempted=false`,
+`request_sent=false`, `intent_persisted=false`, and owned-client cleanup success.
+Private input transfer failed with `DO_API_NETWORK_OR_TLS_FAILURE`; report bytes
+were persisted despite the same error during transfer completion. The initial
+five-second HTTP cap was too short for this observed path. It is now ten seconds,
+with a corresponding 70-second final reserve; the three-minute run bound is
+retained. This is a harness/access failure, not a proposal-model outcome.
 
 ## November 8 — remove synchronous proposal dispatch waits
 

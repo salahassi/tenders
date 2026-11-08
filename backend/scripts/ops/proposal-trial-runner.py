@@ -41,6 +41,7 @@ transfer = auth.transfer
 BUCKET = auth.BUCKET
 STAGE = 'initial'
 PRIVATE_VALUES = set()
+PUBLIC_STATE = {}
 
 
 def require(value, code):
@@ -59,7 +60,7 @@ def fixed_code(error):
 
 def work_budget():
     # Reserve session logout, scoped pod cleanup and encrypted report readback.
-    budget = min(100, release.remaining_run_seconds() - 65)
+    budget = min(100, release.remaining_run_seconds() - 70)
     require(budget >= 40, 'WORK_BUDGET_EXHAUSTED')
     return budget
 
@@ -162,7 +163,7 @@ def private_input(name, digest):
 
 def run(args):
     global STAGE
-    os.environ['TENDERDESK_TRANSFER_HTTP_TIMEOUT_SECONDS'] = '5'
+    os.environ['TENDERDESK_TRANSFER_HTTP_TIMEOUT_SECONDS'] = '10'
     report = {'version': 1, 'kind': 'proposal_trial_report', 'mode': args.mode,
               'source_revision': os.environ['GITHUB_SHA'], 'request_sent': False, 'send_attempted': False,
               'intent_persisted': False, 'cleanup_verified': False}
@@ -263,6 +264,9 @@ def run(args):
         except (Exception, release.DeadlineExceeded) as error:
             report.update(cleanup_failure=fixed_code(error))
     STAGE = 'private_report_persistence'
+    PUBLIC_STATE.clear()
+    PUBLIC_STATE.update({key: report[key] for key in ('request_sent', 'send_attempted',
+        'intent_persisted', 'cleanup_verified', 'failure_code', 'failure_stage') if key in report})
     remaining = release.remaining_run_seconds()
     require(remaining > 5, 'REPORT_BUDGET_EXHAUSTED')
     signal.alarm(min(25, remaining - 3))
@@ -312,7 +316,8 @@ def main():
         print(json.dumps(result), flush=True)
         return 0 if result['cleanup_verified'] and not result.get('failure_code') else 1
     except (Exception, release.DeadlineExceeded) as error:
-        print(json.dumps({'proposal_trial': 'failed', 'code': fixed_code(error), 'stage': STAGE}), flush=True)
+        print(json.dumps({'proposal_trial': 'failed', 'code': fixed_code(error), 'stage': STAGE,
+            'state': PUBLIC_STATE}), flush=True)
         return 1
 
 

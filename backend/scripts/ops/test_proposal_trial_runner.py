@@ -155,7 +155,7 @@ class TrialRunnerTests(unittest.TestCase):
         self.send.assert_not_called()
 
     def test_work_budget_reserves_cleanup_and_report_with_queue_time(self):
-        for remaining, expected in ((170, 100), (115, 50), (105, 40)):
+        for remaining, expected in ((170, 100), (115, 45), (110, 40)):
             with patch.object(m.release, 'remaining_run_seconds', return_value=remaining):
                 self.assertEqual(m.work_budget(), expected)
         with patch.object(m.release, 'remaining_run_seconds', return_value=104):

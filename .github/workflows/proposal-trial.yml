@@ -72,7 +72,7 @@ jobs:
           ]
           try:
               for command,limit in steps:
-                  available=int(deadline-time.time())-105
+                  available=int(deadline-time.time())-110
                   if available<5:raise RuntimeError('SETUP_BUDGET')
                   result=subprocess.run(command,stdout=subprocess.PIPE,stderr=subprocess.PIPE,timeout=min(limit,available))
                   if result.returncode:raise RuntimeError('SETUP_FAILED')
