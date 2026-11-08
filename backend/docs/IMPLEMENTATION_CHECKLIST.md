@@ -1,5 +1,25 @@
 # Implementation status and continuation plan
 
+## November 8 — exact whole-review image qualified and published
+
+Artifact source `7c93e7ec9726b46168a30257793a76ee1ced56c5` built offline into
+image `8c836993`. All six actual-image native suites pass65 controls: executor7
+dispatch10, prompt12, accepted polling10, UUID boundary8, commercial11 and
+whole-review14. Each verifies owned-container cleanup and makes no external
+provider calls. The legacy image reproduces zero reviews; the candidate creates
+one, includes every saved draft/fixed block and complete commercial draft,
+preserves48 legacy prompt wires, and rejects12 malformed review scopes.
+
+Qualification `f2a22735` binds the exact four-file runtime change, immutable
+baseline and five SQL policies. It explicitly does not qualify SQL execution.
+Registry publication `4470a2fe` passed immutable pull/source verification and
+removed temporary credentials. The wrapper's13 controls pass after freezing.
+See the [qualification](evidence/proposal-review-runtime-20261108.json) and
+[publication](evidence/proposal-review-publication-20261108.json).
+Production still runs `de4312a0`; final native SQL authority, guarded release and
+actual customer review/file issuance remain separate gates. No hosted business
+request or provider activation occurred in qualification or publication.
+
 ## November 8 — integrated whole-review package verified locally
 
 The integrated source `d2b2066` ran all 3,674 backend tests across 218 files.

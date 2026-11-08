@@ -40,8 +40,8 @@ validate_native_identity, validate_harnesses = successor.validate_native_identit
 validate_commercial_native = successor.validate_commercial_native
 RECEIPT = 'backend/docs/evidence/proposal-review-runtime-20261108.json'
 PUBLICATION = 'backend/docs/evidence/proposal-review-publication-20261108.json'
-# Set only after actual image/native capture; preparation cannot authorize release.
-RECEIPT_SHA256 = None
+# Actual immutable-image capture; SQL and hosted issuance remain separate gates.
+RECEIPT_SHA256 = 'f2a227350d95c9ce6f45eb64acfd38b891e76fa144b139e2c77438cc590b7b29'
 BASELINE_QUALIFICATION_SHA256 = 'a5e636e87f125c9f02e838a913b0e1ed05a6691681fd132a34d8e70a9b8d7b41'
 BASELINE_PUBLICATION_SHA256 = '3d73c1c039fadcf707e09759c102a6b3ac76534b9c9b35a94f38ed9614dcac27'
 BASELINE_REFERENCE = REGISTRY + '@sha256:de4312a0bea6170bcd0697bf7e209900295732add424239466bb2cfededc47f1'
