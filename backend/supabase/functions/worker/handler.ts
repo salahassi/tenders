@@ -241,7 +241,7 @@ export function createWorkerHandler(
             )
           )
             break;
-          const local = await backend.internal("claim_backend_local_job_v5");
+          const local = await backend.internal("claim_backend_local_job_v6");
           if (!local) break;
           job = local;
           await processClaimed();

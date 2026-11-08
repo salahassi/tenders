@@ -1,5 +1,22 @@
 # Implementation status and continuation plan
 
+## November 8 — worker executor-6 claim and wake boundary
+
+The new worker calls only the version-6 primary claim, local claim and guarded
+wake RPCs. The SQL capability layer separately fences new version-2 commercial
+jobs at executor 6 while retaining the historical version-5 functions. Worker
+response metadata, processing order, business/model permissions, deadlines,
+model-executor pins and stored prompt identities are unchanged. A missing v6
+RPC fails; it never silently falls back to an older worker capability.
+
+Current worker mocks and guarded-wake integration calls use the new RPCs;
+historical direct-SQL v5 assertions remain v5. HTTP adapter tests preserve
+unmodified stored job identities at floors 1/2/5/6 and reject fallback. All 49
+focused worker/adapter/wake tests and backend typecheck/build pass. Actual
+mixed-worker claims, native dispatch and full-schema gates belong to the
+separate SQL/native qualification changes and must pass before rollout.
+No live call, provider request, configuration change or budget reset ran here.
+
 ## November 8 — versioned commercial business-input instructions
 
 Only fresh `plan_commercial` steps carrying numeric `commercial_input_version: 2`
