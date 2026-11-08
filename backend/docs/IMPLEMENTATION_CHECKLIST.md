@@ -1,5 +1,53 @@
 # Implementation status and continuation plan
 
+## November 8 — legacy whole-review schema release guards tested locally
+
+The eighth-child release now has an isolated PGlite regression matrix against
+candidate SQL `56627d55`. All four ops tests pass in33seconds. Canonical apply,
+read-only parent/child verification and replay preserve all22 predecessor ledger
+rows exactly and append three child rows once. Corrupting each ancestor is
+rejected both before and after installation. All48 injected faults roll back
+without changing retained rows, ledger timestamps, catalog or structure.
+
+Coverage includes ten approved function bodies retaining their attributes,
+unchanged helper body scope, the exact renamed delegate, private helpers,
+executor-seven RPC/trigger authority and the explicit lineage shape contract.
+Four locally bound synthetic candidates prove the fast transaction activity and
+storage guard catches net-zero writes and empty-table truncation; arbitrary
+fault payloads retain the full-row proof. Exact reviewed source bytes remain the
+authority for new-table types and constraint expressions. The operational source
+hash remains unfrozen. Native product acceptance, runtime qualification,
+deployment and customer file issuance remain separate pending gates; this
+test-only work made no live calls or image builds.
+
+
+## November 8 — executor-seven whole-review release controls prepared
+
+The separate whole-review coordinator binds the deployed `de4312a0` worker and
+scheduler, retained API/source/frontend images and exact seventh-child SQL
+`6bf6a506`, catalog `37e48b5e`, structure `5dfdc428`. The eighth child retains
+all22 historical ledger rows and appends three atomically. Its source hash stays
+unfrozen until the actual PostgreSQL recovery proof passes. Only the frozen
+DDL receives transaction-local activity/storage protection; explicit injected
+payloads retain full-row checks as well. No customer command occurs in release.
+
+The existing170-second run-created deadline, original-CA access, owned scheduler
+pause/drain, worker-first rollout, before-activation rollback and after-activation
+forward recovery remain unchanged. All four executor-seven service routes must
+be visible through a bounded read-only OpenAPI request before scheduler resume.
+Rollback retains the SQL capability fence and explicitly requires a later
+forward release for work requiring executor seven. Trial verification requires
+the new qualified image and exact child, with all five SQL policies bound
+separately and the historical successor receipt unchanged.
+
+Local coordinator27, trial15 and qualification13 controls pass. The separate
+isolated SQL guard matrix passes48 rejected payloads and every historical
+ledger corruption; its detailed test evidence is recorded separately. Independent
+read-only coordinator/workflow review found no blocker. Final migration freeze,
+full product gates, actual-image native capture, registry publication, hosted
+release and customer review/file issuance remain separate pending evidence; no
+build, publication or live action is performed by this preparation change.
+
 ## November 8 — canonical missing-review recovery harness prepared
 
 Only a selected failed legacy plan at completed stage with a current accepted
