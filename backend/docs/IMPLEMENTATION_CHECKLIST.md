@@ -1,5 +1,98 @@
 # Implementation status and continuation plan
 
+## November 8 — ordinary review-copy operations integrated
+
+All46 focused controls pass on the integrated source: eight preparation/send,
+11 authenticated download and27 coordinator tests. The frozen runtime
+qualification still verifies image `8c836993`; product, schema and frontend
+bytes are unchanged. The11 native helper controls apply to the final helper's
+unchanged SQL and preparation/observation functions: independent AST comparison
+confirms only `download()` differs from native-qualified `6d1360e1`, and its
+per-artifact DRAFT check is covered by the11 download controls. Both native
+receipts retain their original exact source hashes and limits.
+
+The permanent access runbook records the three bounded ordinary-copy modes and
+their distinct unapproved status. Hosted preparation, authenticated retrieval
+and actual document QA are next; no ordinary export command has yet been sent.
+
+## November 8 — ordinary draft-download boundaries verified locally
+
+Eleven focused tests exercise the actual new download helper against synthetic
+HTTP responses and real DOCX ZIP/XML bytes. Both volumes retain all eight review
+findings and a visible DRAFT label in each file; a missing label in one volume
+was caught and corrected in the helper. Exact Owner/session/package identities
+are checked before and after transfer. Redirects, HTML, incorrect hash/size,
+extra or incomplete artifacts, duplicate identities, unsafe names, malformed
+ZIP/XML and exhausted total time are rejected. Every recorded request is an
+authenticated canonical GET, with no command POST.
+
+The tests pass against helper `826cf6cb` in0.042seconds. This is local operations
+verification, separate from graph's canonical SQL proof and any hosted artifact
+or visual review. No helper/product/schema edit, model request or live download
+is part of this test-only commit.
+
+## November 8 — bounded ordinary draft-copy runner prepared
+
+The existing private trial workflow now has separate draft-copy preparation,
+observation and download modes. Preparation requires explicit activation and
+permits one canonical `export.package.prepare` command with `mode=draft`.
+The exact request is persisted before transmission; an uncertain response is
+retained and later reconciled read-only against its immutable package target.
+Observation and download cannot resend. Existing generated-issuance reports
+cannot be relabelled as draft-copy reports, and final export mode is refused.
+
+The original170-second run-created deadline, exact deployed `4470a2fe` runtime
+and `77631534` schema checks, genuine Owner authentication, scoped cleanup and
+encrypted private reporting are retained. Downloaded copies use the dedicated
+`draft_copy_download` field. Public status explicitly states draft-copy only,
+no generated issuance success and no approval. Accepted review findings and
+failed issuance remain retained; no validator or content is changed.
+
+All27 focused runner tests pass, including12 new activation, exact-command,
+durable-intent, lost-acknowledgment, target-binding, cleanup and ordinary-download
+boundaries. The actual workflow's validation code is exercised. Helper/native
+integration, hosted preparation, authentic file downloads and visual review
+remain separate gates. This operations-only change performs no live call,
+product/schema change, image build or paid model request.
+
+## November 8 — actual whole review succeeds; content findings stop issuance
+
+One canonical continuation in run42534155723 was accepted at23:14:37Z. The real
+whole-proposal review and normal reassembly succeeded. Delivery then stopped at
+23:18:38Z after241.333seconds with `GENERATED_DELIVERY_VALIDATION_FAILED`.
+Read-only inspection42534760575 and the unmodified assessor prove all32 accepted
+receipts, source scope and17-section reconstruction pass. The only machine
+blocker is `WHOLE_PROPOSAL_REVIEW_BLOCKING`: six accepted findings cover an
+unsupported attribution, conflicting schedule, technical/commercial allocation,
+pricing finalization, acceptance baseline and support boundaries. Two findings
+are advisory. Business unknowns remain explicit; no complete file is issued.
+
+The [continuation receipt](evidence/proposal-review-continuation-20261108.json)
+keeps this content outcome separate from the passed technical repair. The saved
+review, previous31 results and both versions remain retained. No second review
+budget, result rewrite or validator relaxation is attempted. A legitimate
+ordinary draft-export path is being assessed for a clearly unapproved review
+copy; it must not be reported as passed generated issuance or final approval.
+
+## November 8 — whole-review capability deployed successfully
+
+[Run42534028969](https://github.com/salahassi/tenders/actions/runs/42534028969)
+from `fc81119` passed in66seconds including queue. Worker/scheduler now run
+`4470a2fe` / image `8c836993`, artifact `7c93e7e`, qualification `f2a22735`.
+SQL `77631534` is applied with catalog `a0623879` and structure `28a53b0f`;
+all22 predecessors remain intact (25 ledger rows). Atomic apply, independent
+readback, drain, worker-first rollout, four executor-seven service routes,
+retained poll rejection, scheduler activation and owned cleanup all pass.
+All other images, private settings and resource limits are unchanged. See the
+[exact receipt](evidence/proposal-review-passed-20261108-42534028969.json).
+
+PR57 merged as `36f0b020`. Pages42534000639 passed; the unrelated credential-sync
+push run42534000344 was canceled during setup before any provider steps.
+No business command or provider activation occurred in deployment. The selected
+canonical recovery trial is separately authorized; its admission, genuine review
+and complete files remain pending. The release previous-image guard now rejects
+unchanged apply; inspect and repair forward after scheduler activation.
+
 ## November 8 — final integrated release controls ready
 
 After integrating native proof and freezing both qualification and schema,
@@ -13848,3 +13941,78 @@ Added separate worker_dispatch_v7_native Python/Deno harnesses, preserving the f
 Added separate legacy_review_native Python/Deno harnesses, retaining all prior harnesses and receipts. It imports actual image context, prompt, result validation and delivery-assessment functions. Fourteen controls bind the explicit legacy zero-inventory review marker to all saved draft/fixed-template prose and the complete unconfirmed commercial draft, retain the wording-only trust of the review source, reject twelve malformed scopes, and require an accepted review receipt. A complete synthetic receipt set positively reconstructs as machine-eligible draft, while an altered review candidate hash fails; this is offline test evidence, never a real model review or customer acceptance.
 
 The exact deployed successor image 3cc6c7cb (qualification a5e636e8) was executed offline with its original worker entrypoint and no network: it reproduced zero scheduled reviews and retained all 48 legacy wire cases. The candidate source smoke against the isolated marker patch passed all 12 raw controls, scheduled one review, produced 12 new EN/AR writer/repair/verifier wires and preserved the eight legacy context/input hashes and all 48 wire hashes. Both baseline probes confirmed owned-container cleanup. Thirteen Python guard/ownership/isolation tests and the twelve v7 dispatch guards pass; backend typecheck passes. Candidate immutable-image execution, SQL authority gates, publication, deployment and real whole-proposal review remain pending. No customer data was used in these fixtures or added to the repository.
+
+### November 8 — ordinary draft export with a blocking whole review
+
+Added an isolated PostgreSQL proof for the existing canonical
+`export.package.prepare` with `mode=draft`. The synthetic fixture retains 31
+accepted generation records and completes one synthetic accepted whole review
+through normal finalization and reassembly. Calling `fail_generated_delivery`
+then establishes the real failed-plan/completed-stage state with 32 accepted
+records, 17 sections, six blocking findings, null commercial inputs and an
+unresolved pricing question. This proof adds no product SQL or runtime change.
+
+All 11 targeted native controls pass in a network-isolated PostgreSQL container
+limited to one CPU, with cleanup confirmed; see
+[`blocking-review-draft-export-native-20261108.json`](evidence/blocking-review-draft-export-native-20261108.json).
+The canonical command adds exactly one local `render_export` job with its normal
+600-second deadline. Every generation record, paid usage, budget, accepted review,
+issuance, question and approval remains unchanged. Final export without approval,
+stale version revision, changed source and revoked Owner are refused atomically;
+same-key replay adds no work and conflicting replay is refused. Current worker7
+claims the local export and reads its authorized immutable snapshot.
+
+The production render model retains the DRAFT label, all six finding texts,
+missing commercial inputs and the unresolved question. Normal assembly also
+materializes blocking findings as finalization questions: identical finding text
+is de-duplicated under “Required before final approval.” Two fixture assertions
+were corrected to match canonical assembled commercial shape and that visible
+label; no product behavior was changed. This proof does not render/upload/download
+document bytes, grant final approval, clear review findings, or qualify a provider
+response. All content is synthetic; no hosted calls or customer data are used.
+
+The separate bounded draft-copy helper also passes 11 native PostgreSQL controls;
+see [`blocking-review-draft-ops-native-20261108.json`](evidence/blocking-review-draft-ops-native-20261108.json).
+The test executes its actual inspection, preparation, fresh recheck, idempotency
+acceptance and observation SQL around one canonical authenticated draft command.
+All 17 saved generation/review/paid-history hashes remain identical, and all six
+blocking findings remain visible in observation. Existing package discovery is
+observe-only; a now-stale send intent and altered history/source/actor/version
+pins are refused. Worker7's running local render remains observable without
+changing those history pins. Only the isolated database name and operational
+reader role are adapted; business SQL and authenticated command authority stay
+unchanged. Exact helper/dependency hashes and read-query hashes are in the
+receipt. Cleanup is confirmed, with no HTTP/provider/hosted calls or document
+rendering, uploading or downloading in this proof.
+
+### November 8 — ordinary DRAFT review-copy helper prepared
+
+Added an ops-only helper for one genuine Owner `export.package.prepare` command
+with `mode=draft`, bound to the current active version, revision, source proof
+and retained failed generated issuance. It persists a stable intent before POST;
+an unknown acknowledgement is reconciled through read-only observation without
+resubmission. Existing packages are observe-only. All 17 selected-plan/history
+hashes and the complete review findings remain unchanged; unrelated workspace
+usage does not prevent this local export. No generation, review, approval,
+provider allowance or product/SQL policy is changed.
+
+The separate authenticated download verifies the canonical ordinary-2 package,
+Owner before and after retrieval, each artifact's API MIME/size/SHA-256 identity,
+safe DOCX structure, a visible DRAFT label in every volume and every retained
+finding. Only the encrypted private report contains file bytes. Public output
+explicitly distinguishes a review copy from successful generated issuance and
+final approval. Authenticated GETs may perform normal expiry/audit bookkeeping.
+
+Validation: eight prepare/proof/send tests pass, including unknown-response
+replay protection, final-mode refusal, currentness and selected-history checks.
+The separate download test patch passes 11 controls, including the per-volume
+DRAFT regression and all eight synthetic findings. The actual PostgreSQL helper
+hook passed 11 controls and cleanup against helper SHA-256
+`6d1360e13cfed14d001549a417e4c969c9003e389c21be39436a40be13751f6c`.
+Final helper `826cf6cb68264432756e24f2f74e932d921eb8e44fa61e1a9c77749c7bb721fc`
+changes only `download()`: AST comparison confirms every other module node is
+identical, and generated inspection, acceptance and observation SQL bytes are
+identical. The final difference is covered by the 11 download tests. Python
+compilation and whitespace checks pass. No hosted request, download or model
+call was performed by this implementation task; actual review-copy acceptance
+and visual/semantic QA remain pending.

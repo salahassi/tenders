@@ -243,6 +243,169 @@ class TrialRunnerTests(unittest.TestCase):
         self.upload.assert_not_called()
 
 
+
+class DraftCopyRunnerTests(unittest.TestCase):
+    args = staticmethod(TrialRunnerTests.args)
+
+    def setUp(self):
+        TrialRunnerTests.setUp(self)
+        self.proof = {'selection': self.incoming, 'actor_id': 'synthetic-owner'}
+        self.copy_target = {'workspace_id': self.incoming['workspace_id'],
+            'opportunity_id': self.incoming['opportunity_id'], 'actor_id': self.proof['actor_id'],
+            'package_id': 'synthetic-package', 'job_id': 'synthetic-render-job'}
+        self.copy_prepared = {'mode': 'send', 'proof': self.proof, 'operation': 'export.package.prepare',
+            'prepared_object': 'diagnostics/synthetic-draft-copy.prepared.bundle',
+            'body': {'commands': [{'operation': 'export.package.prepare', 'input': {
+                'proposal_version_id': 'synthetic-version', 'expected_revision': 2, 'mode': 'draft'}}]}}
+        self.copy = SimpleNamespace(inspect=Mock(return_value=self.proof),
+            prepare=Mock(return_value=self.copy_prepared), validate_prepared=Mock(), recheck=Mock(),
+            verify_result=Mock(return_value=self.copy_target), sample=Mock(return_value={
+                'outcome': 'ready', 'target': self.copy_target, 'draft_copy_only': True}),
+            public_receipt=Mock(return_value={'outcome': 'ready', 'draft_copy_only': True,
+                'generated_issuance_issued': False, 'approval_granted': False}),
+            download=Mock(return_value={'kind': 'ordinary_draft_copy_download', 'artifacts': [{'id': 'synthetic-artifact'}]}))
+        self.events = []
+        def send(_client, _session, prepared, persist, before_send):
+            persist(prepared); self.events.append('persisted')
+            before_send(); self.events.append('send_attempted')
+            return {'sent': True, 'accepted': True, 'http_status': 200, 'unknown': False}
+        self.copy.send = Mock(side_effect=send)
+        self.loader = self.stack.enter_context(patch.object(m, 'module', return_value=self.copy))
+
+    def saved(self, **updates):
+        value = {'version': 1, 'kind': 'proposal_trial_report', 'mode': 'draft-copy-prepare',
+            'draft_copy_only': True, 'selection': self.incoming, 'prepared': self.copy_prepared,
+            'intent_persisted': True, 'target': self.copy_target}
+        return value | updates
+
+    def test_prepare_requires_activation_before_any_access(self):
+        with self.assertRaisesRegex(RuntimeError, 'ACTIVATION_REQUIRED'):
+            m.run(self.args('draft-copy-prepare', activate=False))
+        self.runtime.assert_not_called(); self.loader.assert_not_called(); self.session.assert_not_called()
+
+    def test_cross_route_expected_operations_fail_before_access(self):
+        for mode, operation in (('start', 'export.package.prepare'),
+                ('draft-copy-prepare', 'generation.retry'), ('draft-copy-prepare', 'proposal.generate'),
+                ('draft-copy-observe', 'export.package.prepare'), ('draft-copy-download', 'export.package.prepare')):
+            args = self.args(mode); args.expected_operation = operation
+            with self.subTest(mode=mode, operation=operation), self.assertRaisesRegex(RuntimeError, 'EXPECTED_OPERATION_INVALID'):
+                m.run(args)
+        self.runtime.assert_not_called(); self.loader.assert_not_called(); self.session.assert_not_called()
+
+    def test_one_draft_command_persists_before_send_and_uses_separate_summary(self):
+        args = self.args('draft-copy-prepare'); args.expected_operation = 'export.package.prepare'
+        result = m.run(args)
+        self.assertEqual(self.events, ['persisted', 'send_attempted'])
+        self.copy.send.assert_called_once(); self.copy.verify_result.assert_called_once()
+        self.assertEqual(self.copy.recheck.call_count, 2)
+        self.assertTrue(result['request_sent']); self.assertTrue(result['intent_persisted'])
+        self.assertTrue(result['draft_copy_only']); self.assertFalse(result['generated_issuance_issued'])
+        self.assertFalse(result['approval_granted']); self.assertEqual(result['observation']['outcome'], 'ready')
+        self.send.assert_not_called(); self.sample.assert_not_called(); self.public.assert_not_called()
+        self.copy.download.assert_not_called(); self.assertTrue(self.reports[-1]['draft_copy_only'])
+
+    def test_wrong_command_or_final_mode_is_rejected_before_session(self):
+        for operation, mode in (('generation.retry', 'draft'), ('export.package.prepare', 'final')):
+            self.copy_prepared['operation'] = operation
+            self.copy_prepared['body']['commands'][0]['input']['mode'] = mode
+            result = m.run(self.args('draft-copy-prepare'))
+            self.assertEqual(result['failure_code'], 'PROPOSAL_TRIAL_DRAFT_COPY_COMMAND_REQUIRED')
+        self.session.assert_not_called(); self.persist.assert_not_called(); self.copy.send.assert_not_called()
+
+    def test_lost_acknowledgement_is_preserved_and_observer_never_resends(self):
+        def uncertain(_client, _session, prepared, persist, before_send):
+            persist(prepared); before_send(); raise OSError('private transport details')
+        self.copy.send.side_effect = uncertain
+        self.copy.verify_result.side_effect = RuntimeError('DRAFT_COPY_ACCEPTANCE_UNPROVEN')
+        result = m.run(self.args('draft-copy-prepare'))
+        self.assertTrue(result['intent_persisted']); self.assertTrue(result['send_attempted'])
+        self.assertIsNone(result['request_sent']); self.assertEqual(result['failure_code'], 'DRAFT_COPY_ACCEPTANCE_UNPROVEN')
+        saved = self.reports[-1]
+        self.assertTrue(saved['acknowledgement']['unknown']); self.assertNotIn('target', saved)
+        self.input.return_value = saved
+        self.copy.verify_result.side_effect = None
+        self.copy.send.reset_mock(); self.session.reset_mock()
+        reconciled = m.run(self.args('draft-copy-observe', activate=False))
+        self.assertFalse(reconciled['send_attempted']); self.assertTrue(reconciled['intent_persisted'])
+        self.copy.send.assert_not_called(); self.session.assert_not_called()
+        self.assertEqual(self.reports[-1]['target'], self.copy_target)
+
+    def test_durable_persistence_failure_prevents_send_boundary(self):
+        self.persist.side_effect = RuntimeError('PERSIST_FAILED')
+        result = m.run(self.args('draft-copy-prepare'))
+        self.assertFalse(result['intent_persisted']); self.assertFalse(result['send_attempted'])
+        self.assertEqual(result['failure_code'], 'PERSIST_FAILED')
+        self.assertEqual(self.events, []); self.copy.verify_result.assert_not_called()
+
+    def test_existing_copy_observation_needs_no_auth_or_new_intent(self):
+        self.copy_prepared.update(mode='observe_existing', target=self.copy_target)
+        result = m.run(self.args('draft-copy-prepare'))
+        self.assertFalse(result['request_sent']); self.assertFalse(result['intent_persisted'])
+        self.copy.send.assert_not_called(); self.session.assert_not_called(); self.persist.assert_not_called()
+        self.copy.sample.assert_called_once_with(self.database, self.copy_target, None)
+
+    def test_observe_rejects_missing_intent_or_changed_target(self):
+        for change, code in (({'intent_persisted': False}, 'DRAFT_COPY_INTENT_MISSING'),
+                ({'target': self.copy_target | {'package_id': 'different-package'}}, 'DRAFT_COPY_TARGET_CHANGED')):
+            self.input.return_value = self.saved(**change)
+            result = m.run(self.args('draft-copy-observe', activate=False))
+            self.assertTrue(result['failure_code'].endswith(code))
+        self.copy.send.assert_not_called(); self.copy.sample.assert_not_called(); self.session.assert_not_called()
+
+    def test_generated_issuance_report_cannot_be_relabelled_as_draft_copy(self):
+        for change in ({'mode': 'observe'}, {'draft_copy_only': False}):
+            self.input.return_value = self.saved(**change)
+            result = m.run(self.args('draft-copy-download', activate=False))
+            self.assertEqual(result['failure_code'], 'PROPOSAL_TRIAL_DRAFT_COPY_REPORT_INPUT')
+        self.copy.send.assert_not_called(); self.session.assert_not_called(); self.copy.download.assert_not_called()
+
+    def test_download_requires_ready_and_uses_only_private_draft_field(self):
+        self.input.return_value = self.saved()
+        self.copy.sample.return_value = {'outcome': 'blocked', 'target': self.copy_target}
+        blocked = m.run(self.args('draft-copy-download', activate=False))
+        self.assertEqual(blocked['failure_code'], 'PROPOSAL_TRIAL_DRAFT_COPY_NOT_READY')
+        self.session.assert_not_called(); self.copy.download.assert_not_called()
+        self.copy.sample.return_value = {'outcome': 'ready', 'target': self.copy_target}
+        ready = m.run(self.args('draft-copy-download', activate=False))
+        self.assertEqual(ready['draft_copy_files_downloaded'], 1)
+        self.assertNotIn('files_downloaded', ready); self.assertFalse(ready['generated_issuance_issued'])
+        self.assertIn('draft_copy_download', self.reports[-1]); self.assertNotIn('download', self.reports[-1])
+        self.copy.send.assert_not_called(); self.download.assert_not_called(); self.sample.assert_not_called()
+        self.session.assert_called_once_with(self.copy_target['actor_id'], self.copy_target['workspace_id'])
+
+    def test_download_failure_and_cleanup_failure_never_claim_completion(self):
+        self.input.return_value = self.saved()
+        self.copy.download.side_effect = RuntimeError('DRAFT_COPY_HASH_MISMATCH')
+        self.cleanup.side_effect = RuntimeError('CLEANUP_NOT_CONFIRMED')
+        result = m.run(self.args('draft-copy-download', activate=False))
+        self.assertEqual(result['failure_code'], 'DRAFT_COPY_HASH_MISMATCH')
+        self.assertEqual(result['cleanup_failure'], 'CLEANUP_NOT_CONFIRMED')
+        self.assertFalse(result['cleanup_verified']); self.assertNotIn('draft_copy_files_downloaded', result)
+        self.assertFalse(result['generated_issuance_issued']); self.copy.send.assert_not_called()
+
+    def test_workflow_gate_matches_mode_activation_and_operation_boundaries(self):
+        source = (HERE.parents[2] / '.github/workflows/proposal-trial.yml').read_text()
+        self.assertIn('timeout-minutes: 3', source)
+        self.assertIn('available=int(deadline-time.time())-110', source)
+        block = source.split('- name: Validate mode and explicit activation before access preparation', 1)[1]
+        block = block.split("python3 - <<'PY'", 1)[1].split('          PY', 1)[0]
+        code = '\n'.join(line[10:] if line.startswith('          ') else line for line in block.splitlines())
+        base = {'TRIAL_INPUT_OBJECT': 'requests/synthetic.bundle', 'TRIAL_INPUT_SHA256': 'a' * 64,
+            'GITHUB_RUN_ATTEMPT': '1', 'RUN_PROPOSAL_TRIAL': 'true'}
+        for mode, operation, allowed in (('draft-copy-prepare', 'export.package.prepare', True),
+                ('draft-copy-observe', 'any', True), ('draft-copy-download', 'any', True),
+                ('draft-copy-prepare', 'generation.retry', False), ('start', 'export.package.prepare', False)):
+            with patch.dict(os.environ, base | {'TRIAL_MODE': mode, 'TRIAL_EXPECTED_OPERATION': operation}), \
+                 patch('sys.stdout', new=io.StringIO()):
+                if allowed: exec(compile(code, '<workflow-gate>', 'exec'), {})
+                else:
+                    with self.assertRaisesRegex(SystemExit, 'Invalid expected command restriction'):
+                        exec(compile(code, '<workflow-gate>', 'exec'), {})
+        with patch.dict(os.environ, base | {'TRIAL_MODE': 'draft-copy-prepare', 'TRIAL_EXPECTED_OPERATION': 'any',
+                'RUN_PROPOSAL_TRIAL': 'false'}), self.assertRaisesRegex(SystemExit, 'Mutation requires explicit activation'):
+            exec(compile(code, '<workflow-gate>', 'exec'), {})
+
+
 class TrialRunnerBoundaryTests(unittest.TestCase):
     def test_runtime_verification_requires_qualified_worker_but_preserves_other_baselines(self):
         candidate = 'registry/synthetic-runtime@sha256:' + 'b' * 64

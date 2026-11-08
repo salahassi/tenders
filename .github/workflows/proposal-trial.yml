@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: Start or observe a proposal, download files, or plan/apply/observe the scoped settings repair
+        description: Start or observe a proposal, download files, prepare/observe/download an unapproved draft copy, or manage scoped settings
         required: true
         type: choice
         default: observe
@@ -15,6 +15,9 @@ on:
           - settings-plan
           - settings-apply
           - settings-observe
+          - draft-copy-prepare
+          - draft-copy-observe
+          - draft-copy-download
       input_object:
         description: Encrypted private selection or previous trial report object
         required: true
@@ -24,12 +27,12 @@ on:
         required: true
         type: string
       activation_confirmed:
-        description: Explicit user authorization for the selected start request or settings application
+        description: Explicit user authorization for the selected proposal request, draft-copy preparation or settings application
         required: true
         type: boolean
         default: false
       expected_operation:
-        description: Restrict a new start command; use generation.retry to preserve saved work
+        description: Restrict the selected canonical command; draft copies use export.package.prepare
         required: false
         type: choice
         default: any
@@ -37,6 +40,7 @@ on:
           - any
           - generation.retry
           - proposal.generate
+          - export.package.prepare
 permissions:
   contents: read
   actions: read
@@ -52,7 +56,7 @@ jobs:
       TRIAL_INPUT_OBJECT: ${{ inputs.input_object }}
       TRIAL_INPUT_SHA256: ${{ inputs.input_sha256 }}
       TRIAL_EXPECTED_OPERATION: ${{ inputs.expected_operation || 'any' }}
-      RUN_PROPOSAL_TRIAL: ${{ (inputs.mode == 'start' || inputs.mode == 'settings-apply') && inputs.activation_confirmed && 'true' || 'false' }}
+      RUN_PROPOSAL_TRIAL: ${{ (inputs.mode == 'start' || inputs.mode == 'settings-apply' || inputs.mode == 'draft-copy-prepare') && inputs.activation_confirmed && 'true' || 'false' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -66,10 +70,10 @@ jobs:
           python3 - <<'PY'
           import os,re
           mode=os.environ['TRIAL_MODE']
-          if mode not in {'start','inspect','observe','download','settings-plan','settings-apply','settings-observe'}:raise SystemExit('Invalid trial mode')
-          if mode in {'start','settings-apply'} and os.environ['RUN_PROPOSAL_TRIAL']!='true':raise SystemExit('Mutation requires explicit activation')
+          if mode not in {'start','inspect','observe','download','settings-plan','settings-apply','settings-observe','draft-copy-prepare','draft-copy-observe','draft-copy-download'}:raise SystemExit('Invalid trial mode')
+          if mode in {'start','settings-apply','draft-copy-prepare'} and os.environ['RUN_PROPOSAL_TRIAL']!='true':raise SystemExit('Mutation requires explicit activation')
           expected=os.environ['TRIAL_EXPECTED_OPERATION']
-          if expected not in {'any','generation.retry','proposal.generate'} or (expected!='any' and mode!='start'):raise SystemExit('Invalid expected command restriction')
+          if not (expected=='any' or mode=='start' and expected in {'generation.retry','proposal.generate'} or mode=='draft-copy-prepare' and expected=='export.package.prepare'):raise SystemExit('Invalid expected command restriction')
           if os.environ['GITHUB_RUN_ATTEMPT']!='1':raise SystemExit('Workflow replay is refused')
           if not re.fullmatch(r'(requests|diagnostics)/[A-Za-z0-9][A-Za-z0-9._/-]{0,160}\.bundle',os.environ['TRIAL_INPUT_OBJECT']):raise SystemExit('Invalid private input object')
           if not re.fullmatch(r'[a-f0-9]{64}',os.environ['TRIAL_INPUT_SHA256']):raise SystemExit('Invalid private input hash')

@@ -5,15 +5,45 @@ The repository-root [AGENTS.md](../../AGENTS.md) points here so the established
 route is available in every checkout, without relying on conversation history.
 Last reviewed: November 8, 2026.
 
-## Legacy whole-proposal review release (November 8, prepared)
+## Ordinary review-copy export after a blocking review (November 8)
+
+The genuine continuation completed its whole-proposal review in241.333seconds,
+but six content findings correctly stopped generated issuance. Preserve that
+failed issuance and its accepted review. A separate ordinary draft copy uses
+the existing canonical `export.package.prepare` command with `mode=draft`;
+it is never evidence of generated issuance success or final approval.
+
+Use only the bounded `proposal-trial.yml` modes `draft-copy-prepare`,
+`draft-copy-observe` and `draft-copy-download`. Read the complete workflow and
+helper before dispatch. Preparation requires the existing encrypted selection,
+explicit activation and `expected_operation=export.package.prepare`. It binds
+the current Owner, selected draft, accepted review and failed issuance, persists
+one stable private intent before transmission, and independently reconciles the
+actual command record. Existing packages are observed without another command.
+Unknown acknowledgment is reconciled from the private report, never resent.
+
+Observation/download take the exact previous encrypted report and plaintext
+SHA-256. They retain all17 generation/review/paid-history hashes and make no
+model call. Download uses only normal authenticated artifact GETs and requires
+matching metadata/bytes, a visible DRAFT label in every document and all accepted
+finding texts. It stores files under the separate `draft_copy_download` field.
+The170-second run-created deadline, original CA, runtime/schema verification,
+private transport and owned cleanup remain mandatory. Monitor each started run
+including queue time and cancel at175seconds. Actual downloadable bytes and
+visual review remain separate from the native SQL and synthetic HTTP proofs.
+
+## Legacy whole-proposal review release (November 8, deployed)
 
 `deploy-proposal-review.yml` is the bounded eighth-child and executor-seven
 release. Read its complete workflow, coordinator and schema guard before use.
 The exact frozen SQL is `77631534`; its parent is checkpoint SQL `6bf6a506`,
 catalog `37e48b5e`, structure `5dfdc428`, retaining all22 prior ledger rows.
 Candidate worker/scheduler `4470a2fe` is image `8c836993`, artifact source
-`7c93e7e`, qualification `f2a22735`. The deployed pair remains `de4312a0` until
-an actual passed release receipt is recorded. API, source-browser, frontend,
+`7c93e7e`, qualification `f2a22735`. [Run42534028969](https://github.com/salahassi/tenders/actions/runs/42534028969)
+from `fc81119` passed in66seconds including queue and cleanup. Worker/scheduler
+now run `4470a2fe`. Catalog is `a0623879`, structure `28a53b0f`; all22 predecessor
+rows remain intact (25 total). See the
+[passed receipt](evidence/proposal-review-passed-20261108-42534028969.json). API, source-browser, frontend,
 private settings and resource envelopes are retained.
 
 The 170-second creation-time deadline includes queue/setup and cleanup. SQL is
