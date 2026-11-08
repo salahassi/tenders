@@ -1,5 +1,21 @@
 # Implementation status and continuation plan
 
+## November 8 — hosted read-only performance snapshot
+
+Inspection42517566064 from `531acaf` passed with owned cleanup and no command or
+provider request. The selected frozen context is 772,563 logical bytes and
+138,736 stored bytes. The available relation estimates do not demonstrate major
+bloat. Server function tracking is disabled, statement statistics are unavailable
+and the observer does not have full statistics visibility. This snapshot cannot
+attribute the internal handoff gaps to an individual query, exclude earlier lock
+waits or establish CPU/transport latency. Existing transaction-start timestamps
+span several RPCs between graph transitions and must not be labeled single-query
+timings. See the [bounded inspection receipt](evidence/proposal-performance-inspection-20261108-42517566064.json).
+
+The accepted-request optimization remains a separately tested reduction in
+serialized round trips. Actual production latency and file issuance still require
+a subsequent qualified deployment and authorized saved-work trial.
+
 ## November 8 — bounded read-only database performance inspection
 
 The selected proposal inspector now records only named RPC execution aggregates,

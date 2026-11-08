@@ -1,0 +1,25 @@
+{
+  "workflow_run_id": 42517566064,
+  "workflow_url": "https://github.com/salahassi/tenders/actions/runs/42517566064",
+  "source_revision": "531acafa97710cea1733e242e1fe657d0345ecc1",
+  "mode": "inspect",
+  "report_object": "diagnostics/proposal-trial-42517566064.bundle",
+  "report_sha256": "54b052852f17b27a72987f45c65c13d6dfbdb755afeafcaf7b46dff2c1ab1abf",
+  "request_sent": false,
+  "send_attempted": false,
+  "cleanup_verified": true,
+  "metadata_only": true,
+  "settings": {
+    "track_functions": "none",
+    "track_io_timing": "off",
+    "statements_track": "top",
+    "full_stats_visibility": false
+  },
+  "statement_statistics_status": "unavailable",
+  "function_statistics_available": false,
+  "selected_context_bytes": {
+    "stored_bytes": 138736,
+    "logical_bytes": 772563
+  },
+  "limitation": "Server-side timing statistics were unavailable. Activity visibility is incomplete; this snapshot does not rule out historical locks, CPU pressure or transport delays. Stored timestamps show internal handoff gaps, not individual SQL durations."
+}
