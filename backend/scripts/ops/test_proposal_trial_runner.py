@@ -230,9 +230,10 @@ class TrialRunnerBoundaryTests(unittest.TestCase):
     def test_runtime_verification_requires_qualified_worker_but_preserves_other_baselines(self):
         candidate = 'registry/synthetic-runtime@sha256:' + 'b' * 64
         expected = m.release.BASELINES | {'worker': candidate, 'scheduler': candidate}
-        schema = Mock(ROOT=Path('/synthetic'), SOURCE=Path('/synthetic/backend/supabase/migrations/poll.sql'))
-        schema.source_sha256.return_value = 'c' * 64
-        schema.parent.PARENT_SQL = 'e' * 64
+        schema = Mock(ROOT=Path('/synthetic'))
+        schema.parent.SOURCE = Path('/synthetic/backend/supabase/migrations/poll.sql')
+        schema.parent.source_sha256.return_value = 'c' * 64
+        schema.retry.PARENT_SQL = 'e' * 64
         receipt = {'poll_migration': {'path': 'backend/supabase/migrations/poll.sql', 'sha256': 'c' * 64},
             'source': {'source_entries': {'backend/scripts/runtime/dispatcher.sql': {'sha256': 'e' * 64}}}}
         qualification = Mock()
@@ -244,11 +245,11 @@ class TrialRunnerBoundaryTests(unittest.TestCase):
                 side_effect=lambda name, filename: qualification if filename == 'proposal-latency-runtime.py' else schema):
             database = object()
             m.verify_runtime(database)
-            schema.verify.assert_called_once_with(database)
-            schema.source_sha256.return_value = 'd' * 64
+            schema.verify.assert_called_once_with(database, allow_parent=True)
+            schema.parent.source_sha256.return_value = 'd' * 64
             with self.assertRaisesRegex(RuntimeError, 'POLL_SOURCE_CHANGED'):
                 m.verify_runtime(database)
-            schema.source_sha256.return_value = 'c' * 64
+            schema.parent.source_sha256.return_value = 'c' * 64
             expected['api'] = candidate
             with self.assertRaisesRegex(RuntimeError, 'RUNTIME_CHANGED'):
                 m.verify_runtime()

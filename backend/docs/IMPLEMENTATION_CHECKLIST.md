@@ -1,5 +1,178 @@
 # Implementation status and continuation plan
 
+## November 8 — verified routing diagnosis and final admission gates
+
+Read-only inspection42513550842 from `0c1613d` passed with owned cleanup and no
+command sent. It confirms enabled modern execution at revision3 with exactly two
+parallel requests, no reserved usage and retry admission ready. The explicit
+verifier route inherits the round-robin default. Retained gpt-6-luna failures
+include source-quote mismatch (nine projected findings), candidate-quote mismatch
+(two), numeric-evidence mismatch and an invalid finding reference. The selected
+plan also proves successful gpt-6.1-sol verification. The scoped planned repair
+therefore makes this existing verifier explicit and raises the supported limit
+to four; its canonical Owner batch remains to execute and verify.
+
+The fresh complete backend suite after the admission migration passes all 3,590
+tests in 212 files (454.53 seconds). Both newly added full-schema settings-batch
+tests also pass after integration, as do backend typecheck/build, 16 admission
+release tests, 20 settings controls and 15 trial-runner controls. The unchanged
+frontend retains its fresh 389-test/typecheck/build pass from the latency change.
+Current runtime qualification still passes. Hosted admission release, exact
+settings application and another actual saved-work issuance are pending.
+
+## November 8 — SQL-only admission-wake release controls prepared
+
+The scoped admission workflow retains the qualified `03c68b58` runtime pair,
+every other image and all private workload settings. Its atomic child ledger
+requires the exact deployed latency catalog `321a5873`, structure `089a08ae`
+and all predecessor receipts. Only the admission trigger body may change;
+complete existing row digests, routine attributes and schema authority must
+remain identical. The reviewed migration bytes are fixed to `fcde6425`.
+
+Explicit read-only inspection accepts the exact latency parent or the exact
+admission child. Apply sends one transaction; an uncertain response permits only
+readback, never resubmission or DDL reversal. The workflow retains the 170-second
+deadline from run creation including queue time, with bounded reconciliation
+and owned-client cleanup. Independent review aligned the work timer's 45-second
+reserve with the 20-second commit-readback and 15-second cleanup bounds, so an
+interrupted apply still has time to reconcile. No image patch, scheduler pause, provider call or
+business command is part of this release. Trial verification explicitly accepts
+either bound schema state without changing historical latency verification.
+
+Sixteen focused admission controls and 15 trial-runner tests pass, including
+actual PostgreSQL execution of the four-level ledger chain, nine mutation fault
+cases, replay, partial receipts, changed source, and unchanged historical
+verification rejecting the later catalog. The current native qualification
+still loads with identical source/image bindings. Python compilation, workflow
+YAML/shell syntax and diff checks pass. Product migration evidence is recorded
+separately below; deployment and measured hosted startup improvement remain
+pending. No live action was performed for these operational controls.
+
+## November 8 — latency retry reached drafting but still timed out
+
+The actual canonical `generation.retry` in run42512021556 was accepted at
+18:51:38.538224 UTC with its unchanged 600-second clock and the same saved plan.
+Both previously pending analyses recovered without repeating their extraction;
+all twelve analyses and planning completed. Healthy poll intervals now follow
+approximately 5, 11, 16 and 31 seconds, proving the deployed backoff behavior.
+However, two fresh analysis verifications first failed with
+`EVIDENCE_REFERENCE_INVALID` after about 67–68 seconds on gpt-6-luna, then
+succeeded after another 34–37 seconds on gpt-6.1-sol. This remains a material
+verification bottleneck even with smaller evidence transport.
+
+At the drafting observation, seventeen units were scheduled but only two were
+active. The current report alone does not prove the configured concurrency
+value; the Owner contract supports one to four. First draft writer times were
+21.10 and 36.62 seconds. Terminal observation42512878038 proves another
+`PROPOSAL_ISSUANCE_TIMEOUT`: ten current-issuance jobs succeeded, sixteen stopped,
+and no complete file package was issued. Previous seven analysis successes are
+historical jobs, excluded from these issuance-scoped counts. Saved progress is
+retained. The [terminal receipt](evidence/proposal-latency-trial-timeout-20261108-42512878038.json)
+keeps deployment success separate from the still-open customer outcome.
+
+Read-only follow-up will inspect exact persisted validation diagnostics and the
+selected workspace's verification route/concurrency before any further request.
+The source also shows a missing immediate admission wake: an idle durable outbox
+can wait for its 60-second recovery tick. Its exact contribution to the measured
+36.39-second startup remains unproven without claim/outbox timestamps. No third
+paid request or provider setting change has been made for these findings.
+
+## November 8 — wake newly authorized proposal admissions immediately
+
+The live fresh request and saved-work retry did not start model activity for
+42.8 and 36.39 seconds respectively. Source inspection found that canonical
+admission enqueues/requeues jobs without signaling the durable dispatcher, whose
+idle recovery tick is 60 seconds. The one-second scheduler loop does not itself
+make an idle outbox runnable. Exact attribution of the measured gap still needs
+an outbox periodic timestamp and initial claim timestamp; these are absent from
+the existing private observation projection.
+
+The migration changes only the existing private `admit_proposal_issuance()`
+trigger body. After its existing authorization, deduplication and pending-job
+binding, a newly admitted `proposal.generate` or `generation.retry` writes the
+normal durable dispatch hint in the same transaction. Replay exits remain before
+the hook. The installed durable outbox is required; installations without it do
+not invoke the legacy HTTP dispatcher from admission. Deployment must separately
+verify the exact durable dispatcher source/catalog. Enabled state, due work,
+leases, provider accounting, immutable inputs and the 600-second issuance limit
+remain governed by their existing checks. No global recovery interval changes.
+
+Eight new actual PostgreSQL tests install the complete application schema and
+real runtime dispatcher SQL. They prove immediate outbox claiming with periodic
+recovery suppressed, replay/rejection/rollback behavior, saved-work retry,
+existing lease exclusion, retention behind an older acknowledgement, paused
+configuration and legacy-dispatch isolation. Together with existing issuance and
+queue controls, 105 tests pass; all 12 retry-accounting controls also pass.
+Backend typecheck and build pass. Independent review found no remaining hook
+or transaction blocker. This is local implementation evidence; deployment and a
+measured hosted admission improvement remain pending. No live action or model
+request was performed for this change.
+
+## November 8 — bounded verifier failure and routing inspection
+
+The existing read-only, encrypted trial inspector now projects the selected
+latest plan's retained verifier diagnostic codes, reasons and field paths,
+with bounded counts and explicit truncation. Real attempt IDs and model
+configuration IDs are reported separately; no inferred attempt/report linkage
+is asserted. Quotes, result bodies, numeric literals and producer project data
+are excluded. Selected-workspace default/verifier route order, configuration
+revisions/enabled flags, exact nullable execution profiles and concurrency
+settings support a later revision-bound Owner decision. The inspector does not
+change routes, settings, accepted requests or allowances.
+
+Focused Python controls cover strict readback, privacy and bounds; the actual
+PGlite query fixture exercises nonempty diagnostic/model/route projection.
+Runtime files and deployment inputs are unchanged. Live inspection, any Owner
+configuration decision and actual completed issuance remain separate evidence.
+
+## November 8 — scoped Owner repair of verifier routing and request capacity
+
+The selected private diagnosis identifies repeated invalid Luna verifier results,
+successful `gpt-6.1-sol` verification, inherited default routing and an enabled
+workspace limit of two accepted model requests. The trial workflow now offers
+read-only `settings-plan`, explicitly activated `settings-apply`, and read-only
+`settings-observe`. Planning requires the exact selected diagnostic and a fresh
+successful attempt bound to an existing enabled Sol configuration and connection.
+It refuses changed model identities/revisions, active issuance, reservations or
+restore, and preserves the selected task profile and strategy.
+
+The reviewed batch can only select that existing Sol configuration for
+`verify_grounding`, disable default-route inheritance, and raise an observed
+capacity of two to four. Already-correct commands are omitted. Enabled state,
+admission cutoff, provider connections, capabilities, credentials and daily
+allowances remain unchanged. Existing jobs retain their frozen catalog snapshots;
+the route repair affects newly frozen jobs. No generation or job-reset command
+is included. Exact intent is encrypted and read back before one genuine Owner
+API batch. Fresh checks precede authentication, persistence and send. Ambiguous
+results are reconciled by authoritative batch and command receipts plus current
+row readback, never a second send.
+
+Thirty-five focused helper/runner controls and two PostgreSQL tests against all
+committed migrations pass. The latter execute the generated read-only queries,
+verify exact admission/profile/allowance preservation and idempotent replay, and
+prove a stale second revision rolls back the route command and receipts. These
+are local tests only; no settings mutation, provider call or new issuance has
+been performed by this preparation. Hosted plan review, application and a
+separate actual proposal request remain pending.
+
+## November 8 — latency correction deployed; saved-work trial started
+
+[Release 42511889721](https://github.com/salahassi/tenders/actions/runs/42511889721)
+passed from `47cdca4` in 67 seconds including queue. Worker and scheduler now use
+qualified `03c68b58`; API, source-browser, frontend and private configuration are
+retained. The scheduler was drained before replacement and restored to its
+original single replica only after the pre-activation checks. Both components
+are ready, exact schema readback passes, and owned cleanup is verified.
+
+The additive polling ledger records SQL `d2c683dd`, catalog `321a5873` and
+structure `089a08ae`, preserving all predecessor receipts and business rows.
+The [release receipt](evidence/proposal-latency-passed-20261108-42511889721.json)
+contains exact bindings. PR50 merged as `39efbb80`; its redirect-only Pages run
+42511868120 passed in 30 seconds. Combined operations checks pass 37 latency
+and 15 trial controls after integration. A separate explicitly authorized
+`generation.retry` trial is now starting; deployment success does not claim
+completed technical/financial documents.
+
 ## November 8 — latency runtime qualified and published
 
 The frozen source `3ea8899` built offline and passed all nine actual dispatch

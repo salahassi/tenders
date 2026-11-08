@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: Start one authorized request, observe it, or download its issued files
+        description: Start or observe a proposal, download files, or plan/apply/observe the scoped settings repair
         required: true
         type: choice
         default: observe
@@ -12,6 +12,9 @@ on:
           - inspect
           - observe
           - download
+          - settings-plan
+          - settings-apply
+          - settings-observe
       input_object:
         description: Encrypted private selection or previous trial report object
         required: true
@@ -21,7 +24,7 @@ on:
         required: true
         type: string
       activation_confirmed:
-        description: Explicit user authorization for the selected start request and provider calls
+        description: Explicit user authorization for the selected start request or settings application
         required: true
         type: boolean
         default: false
@@ -49,7 +52,7 @@ jobs:
       TRIAL_INPUT_OBJECT: ${{ inputs.input_object }}
       TRIAL_INPUT_SHA256: ${{ inputs.input_sha256 }}
       TRIAL_EXPECTED_OPERATION: ${{ inputs.expected_operation || 'any' }}
-      RUN_PROPOSAL_TRIAL: ${{ inputs.mode == 'start' && inputs.activation_confirmed && 'true' || 'false' }}
+      RUN_PROPOSAL_TRIAL: ${{ (inputs.mode == 'start' || inputs.mode == 'settings-apply') && inputs.activation_confirmed && 'true' || 'false' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -63,8 +66,8 @@ jobs:
           python3 - <<'PY'
           import os,re
           mode=os.environ['TRIAL_MODE']
-          if mode not in {'start','inspect','observe','download'}:raise SystemExit('Invalid trial mode')
-          if mode=='start' and os.environ['RUN_PROPOSAL_TRIAL']!='true':raise SystemExit('Start requires explicit activation')
+          if mode not in {'start','inspect','observe','download','settings-plan','settings-apply','settings-observe'}:raise SystemExit('Invalid trial mode')
+          if mode in {'start','settings-apply'} and os.environ['RUN_PROPOSAL_TRIAL']!='true':raise SystemExit('Mutation requires explicit activation')
           expected=os.environ['TRIAL_EXPECTED_OPERATION']
           if expected not in {'any','generation.retry','proposal.generate'} or (expected!='any' and mode!='start'):raise SystemExit('Invalid expected command restriction')
           if os.environ['GITHUB_RUN_ATTEMPT']!='1':raise SystemExit('Workflow replay is refused')
