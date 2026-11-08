@@ -57,6 +57,41 @@ production diagnosis are under implementation. Further local projection retry
 is deferred until actual receipt/context checks establish the complete cause.
 No completed content or model budget is being reset.
 
+## November 8 — checkpoint decoding SQL release prepared
+
+`deploy-proposal-checkpoint.yml` defaults to inspection and requires explicit
+apply mode for the seventh schema child. Its only reviewed footprint is the
+private checkpoint report-reference decoder and the body change in the existing
+generated-delivery context function. The schema wrapper requires the deployed
+commercial-successor SQL `1cab7a1a`, catalog `8654608b`, structure `c75f3187`, and
+all 19 preceding ledger rows. Those rows, existing business records and every
+existing routine attribute are retained; exactly three child receipt rows are
+added atomically with the reviewed SQL. Runtime `de4312a0`, qualification
+`a5e636e8`, all other images and private configuration remain unchanged.
+
+The exact frozen DDL uses transaction-local row-activity and storage-identity
+guards. Arbitrary fault payloads retain the additional complete row-value proof.
+The helper must remain private, immutable and SECURITY INVOKER. Apply and
+read-only readback reject source, parent, child-catalog and authority drift;
+unknown commits receive one read-only reconciliation and are never resubmitted
+or followed by DDL rollback. Queue/setup time is included in the existing
+170-second deadline, with reconciliation and owned cleanup reserved.
+
+Local release tests pass 13 controls and the schema suite passes four tests,
+including full-migration PGlite execution, 19 atomic fault injections, rejection
+of corruption in every predecessor receipt, and 19-to-22-row chain preservation.
+Workflow YAML, shell and embedded Python checks pass. Current immutable runtime
+qualification verifies locally without rebuilding or pulling an image.
+Independent review found no blocking issue and reran all 13 coordinator checks.
+The [guard receipt](evidence/proposal-checkpoint-schema-guards-20261108.json)
+binds the exact tested operations sources and separates this synthetic SQL proof
+from the native decoder and concurrent-publication receipts.
+The operational source is frozen to `6bf6a506` after the exact product native
+PostgreSQL publication and decoder-authority acceptance. No hosted inspection,
+migration, business command
+or provider request has been issued by this preparation. Actual customer files
+remain a separate acceptance result.
+
 ## November 8 — generated delivery checkpoint decoding fixed locally
 
 The production saver has used typed JSON/base64 checkpoints since its original

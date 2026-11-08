@@ -5,6 +5,26 @@ The repository-root [AGENTS.md](../../AGENTS.md) points here so the established
 route is available in every checkout, without relying on conversation history.
 Last reviewed: November 8, 2026.
 
+## Generated-delivery checkpoint decoding (prepared, not deployed)
+
+`deploy-proposal-checkpoint.yml` is a SQL-only seventh-child release. Its default
+mode inspects; explicit `apply` installs frozen SQL `6bf6a506`, adding only the
+private immutable checkpoint decoder and changing the existing delivery-context
+function body. Read the complete workflow, release coordinator and schema guard
+before dispatch. The exact parent is commercial-successor SQL `1cab7a1a`, catalog
+`8654608b`, structure `c75f3187`, with all 19 predecessor ledger rows retained.
+The child appends three rows atomically. Worker/scheduler `de4312a0`, qualification
+`a5e636e8`, all retained images and private configuration must remain identical.
+
+The 170-second deadline includes queue/setup and reserves uncertain-commit
+readback plus owned-client cleanup. No image build/rollout, provider call,
+business command or schema rollback is performed. An uncertain apply is checked
+read-only once against the exact parent or child; it is never resubmitted within
+the run. Local SQL/native evidence is recorded separately from hosted deployment
+and actual customer file completion in the implementation checklist. Existing
+trial observers must use the explicit seventh-child verifier after application;
+do not replace earlier receipt hashes or relax catalog checks.
+
 ## Commercial successor capability (November 8, current runtime and schema)
 
 [Run42527251795](https://github.com/salahassi/tenders/actions/runs/42527251795)

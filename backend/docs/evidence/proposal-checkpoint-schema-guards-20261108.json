@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "kind": "proposal_checkpoint_schema_guards",
+  "recorded_at": "2026-11-08T22:15:09.815976+00:00",
+  "status": "passed",
+  "scope": "local operations boundaries; no hosted action",
+  "product_source_revision": "cbdf129d1de4e9eec81bf9ec83b9e090413d3c51",
+  "migration": {
+    "path": "backend/supabase/migrations/20261108220203_generated_delivery_checkpoint_report_ref.sql",
+    "sha256": "6bf6a506c53bf5113a17dfbb9c12ec09fc4ee0090599931776c34ed8e2614e53"
+  },
+  "source_hashes": {
+    "backend/scripts/ops/proposal-checkpoint-schema.py": "199254ac5d1dca7a7003187575c3088bcebe517307595456aa5f01ef6521b223",
+    "backend/scripts/ops/proposal-checkpoint-release.py": "83b204bcf9629b45c36deb29a121978e41175d7627dc7987341844fb6a0193bc",
+    "backend/scripts/ops/test_proposal_checkpoint_schema.py": "19b3ad1878a736a8759515506efe976efd0c7f2de7f675e65dca893f44c02797",
+    "backend/scripts/ops/test_proposal_checkpoint_release.py": "d0a11ce120fae161e6d4492bde223bedc9e3d9c235b27c15a5a7a01aa0e5aae7",
+    ".github/workflows/deploy-proposal-checkpoint.yml": "e388b53834e6893036da89471358231063f8de332ba8e3eef8136b8def76eb16"
+  },
+  "tests": {
+    "command": "python3 -m unittest discover -s backend/scripts/ops -p 'test_proposal_checkpoint_*.py'",
+    "passed": 17,
+    "release_controls": 13,
+    "schema_tests": 4,
+    "schema_engine": "PGlite with complete predecessor migration set",
+    "atomic_fault_cases": 19,
+    "predecessor_receipt_corruptions_rejected": 19,
+    "predecessor_rows": 19,
+    "result_rows": 22,
+    "duration_seconds": 12.244
+  },
+  "workflow_checks": [
+    "default inspect",
+    "explicit apply",
+    "three-minute job",
+    "run-created 170-second deadline",
+    "production concurrency",
+    "bounded setup",
+    "owned cleanup",
+    "YAML/Bash/embedded Python syntax"
+  ],
+  "independent_review": {
+    "blocking_findings": 0,
+    "release_tests_rerun": 13,
+    "schema_review": "read-only review of guards and test matrix"
+  },
+  "native_product_proofs": [
+    {
+      "path": "backend/docs/evidence/generated-delivery-checkpoint-decoder-20261108.json",
+      "sha256": "9152214dbee3f53220259be08b8fa0c3d5641f256a85554040d08bbd06fb2b4a"
+    },
+    {
+      "path": "backend/docs/evidence/generated-delivery-checkpoint-publication-20261108.json",
+      "sha256": "86238032647440039bd86fe849bf109c132bb8802826e8ce3efd2dcb3ee21cc7"
+    }
+  ],
+  "runtime": {
+    "unchanged": true,
+    "image": "registry.digitalocean.com/tenderdesk-a6093a76/runtime@sha256:de4312a0bea6170bcd0697bf7e209900295732add424239466bb2cfededc47f1",
+    "qualification_sha256": "a5e636e87f125c9f02e838a913b0e1ed05a6691681fd132a34d8e70a9b8d7b41",
+    "publication_verified_locally": true,
+    "image_rebuilt": false
+  },
+  "production_calls": 0,
+  "provider_calls": 0,
+  "customer_completion_verified": false
+}
