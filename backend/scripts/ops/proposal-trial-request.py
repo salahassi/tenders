@@ -23,6 +23,10 @@ SPEC = importlib.util.spec_from_file_location('trial_request_auth', HERE / 'prop
 auth = importlib.util.module_from_spec(SPEC)
 sys.modules[SPEC.name] = auth
 SPEC.loader.exec_module(auth)
+REVIEW_SPEC = importlib.util.spec_from_file_location('trial_review_recovery', HERE / 'proposal-review-recovery-proof.py')
+review_recovery = importlib.util.module_from_spec(REVIEW_SPEC)
+sys.modules[REVIEW_SPEC.name] = review_recovery
+REVIEW_SPEC.loader.exec_module(review_recovery)
 d = auth.access.d
 REASON = 'User requested continuation of the saved work.'
 OPERATIONS = {'proposal.generate', 'generation.retry'}
@@ -195,12 +199,17 @@ def validate_proof(proof):
                 'PROPOSAL_TRIAL_PROOF_INVALID')
     else:
         require(plan is None or plan['issuance_request_id'] is None, 'PROPOSAL_TRIAL_ISSUANCE_MISSING')
+    if 'whole_review_recovery' in proof:
+        review_recovery.validate(proof['whole_review_recovery'], proof)
     return proof
 
 
 def inspect(database, selection):
     result = validate_proof(read(database, inspection_sql(selection)))
     require(result['selection'] == selection, 'PROPOSAL_TRIAL_SELECTION_MISMATCH')
+    if review_recovery.selected(result):
+        result['whole_review_recovery'] = review_recovery.validate(
+            read(database, review_recovery.sql(result, PREFIX)), result)
     return result
 
 
@@ -596,6 +605,7 @@ def prepare(proof):
     validate_proof(proof)
     plan, proposal, issuance = proof.get('plan'), proof.get('proposal'), proof.get('latest_issuance')
     envelope = {'version': 1, 'kind': 'proposal_trial_prepared_request', 'proof': proof}
+    whole_review_retry = review_recovery.ready(proof)
     if plan and (plan['status'] in {'queued', 'running', 'completed'} or issuance and issuance['outcome'] in {'active', 'issued'}):
         require(proof['guards']['no_other_active_plan'] is True, 'PROPOSAL_TRIAL_PRECONDITION_NO_OTHER_ACTIVE_PLAN')
         return envelope | {'mode': 'observe_existing', 'target': existing_target(proof)}
@@ -604,9 +614,9 @@ def prepare(proof):
     # guards; historical unknown accounting is neither cleared nor rewritten.
     for name in sorted(GUARDS - {'usage_ready'}):
         require(proof['guards'][name] is True, 'PROPOSAL_TRIAL_PRECONDITION_' + name.upper())
-    if plan and plan.get('stage') == 'completed' and issuance:
+    if not whole_review_retry and plan and plan.get('stage') == 'completed' and issuance:
         raise TrialRequestError('PROPOSAL_RENDER_RETRY_REQUIRED')
-    retry = bool(proof['guards']['usage_ready'] and plan and plan['status'] in {'failed', 'canceled', 'blocked'} and plan['current_contract']
+    retry = bool(whole_review_retry or proof['guards']['usage_ready'] and plan and plan['status'] in {'failed', 'canceled', 'blocked'} and plan['current_contract']
                  and plan['evidence_revision'] == proof['workspace_evidence_revision']
                  and plan.get('base_version_id') == proposal.get('active_version_id'))
     if retry:
@@ -690,6 +700,9 @@ def acceptance_sql(prepared):
     proof, operation = prepared['proof'], prepared['operation']
     w, o = proof['selection']['workspace_id'], proof['selection']['opportunity_id']
     plan_guard = ("AND p.id='" + proof['plan']['id'] + "' AND p.input_hash='" + proof['plan']['input_hash'] + "'") if operation == 'generation.retry' else ''
+    if review_recovery.ready(proof):
+        require(operation == 'generation.retry', 'PROPOSAL_TRIAL_PREPARED_MISMATCH')
+        plan_guard += '\n' + review_recovery.acceptance_guard(proof, prepared['command_key'])
     return PREFIX + f"""
 WITH accepted AS MATERIALIZED (
  SELECT r.*,p.opportunity_id,p.proposal_id,p.issuance_request_id AS current_issuance_id FROM public.proposal_issuance_requests r

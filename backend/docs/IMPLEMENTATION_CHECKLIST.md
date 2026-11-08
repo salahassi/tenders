@@ -1,5 +1,32 @@
 # Implementation status and continuation plan
 
+## November 8 — canonical missing-review recovery harness prepared
+
+Only a selected failed legacy plan at completed stage with a current accepted
+version can request the new optional read-only SQL recovery predicate. The
+bounded private proof contains identifiers, counts and hashes; source prose,
+candidates and credentials are excluded. Missing predicates, unsafe history,
+wrong identity or declined source/usage checks cannot authorize a start. Owner,
+restore, current target and lease checks remain required, followed by the real
+current Owner session and ordinary server-authorized `generation.retry` command.
+
+The command body, stable idempotency identity, encrypted durable readback and
+single-send/unknown-response rules are unchanged. No local `job.action` harness
+is included. New-issuance acceptance additionally checks immutable recovery
+lineage, authorized actor, exact old version/sections/history/projection hashes,
+new executor-seven review job and exact full-review input. Normal observation
+keeps its existing issuance target and authoritative 600-second clock.
+
+All 51 focused recovery/request/observer/runner tests pass, including original
+operation behavior and SQL observations, declined/absent/oversized proof,
+identity/history tampering and unknown-send replay refusal. Python syntax and
+diff checks pass. A separate rollback-only native hook uses the existing actual
+31-receipt/17-section PostgreSQL fixture for preparation/canonical command/lineage
+readback and full retained-state comparison; its integrated native run remains
+pending. New recovery SQL qualification, worker-seven deployment and actual
+customer review/file issuance remain separate gates. No live call or customer
+mutation ran for this harness preparation.
+
 ## November 8 — executor-seven and empty-inventory review qualification prepared
 
 The separate `proposal-review-runtime.py` binds the deployed successor image
