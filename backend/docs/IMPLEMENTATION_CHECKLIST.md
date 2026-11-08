@@ -1,5 +1,37 @@
 # Implementation status and continuation plan
 
+## November 8 — executor-seven and empty-inventory review qualification prepared
+
+The separate `proposal-review-runtime.py` binds the deployed successor image
+`3cc6c7cb`, registry `de4312a0` and qualification `a5e636e8` as its immutable
+baseline. Exactly four copied files may change: `generation.ts`, `backend.ts`,
+`worker/handler.ts` and `worker/queueWake.ts`. Model prompt/grounding code, all
+other copied inputs and supplementary build files remain identical. Historical
+qualification, publication and native fixture files remain unchanged.
+
+Candidate proof requires the separate executor-seven dispatch fixture and all
+existing prompt, accepted-poll, UUID-boundary and commercial-V2 controls, plus
+the explicit legacy review fixture. The latter binds 14 controls, eight legacy
+context cases, 48 unchanged legacy prompt wires, 12 marked review wires and
+12 invalid-scope refusals. Candidate/baseline inputs, complete review-source
+hash, transition from zero reviews to one, receipt reconstruction, source/image
+identities and owned cleanup are checked. Synthetic native reconstruction is
+separate from an accepted customer review or completed issuance.
+
+Build and qualification evidence bind both polling policies, successor SQL,
+the fixed checkpoint decoder `6bf6a506`, and the new zero-inventory recovery
+migration. These hashes qualify no SQL execution. Image/base/source/build guards
+reuse the successor helpers; new v7 dispatch proof never invokes historical v5
+or v6 native validators. The qualification checksum remains unset until actual
+candidate build, native execution and capture. All 38 focused qualification and
+new native-driver controls pass, including 13 wrapper controls for the actual
+four-file product delta, historical bytes, exact v7 RPCs, all six proof hooks,
+14 required review controls, wire/scope/transition tampering, five policy
+bindings and unfrozen publication. Syntax and diff checks pass. Final recovery
+SQL, full product/package gates, actual candidate-image proof, publication,
+rollout and customer acceptance remain separate pending work. No build,
+publication or hosted action ran for this qualification preparation.
+
 ## November 8 — worker-seven legacy whole-proposal review path prepared
 
 New legacy workflow-one commercial transitions with an empty extracted inventory
