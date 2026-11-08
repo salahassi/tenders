@@ -1,5 +1,28 @@
 # Implementation status and continuation plan
 
+## November 8 — accepted-request poll runtime qualification preparation
+
+The new poll qualification wrapper has separate build, native, qualification and
+publication receipts. The deployed `03c68b58` latency image and prior `c6f7cce5`
+dispatch evidence remain immutable. It reuses their source, image, offline build
+and registry guards without changing historical constants. Acceptance requires
+the nine dispatch controls, the prior prompt fixture, and a new actual-image
+accepted-poll fixture proving pending resumes and ordinary completed-response
+validation without a duplicate generation request or reservation.
+
+The additional native proof must compare all 28 revision-6 wire combinations
+and both accepted revision-6 phase pins against the deployed latency image;
+the existing fixture separately covers 84 older wire combinations and eleven
+older pins. Both the existing adaptive-poll SQL and the new accepted-poll helper
+migration are bound to the build receipt. This binds source only; SQL behavior
+and the child schema ledger require separate database qualification.
+
+Eight wrapper guard tests pass. The new native fixture and product source freeze
+are still being prepared. The qualification hash is intentionally unset, so
+verification and publication fail closed. No image build, native execution,
+registry publication, deployment or provider request has been performed for
+this qualification preparation.
+
 ## November 8 — hosted read-only performance snapshot
 
 Inspection42517566064 from `531acaf` passed with owned cleanup and no command or
