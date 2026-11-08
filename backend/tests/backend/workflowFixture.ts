@@ -90,16 +90,16 @@ export async function claimCurrentModelWorker(
   fixture: Pick<Awaited<ReturnType<typeof workflowFixture>>, "db">,
   rpc: (name: string) => Promise<any>,
 ) {
-  const installed = (
-    await fixture.db.query<{ installed: boolean }>(
-      "select to_regprocedure('public.claim_backend_job_v6()') is not null installed",
+  const executor = (
+    await fixture.db.query<{ executor: number }>(
+      "select case when to_regprocedure('public.claim_backend_job_v7()') is not null then 7 when to_regprocedure('public.claim_backend_job_v6()') is not null then 6 else 5 end executor",
     )
-  ).rows[0].installed;
-  if (!installed) return claimModelWorker5(fixture, rpc);
+  ).rows[0].executor;
+  if (executor === 5) return claimModelWorker5(fixture, rpc);
   await fixture.db.query(
     "update public.jobs set status='canceled',lease_token=null,lease_until=null where type='render_delivery' and checkpoint->>'delivery_renderer_version'='1' and status in ('queued','retry_wait','quota_wait')",
   );
-  return rpc("claim_backend_job_v6");
+  return rpc(executor === 7 ? "claim_backend_job_v7" : "claim_backend_job_v6");
 }
 
 /** Seed an explicitly historical proposal before the new admission policy.

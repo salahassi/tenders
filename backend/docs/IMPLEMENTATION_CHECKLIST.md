@@ -1,5 +1,36 @@
 # Implementation status and continuation plan
 
+## November 8 — worker-seven legacy whole-proposal review path prepared
+
+New legacy workflow-one commercial transitions with an empty extracted inventory
+now schedule one `review_proposal` step carrying the explicit
+`legacy_zero_inventory_review_version: 1` contract. It reviews every saved draft
+section and fixed template block plus all commercial lines, tasks and questions.
+The citable draft snapshot remains unconfirmed proposal content. The marker does
+not upgrade the plan, invent a semantic blueprint or manufacture requirement IDs.
+Missing flags, incompatible workflow/task/inventory and shortened or reordered
+section scope fail before a model call. Unmarked historical context and wire
+bytes remain exact; accepted review and verifier receipts are still required by
+the unchanged delivery validator.
+
+The worker advertises executor seven through explicit claim/local/wake RPCs,
+with no fallback to an older boundary. Exactly four copied runtime files change:
+generation and the three worker callers. Model instructions, grounding code,
+output schemas, existing pins and all prior job/paid budgets remain unchanged.
+Current-worker test harnesses recognize installed seven while explicit historical
+capability tests and all frozen native v6 evidence remain historical. The current
+HTTP adapter test is renamed for seven and covers floors one through seven.
+
+All 79 focused context, delivery-validation, commercial-compatibility and worker
+controls pass. Frozen hashes were captured from the unmodified baseline source
+and compared directly before checking the new absent-marker path. Tests cover
+17 full synthetic sections, seven lines/eight tasks, legacy planning without a
+version-two blueprint, valid accepted review reconstruction and retained missing
+or changed-receipt rejection. Backend typecheck/build and diff checks pass.
+Actual-image native proof, new SQL v7 capability propagation/canonical recovery,
+full-package checks, publication, rollout and real file issuance remain separate
+pending gates. No build, publication, model call or database mutation ran here.
+
 ## November 8 — complete actual context confirms only missing review remains
 
 Read-only capture42530565871 from `918d7d7` passed in52seconds under the deployed

@@ -57,7 +57,7 @@ function fixture({
       if (name === "verify_dispatcher_secret") return true;
       if (name === "maintenance_tick") await holdMaintenance?.();
       if (name === "claim_storage_cleanup") return [];
-      if (name === "wake_backend_queue_status_v6")
+      if (name === "wake_backend_queue_status_v7")
         return {
           dispatched: false,
           retry_after_ms: hint,
@@ -105,8 +105,8 @@ it("returns a future poll hint without sleeping or replaying the accepted job", 
   expect(generation).toHaveBeenCalledTimes(1);
   expect(f.claim).toHaveBeenCalledTimes(1);
   expect(f.internal.mock.calls.map(([name]) => name)).toEqual([
-    "claim_backend_local_job_v6",
-    "wake_backend_queue_status_v6",
+    "claim_backend_local_job_v7",
+    "wake_backend_queue_status_v7",
   ]);
   expect(notification).not.toHaveBeenCalled();
   expect(f.fetcher).not.toHaveBeenCalled();
@@ -117,7 +117,7 @@ it("preserves the original accepted request's poll hint after chaining local wor
   const original = f.internal.getMockImplementation()!;
   let localClaimed = false;
   f.internal.mockImplementation(async (name, args) => {
-    if (name === "claim_backend_local_job_v6" && !localClaimed) {
+    if (name === "claim_backend_local_job_v7" && !localClaimed) {
       localClaimed = true;
       return {
         id: "synthetic-local",
@@ -125,7 +125,7 @@ it("preserves the original accepted request's poll hint after chaining local wor
         lease_token: "lease-local",
       };
     }
-    if (name === "wake_backend_queue_status_v6") {
+    if (name === "wake_backend_queue_status_v7") {
       expect(args).toEqual({ job_id: "synthetic-1", lease: "lease-1" });
     }
     return original(name, args);
@@ -141,7 +141,7 @@ it("preserves the original accepted request's poll hint after chaining local wor
   ]);
   expect(
     f.internal.mock.calls.filter(
-      ([name]) => name === "wake_backend_queue_status_v6",
+      ([name]) => name === "wake_backend_queue_status_v7",
     ),
   ).toHaveLength(1);
 });
