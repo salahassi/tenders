@@ -95,7 +95,7 @@ def bind_deadline():
 def verify_runtime(database=None):
     release.verify_checkout()
     d.probe.validate_cluster()
-    qualification = module('trial_successor_qualification', 'proposal-successor-runtime.py')
+    qualification = module('trial_review_qualification', 'proposal-review-runtime.py')
     receipt, image = qualification.publication()
     expected = {**release.BASELINES, 'worker': image, 'scheduler': image}
     original = {name: release.u.deployment(name) for name in expected}
@@ -112,7 +112,13 @@ def verify_runtime(database=None):
             'sha256': schema.parent.source_sha256()}, 'PENDING_POLL_SOURCE_CHANGED')
         require(receipt['successor_migration'] == {'path': str(schema.SOURCE.relative_to(schema.ROOT)),
             'sha256': schema.source_sha256()}, 'SUCCESSOR_SOURCE_CHANGED')
-        schema.verify(database)
+        checkpoint_schema = module('trial_checkpoint_schema', 'proposal-checkpoint-schema.py')
+        require(receipt['checkpoint_migration'] == {'path': str(checkpoint_schema.SOURCE.relative_to(checkpoint_schema.ROOT)),
+            'sha256': checkpoint_schema.source_sha256()}, 'CHECKPOINT_SOURCE_CHANGED')
+        review_schema = module('trial_review_schema', 'proposal-review-schema.py')
+        require(receipt['zero_inventory_review_migration'] == {'path': str(review_schema.SOURCE.relative_to(review_schema.ROOT)),
+            'sha256': review_schema.source_sha256()}, 'REVIEW_SOURCE_CHANGED')
+        review_schema.verify(database)
 
 
 def session_path():

@@ -260,15 +260,25 @@ class TrialRunnerBoundaryTests(unittest.TestCase):
             'successor_migration': {'path': 'backend/supabase/migrations/successor.sql', 'sha256': 'a' * 64},
             'source': {'source_entries': {'backend/scripts/runtime/dispatcher.sql': {'sha256': 'e' * 64}}}}
         qualification = Mock()
+        checkpoint_schema = Mock(ROOT=Path('/synthetic'))
+        checkpoint_schema.SOURCE = Path('/synthetic/backend/supabase/migrations/checkpoint.sql')
+        checkpoint_schema.source_sha256.return_value = '1' * 64
+        review_schema = Mock(ROOT=Path('/synthetic'))
+        review_schema.SOURCE = Path('/synthetic/backend/supabase/migrations/review.sql')
+        review_schema.source_sha256.return_value = '2' * 64
+        receipt['checkpoint_migration'] = {'path': 'backend/supabase/migrations/checkpoint.sql', 'sha256': '1' * 64}
+        receipt['zero_inventory_review_migration'] = {'path': 'backend/supabase/migrations/review.sql', 'sha256': '2' * 64}
         qualification.publication.return_value = (receipt, candidate)
         with patch.object(m.release, 'verify_checkout'), patch.object(m.d.probe, 'validate_cluster'), \
              patch.object(m.release.u, 'deployment', side_effect=lambda name: {'image': expected[name]}), \
              patch.object(m.release.base, 'image_of', side_effect=lambda value: value['image']), \
              patch.object(m.release, 'verify_runtime_contract'), patch.object(m, 'module',
-                side_effect=lambda name, filename: qualification if filename == 'proposal-successor-runtime.py' else schema):
+                side_effect=lambda name, filename: qualification if filename == 'proposal-review-runtime.py' else checkpoint_schema if filename == 'proposal-checkpoint-schema.py' else review_schema if filename == 'proposal-review-schema.py' else schema):
             database = object()
             m.verify_runtime(database)
-            schema.verify.assert_called_once_with(database)
+            review_schema.verify.assert_called_once_with(database)
+            checkpoint_schema.verify.assert_not_called()
+            schema.verify.assert_not_called()
             schema.latency.source_sha256.return_value = 'd' * 64
             with self.assertRaisesRegex(RuntimeError, 'POLL_SOURCE_CHANGED'):
                 m.verify_runtime(database)
@@ -281,6 +291,12 @@ class TrialRunnerBoundaryTests(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, 'SUCCESSOR_SOURCE_CHANGED'):
                 m.verify_runtime(database)
             schema.source_sha256.return_value = 'a' * 64
+            for child, code, prior in ((checkpoint_schema, 'CHECKPOINT_SOURCE_CHANGED', '1' * 64),
+                    (review_schema, 'REVIEW_SOURCE_CHANGED', '2' * 64)):
+                child.source_sha256.return_value = 'd' * 64
+                with self.assertRaisesRegex(RuntimeError, code):
+                    m.verify_runtime(database)
+                child.source_sha256.return_value = prior
             expected['api'] = candidate
             with self.assertRaisesRegex(RuntimeError, 'RUNTIME_CHANGED'):
                 m.verify_runtime()

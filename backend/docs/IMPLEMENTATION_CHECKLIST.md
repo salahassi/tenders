@@ -1,5 +1,311 @@
 # Implementation status and continuation plan
 
+## November 8 — final integrated release controls ready
+
+After integrating native proof and freezing both qualification and schema,
+all55 focused coordinator, trial-runner and runtime-qualification controls pass.
+The permanent access runbook now records the exact prepared eighth-child/runtime
+pair and its rollback boundary. Only documentation and operations evidence have
+changed since the package and immutable-image gates; copied product bytes remain
+qualified. Hosted release and the selected customer continuation are next.
+
+## November 8 — final whole-review schema guard and source freeze
+
+The final eighth-child SQL is `77631534`. Its only change since the earlier
+release-guard matrix is explicit qualification of the commercial line/task
+aggregate fields inside the new recovery proof. The full isolated guard matrix
+passes again: four tests in39.583seconds,48 rejected payloads and all22 ancestor
+rows challenged on both parent and child. Canonical apply/readback/replay retains
+those rows exactly and yields25 ledger rows. See the
+[bound guard evidence](evidence/proposal-review-schema-guards-20261108.json).
+
+The separate actual PostgreSQL product proof passes all32 cases with confirmed
+cleanup, including canonical owner admission, retained31 accepted steps, a fresh
+accepted whole review through normal reassembly, old and queued mixed-worker
+fences, lock races and canonical lineage archive/restore. Its exact receipt hash
+is bound in the guard evidence. Only after that acceptance, `SOURCE_SHA256` is
+frozen to the tested final SQL. Three lightweight binding/template checks pass;
+generated apply and read-only SQL hashes are identical before and after the
+literal freeze. This change performs no build, publication, hosted release or
+customer command. Deployment and actual customer files remain separate evidence.
+
+## November 8 — exact whole-review image qualified and published
+
+Artifact source `7c93e7ec9726b46168a30257793a76ee1ced56c5` built offline into
+image `8c836993`. All six actual-image native suites pass65 controls: executor7
+dispatch10, prompt12, accepted polling10, UUID boundary8, commercial11 and
+whole-review14. Each verifies owned-container cleanup and makes no external
+provider calls. The legacy image reproduces zero reviews; the candidate creates
+one, includes every saved draft/fixed block and complete commercial draft,
+preserves48 legacy prompt wires, and rejects12 malformed review scopes.
+
+Qualification `f2a22735` binds the exact four-file runtime change, immutable
+baseline and five SQL policies. It explicitly does not qualify SQL execution.
+Registry publication `4470a2fe` passed immutable pull/source verification and
+removed temporary credentials. The wrapper's13 controls pass after freezing.
+See the [qualification](evidence/proposal-review-runtime-20261108.json) and
+[publication](evidence/proposal-review-publication-20261108.json).
+Production still runs `de4312a0`; final native SQL authority, guarded release and
+actual customer review/file issuance remain separate gates. No hosted business
+request or provider activation occurred in qualification or publication.
+
+## November 8 — integrated whole-review package verified locally
+
+The integrated source `d2b2066` ran all 3,674 backend tests across 218 files.
+3,673 passed; the existing positive DOCX integration case exceeded its unchanged
+5-second timeout under the full run. Its entire 21-test file then passed alone
+in23.438seconds with the original timeout and unchanged product/test bytes.
+The initial filtered npm invocation retained the package-wide filter and was
+stopped; the recorded successful repeat invokes the exact file directly.
+Backend typecheck and build pass. Frontend inputs remain identical to `47cdca4`,
+so its prior package gates remain applicable. The
+[package receipt](evidence/proposal-review-package-20261108.json) retains the
+full-run timing failure and separate repeat; it does not claim a zero-failure
+full run. Native SQL completion, exact-image qualification, deployment and real
+customer file issuance remain pending. No live command occurred in these checks.
+
+## November 8 — native ops hook keeps a single rollback transaction
+
+The integrated native hook reached ready proof, exact prepared command and
+canonical admission, then exposed a fixture-only nested transaction error: its
+readback attempted a new repeatable-read header after test writes. The hook now
+omits only that exact nested BEGIN header while retaining the original acceptance
+SELECT, guards, timeouts and final rollback. Production command and read-only
+transaction SQL are unchanged. Python syntax/diff checks pass; the existing native
+qualification rerun remains pending, with no live action performed.
+
+## November 8 — canonical missing legacy review recovery implemented locally
+
+A direct Owner `generation.retry` may now append one genuine whole-proposal
+review to the exact failed legacy plan with no extracted requirements and no
+prior review. The canonical retry creates its normal 600-second issuance and
+fresh review job; original base version, frozen context, input hash, completed
+steps, old jobs, model receipts, budgets and usage remain unchanged. Immutable
+lineage pins the retained accepted version and sections, authorizing only the
+new review and adjacent assembly against that current version. Reassembly
+creates a new version and updates only that version's consistency metadata.
+Existing source, role, revision and modern scoped usage checks remain required;
+reserved usage blocks recovery while old unknown usage is retained unchanged.
+
+Worker seven fences cover the marked review, following advance and generated
+projection. A dynamic claim/wake predicate also excludes old queued legacy
+commercial-to-review transitions from older workers without rewriting their
+checkpoints. The recovery lineage participates in canonical backup/restore.
+
+The [final full-schema PostgreSQL proof](evidence/legacy-review-recovery-native-20261108.json)
+passes all 32 cases against exact migration `77631534`, with an isolated
+one-CPU container and confirmed cleanup. It starts through actual
+`fail_generated_delivery` with 31 synthetic accepted steps and 17 sections,
+then exercises canonical Owner retry, normal accepted-review completion and
+new-version assembly while retaining every prior job, section, version,
+model result, budget and usage row. Paragraph, bullet and table projections
+remain exact. Nested job actions create no recovery review; duplicate keys,
+body conflicts, source changes and owner revocation preserve the boundary.
+
+Actual operations preparation and acceptance readback pass on that same
+fixture. Old queued commercial transitions retain their checkpoint bytes and
+are dynamically excluded from older workers. Different-key lock races admit
+only one review. Canonical archive/restore retains spent lineage exactly and
+rejects a nonempty target. These are SQL authority tests with synthetic
+accepted records and Auth/Storage stubs, not provider or physical Storage
+qualification. Package/image checks and hosted execution remain separate
+root-owned gates. No hosted action or provider call occurred here.
+
+## November 8 — legacy whole-review schema release guards tested locally
+
+The eighth-child release now has an isolated PGlite regression matrix against
+candidate SQL `56627d55`. All four ops tests pass in33seconds. Canonical apply,
+read-only parent/child verification and replay preserve all22 predecessor ledger
+rows exactly and append three child rows once. Corrupting each ancestor is
+rejected both before and after installation. All48 injected faults roll back
+without changing retained rows, ledger timestamps, catalog or structure.
+
+Coverage includes ten approved function bodies retaining their attributes,
+unchanged helper body scope, the exact renamed delegate, private helpers,
+executor-seven RPC/trigger authority and the explicit lineage shape contract.
+Four locally bound synthetic candidates prove the fast transaction activity and
+storage guard catches net-zero writes and empty-table truncation; arbitrary
+fault payloads retain the full-row proof. Exact reviewed source bytes remain the
+authority for new-table types and constraint expressions. The operational source
+hash remains unfrozen. Native product acceptance, runtime qualification,
+deployment and customer file issuance remain separate pending gates; this
+test-only work made no live calls or image builds.
+
+
+## November 8 — executor-seven whole-review release controls prepared
+
+The separate whole-review coordinator binds the deployed `de4312a0` worker and
+scheduler, retained API/source/frontend images and exact seventh-child SQL
+`6bf6a506`, catalog `37e48b5e`, structure `5dfdc428`. The eighth child retains
+all22 historical ledger rows and appends three atomically. Its source hash stays
+unfrozen until the actual PostgreSQL recovery proof passes. Only the frozen
+DDL receives transaction-local activity/storage protection; explicit injected
+payloads retain full-row checks as well. No customer command occurs in release.
+
+The existing170-second run-created deadline, original-CA access, owned scheduler
+pause/drain, worker-first rollout, before-activation rollback and after-activation
+forward recovery remain unchanged. All four executor-seven service routes must
+be visible through a bounded read-only OpenAPI request before scheduler resume.
+Rollback retains the SQL capability fence and explicitly requires a later
+forward release for work requiring executor seven. Trial verification requires
+the new qualified image and exact child, with all five SQL policies bound
+separately and the historical successor receipt unchanged.
+
+Local coordinator27, trial15 and qualification13 controls pass. The separate
+isolated SQL guard matrix passes48 rejected payloads and every historical
+ledger corruption; its detailed test evidence is recorded separately. Independent
+read-only coordinator/workflow review found no blocker. Final migration freeze,
+full product gates, actual-image native capture, registry publication, hosted
+release and customer review/file issuance remain separate pending evidence; no
+build, publication or live action is performed by this preparation change.
+
+## November 8 — canonical missing-review recovery harness prepared
+
+Only a selected failed legacy plan at completed stage with a current accepted
+version can request the new optional read-only SQL recovery predicate. The
+bounded private proof contains identifiers, counts and hashes; source prose,
+candidates and credentials are excluded. Missing predicates, unsafe history,
+wrong identity or declined source/usage checks cannot authorize a start. Owner,
+restore, current target and lease checks remain required, followed by the real
+current Owner session and ordinary server-authorized `generation.retry` command.
+
+The command body, stable idempotency identity, encrypted durable readback and
+single-send/unknown-response rules are unchanged. No local `job.action` harness
+is included. New-issuance acceptance additionally checks immutable recovery
+lineage, authorized actor, exact old version/sections/history/projection hashes,
+new executor-seven review job and exact full-review input. Normal observation
+keeps its existing issuance target and authoritative 600-second clock.
+
+All 51 focused recovery/request/observer/runner tests pass, including original
+operation behavior and SQL observations, declined/absent/oversized proof,
+identity/history tampering and unknown-send replay refusal. Python syntax and
+diff checks pass. A separate rollback-only native hook uses the existing actual
+31-receipt/17-section PostgreSQL fixture for preparation/canonical command/lineage
+readback and full retained-state comparison; its integrated native run remains
+pending. New recovery SQL qualification, worker-seven deployment and actual
+customer review/file issuance remain separate gates. No live call or customer
+mutation ran for this harness preparation.
+
+## November 8 — executor-seven and empty-inventory review qualification prepared
+
+The separate `proposal-review-runtime.py` binds the deployed successor image
+`3cc6c7cb`, registry `de4312a0` and qualification `a5e636e8` as its immutable
+baseline. Exactly four copied files may change: `generation.ts`, `backend.ts`,
+`worker/handler.ts` and `worker/queueWake.ts`. Model prompt/grounding code, all
+other copied inputs and supplementary build files remain identical. Historical
+qualification, publication and native fixture files remain unchanged.
+
+Candidate proof requires the separate executor-seven dispatch fixture and all
+existing prompt, accepted-poll, UUID-boundary and commercial-V2 controls, plus
+the explicit legacy review fixture. The latter binds 14 controls, eight legacy
+context cases, 48 unchanged legacy prompt wires, 12 marked review wires and
+12 invalid-scope refusals. Candidate/baseline inputs, complete review-source
+hash, transition from zero reviews to one, receipt reconstruction, source/image
+identities and owned cleanup are checked. Synthetic native reconstruction is
+separate from an accepted customer review or completed issuance.
+
+Build and qualification evidence bind both polling policies, successor SQL,
+the fixed checkpoint decoder `6bf6a506`, and the new zero-inventory recovery
+migration. These hashes qualify no SQL execution. Image/base/source/build guards
+reuse the successor helpers; new v7 dispatch proof never invokes historical v5
+or v6 native validators. The qualification checksum remains unset until actual
+candidate build, native execution and capture. All 38 focused qualification and
+new native-driver controls pass, including 13 wrapper controls for the actual
+four-file product delta, historical bytes, exact v7 RPCs, all six proof hooks,
+14 required review controls, wire/scope/transition tampering, five policy
+bindings and unfrozen publication. Syntax and diff checks pass. Final recovery
+SQL, full product/package gates, actual candidate-image proof, publication,
+rollout and customer acceptance remain separate pending work. No build,
+publication or hosted action ran for this qualification preparation.
+
+## November 8 — worker-seven legacy whole-proposal review path prepared
+
+New legacy workflow-one commercial transitions with an empty extracted inventory
+now schedule one `review_proposal` step carrying the explicit
+`legacy_zero_inventory_review_version: 1` contract. It reviews every saved draft
+section and fixed template block plus all commercial lines, tasks and questions.
+The citable draft snapshot remains unconfirmed proposal content. The marker does
+not upgrade the plan, invent a semantic blueprint or manufacture requirement IDs.
+Missing flags, incompatible workflow/task/inventory and shortened or reordered
+section scope fail before a model call. Unmarked historical context and wire
+bytes remain exact; accepted review and verifier receipts are still required by
+the unchanged delivery validator.
+
+The worker advertises executor seven through explicit claim/local/wake RPCs,
+with no fallback to an older boundary. Exactly four copied runtime files change:
+generation and the three worker callers. Model instructions, grounding code,
+output schemas, existing pins and all prior job/paid budgets remain unchanged.
+Current-worker test harnesses recognize installed seven while explicit historical
+capability tests and all frozen native v6 evidence remain historical. The current
+HTTP adapter test is renamed for seven and covers floors one through seven.
+
+All 79 focused context, delivery-validation, commercial-compatibility and worker
+controls pass. Frozen hashes were captured from the unmodified baseline source
+and compared directly before checking the new absent-marker path. Tests cover
+17 full synthetic sections, seven lines/eight tasks, legacy planning without a
+version-two blueprint, valid accepted review reconstruction and retained missing
+or changed-receipt rejection. Backend typecheck/build and diff checks pass.
+Actual-image native proof, new SQL v7 capability propagation/canonical recovery,
+full-package checks, publication, rollout and real file issuance remain separate
+pending gates. No build, publication, model call or database mutation ran here.
+
+## November 8 — complete actual context confirms only missing review remains
+
+Read-only capture42530565871 from `918d7d7` passed in52seconds under the deployed
+seventh-child guard. The complete private context is1,983,030 UTF-8 bytes,
+losslessly carried in421,244 base64 bytes with verified raw length/hash. Source,
+actor and active-version checks remain valid; owned cleanup passed, with no
+command or provider request. Stored plan status is still failed; completed
+status is explicitly a local prospective value only.
+
+Running the unmodified production `assessGeneratedDelivery` against that exact
+context validates all31 accepted verification receipts, assembly and content.
+Its sole machine blocker is `WHOLE_PROPOSAL_REVIEW_REQUIRED`. The17 saved
+sections use a legacy planning output without version2. Requirement inventory
+and126 finalization-input gaps remain explicit human review work. No content
+was accepted or changed by this offline assessment. See the
+[sanitized result](evidence/proposal-delivery-context-assessment-20261108-42530565871.json).
+
+A private preview of the proposed explicit legacy review marker selects all17
+sections and every saved content-block string, all7 commercial lines and8 tasks,
+without invoking the absent blueprint path. That preview is not a model review,
+paid execution or file-issuance result; final source qualification and canonical
+recovery remain pending.
+
+## November 8 — bounded full context transport and current schema inspection
+
+Read-only context capture42529513919 returned an explicit oversized status at
+the original1.25MB limit; it sent no command and retained no partial context.
+The private diagnostic now losslessly packs the complete projected context as
+gzip/base64 with exact UTF-8 byte length and SHA256. Raw context is capped at8MiB,
+SQL read at10MiB, the packed diagnostic at1.75MB and the existing whole encrypted
+report at2MiB. The10-second SQL bound is unchanged; oversized raw or packed
+content remains explicit. No context field or source/actor/version guard is
+removed. Decompression validation enforces the cap, complete stream, canonical
+base64 and matching length/hash.
+
+The trial runner now verifies the deployed seventh-child schema while retaining
+all original immutable successor image/source checks. Eighteen focused inspector
+and runner tests pass, including lossless transport above the old limit and
+hash/length rejection. Full private capture and offline actual-content assessment
+are the next read-only checks; no retry or model call occurs in this change.
+
+## November 8 — checkpoint decoder seventh child deployed
+
+PR56 merged as `fab1bc17`; Pages42530244931 passed. Release42530253700 from
+`3422503` passed in28seconds including queue. Exact SQL `6bf6a506` is applied;
+independent readback confirms catalog `37e48b5e`, structure `5dfdc428` and all19
+predecessor ledger rows preserved (22 total). Worker/scheduler `de4312a0`, other
+images and private configuration remain unchanged. Atomic apply, readback and
+owned cleanup pass with zero business-row mutations or customer commands.
+See the [deployment receipt](evidence/proposal-checkpoint-passed-20261108-42530253700.json).
+
+The31 saved verification receipts can now be selected through their actual
+checkpoint format. The separate legacy empty-inventory review defect remains
+under repair; no new paid request or local projection retry was made by this
+release, and no complete customer file package is claimed. Trial observers must
+use the seventh-child schema verifier before further inspection or continuation.
+
 ## November 8 — checkpoint decoder complete backend package gates pass
 
 The complete backend suite passes217 files and3667 tests with two workers and
@@ -13532,3 +13838,13 @@ cleanup passed. All 3,491 backend tests / 206 files, typecheck and build pass on
 that source. This followup changes operational observation and documentation;
 production runtime/schema bytes are unchanged, so no replacement deployment or
 second business request is performed.
+
+### November 8 — executor7 native dispatch proof prepared
+
+Added separate worker_dispatch_v7_native Python/Deno harnesses, preserving the frozen executor5 and executor6 fixtures and receipts. The candidate image must boot its original worker entrypoint and pass all nine existing behavioral controls plus exact executor7 claim/local-claim/wake RPC selection. The native container uses network none, a read-only root and only the synthetic harness mount; cleanup follows its verified immutable container ID. Twelve targeted validator/ownership/isolation controls pass locally. Actual candidate-image execution, qualification, publication and hosted acceptance remain pending; this preparation made no external calls.
+
+### November 8 — legacy whole-proposal review native fixture prepared
+
+Added separate legacy_review_native Python/Deno harnesses, retaining all prior harnesses and receipts. It imports actual image context, prompt, result validation and delivery-assessment functions. Fourteen controls bind the explicit legacy zero-inventory review marker to all saved draft/fixed-template prose and the complete unconfirmed commercial draft, retain the wording-only trust of the review source, reject twelve malformed scopes, and require an accepted review receipt. A complete synthetic receipt set positively reconstructs as machine-eligible draft, while an altered review candidate hash fails; this is offline test evidence, never a real model review or customer acceptance.
+
+The exact deployed successor image 3cc6c7cb (qualification a5e636e8) was executed offline with its original worker entrypoint and no network: it reproduced zero scheduled reviews and retained all 48 legacy wire cases. The candidate source smoke against the isolated marker patch passed all 12 raw controls, scheduled one review, produced 12 new EN/AR writer/repair/verifier wires and preserved the eight legacy context/input hashes and all 48 wire hashes. Both baseline probes confirmed owned-container cleanup. Thirteen Python guard/ownership/isolation tests and the twelve v7 dispatch guards pass; backend typecheck passes. Candidate immutable-image execution, SQL authority gates, publication, deployment and real whole-proposal review remain pending. No customer data was used in these fixtures or added to the repository.

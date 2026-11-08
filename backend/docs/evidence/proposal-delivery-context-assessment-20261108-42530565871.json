@@ -1,0 +1,42 @@
+{
+  "private_report_sha256": "758f020256d9ea47c305ef31df061b774143980c4a0bdded6770c43c83476ae1",
+  "context_hash": "1fcac023d02f273b7652535e873dab73354be2e70129734a6b2e8f4804d9932f",
+  "stored_plan_status": "failed",
+  "prospective_plan_status": "completed",
+  "prospective_only": true,
+  "database_mutated": false,
+  "model_calls": 0,
+  "workflow_version": 1,
+  "planning_versions": [
+    null
+  ],
+  "steps": 37,
+  "accepted_receipts": 31,
+  "sections": 17,
+  "machine_eligible": false,
+  "blocker_counts": {
+    "WHOLE_PROPOSAL_REVIEW_REQUIRED": 1
+  },
+  "human_gap_counts": {
+    "REQUIREMENT_INVENTORY_REVIEW_REQUIRED": 1,
+    "FINALIZATION_INPUT_REQUIRED": 126,
+    "AUTHORIZED_FINAL_PROPOSAL_REVIEW_REQUIRED": 1
+  },
+  "source_files": {
+    "generatedProposalConsistency.ts": "43d20c78ef4bf45579d263e9ffa800fd1035f5093fa9e862c09b7e4aa2af0d86",
+    "generation.ts": "ff5feca9fc2c410f2016a3d214ee2e423e0d6c561880a23b075d831f002f9022",
+    "modelGrounding.ts": "15c4a4cb06b0a334b138e3ac2acef1af7c1c5d49109d078e6ae5820f266c7f5c",
+    "proposalConsistency.ts": "08f19b247f4691d700afed8f5917af120c943bf93e8cd68d4c53f434da04c625",
+    "sourceResolution.ts": "7945af088fef748c73197a3ffbecc0c23dc73fd040165e1033a9d1e91e51dd91"
+  },
+  "kind": "actual_generated_delivery_prospective_assessment",
+  "run_id": 42530565871,
+  "source_revision": "918d7d74f61c1f73e0f4403cc7262f11c878681c",
+  "elapsed_including_queue_seconds": 52,
+  "context_raw_bytes": 1983030,
+  "context_raw_sha256": "3a4e35129d9fe3673a0b3fbec456221420ba39cb0692cd172be89276156581f5",
+  "context_transport": "gzip+base64",
+  "cleanup_verified": true,
+  "files_issued": false,
+  "provider_requests": 0
+}

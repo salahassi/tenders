@@ -631,7 +631,7 @@ export class Backend {
     return data;
   }
   async claim() {
-    const { data, error } = await this.admin.rpc("claim_backend_job_v6");
+    const { data, error } = await this.admin.rpc("claim_backend_job_v7");
     if (error) throw databaseError(error);
     return data;
   }

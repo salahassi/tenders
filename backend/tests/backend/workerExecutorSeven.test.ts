@@ -15,8 +15,8 @@ const environment = {
   models: modelEnvironments(() => undefined),
 };
 
-it.each([1, 2, 5, 6])(
-  "claims executor-%i work through the v6 server boundary without rewriting its stored identity",
+it.each([1, 2, 5, 6, 7])(
+  "claims executor-%i work through the v7 server boundary without rewriting its stored identity",
   async (floor) => {
     const job = {
       id: "00000000-0000-4000-8000-000000000001",
@@ -50,12 +50,12 @@ it.each([1, 2, 5, 6])(
     );
     expect(await new Backend(environment).claim()).toEqual(job);
     expect(calls).toEqual([
-      { path: "/rest/v1/rpc/claim_backend_job_v6", method: "POST", body: {} },
+      { path: "/rest/v1/rpc/claim_backend_job_v7", method: "POST", body: {} },
     ]);
   },
 );
 
-it("does not fall back to an older claim boundary when the v6 migration is unavailable", async () => {
+it("does not fall back to an older claim boundary when the v7 migration is unavailable", async () => {
   const paths: string[] = [];
   vi.stubGlobal(
     "fetch",
@@ -71,5 +71,5 @@ it("does not fall back to an older claim boundary when the v6 migration is unava
     }),
   );
   await expect(new Backend(environment).claim()).rejects.toThrow();
-  expect(paths).toEqual(["/rest/v1/rpc/claim_backend_job_v6"]);
+  expect(paths).toEqual(["/rest/v1/rpc/claim_backend_job_v7"]);
 });

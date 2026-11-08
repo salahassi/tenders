@@ -203,6 +203,12 @@ export function taskInput(ctx: PlanContext) {
           ? "plan_blueprint"
           : step.task
     ) as ModelTask;
+  const legacyWholeReview = input.legacy_zero_inventory_review_version === 1;
+  if (legacyWholeReview && (
+    task !== "review_proposal" || ctx.plan.kind !== "proposal" || ctx.plan.workflow_version !== 1 ||
+    ctx.requirements.length !== 0 || !Array.isArray(input.requirement_ids) || input.requirement_ids.length !== 0 ||
+    input.workflow_version >= 2 || input.review_scope_version !== 1 || input.review_source_version !== 1 || input.coherence_review !== true
+  )) throw new ModelError("INVALID_INPUT");
   const sourceResolution = sourceResolutionContext(frozen);
   if (sourceResolution) assertSourceResolutionSources(frozen);
   const requirements = ctx.requirements.filter(
@@ -486,11 +492,16 @@ export function taskInput(ctx: PlanContext) {
       }
     }
     if (task === "review_proposal") {
-      const sections = draftedSections(ctx).filter((s) =>
+      const sections = legacyWholeReview ? legacyWholeReviewSections(ctx) : draftedSections(ctx).filter((s) =>
         input.workflow_version >= 2
           ? (input.section_keys || []).includes(s.key)
           : s.requirement_ids.some((id: string) => requiredIds.includes(id)),
       );
+      if (legacyWholeReview) {
+        if (!sections.length || JSON.stringify(input.section_keys) !== JSON.stringify(sections.map((s) => s.key)))
+          throw new ModelError("INVALID_INPUT");
+        context.legacy_zero_inventory_review_version = 1;
+      }
       context.sections = sections.map((s) => ({
         key: s.key,
         title: s.title,
@@ -570,6 +581,9 @@ export function taskInput(ctx: PlanContext) {
       };
       context.instruction =
         "Audit each required requirement ID against the actual supplied sections and proposed commercial draft. The commercial draft is generated, unconfirmed proposal content, not supporting evidence or approved prices, resources or commitments. Check unsupported company claims, contradictions, placeholders, missing acceptance evidence, scope/price mismatch and unrealistic delivery. Never approve not-applicable status. Every mandatory requirement must have a coverage record, even when missing.";
+      if (legacyWholeReview)
+        context.instruction +=
+          " This is the whole-proposal review of an existing legacy draft with no extracted formal requirement inventory. Read ALL supplied full sections, including fixed template prose, and the COMPLETE commercial draft. Check cross-section terminology, architecture/interfaces, dates, assumptions, repeated or contradictory obligations, unsupported claims and technical/financial separation. Return processed_requirement_ids:[] and responses:[], and precise findings with requirement_ids:[] and the exact affected section_ids. Do not invent requirement IDs or infer that buyer requirements are absent merely because this inventory is empty. Correct unresolved business findings remain review findings; this review is not human approval or permission to accept unsupported content.";
       if (explicitScope) {
         const allLines = commercialSteps.flatMap(
           (step) => step.output.lines || [],
@@ -884,6 +898,15 @@ export function draftedSections(ctx: PlanContext): Row[] {
     ordinal: s.ordinal,
   }));
 }
+function legacyWholeReviewSections(ctx: PlanContext): Row[] {
+  return [
+    ...draftedSections(ctx),
+    ...(ctx.plan.frozen_context.template.fixed_blocks || []).map((fixed: Row) => ({
+      key: "fixed-" + fixed.key, title: fixed.title, volume: fixed.volume,
+      content_blocks: [{ type: "paragraph", text: fixed.body }], assumptions: [], evidence_refs: [],
+    })),
+  ];
+}
 export function splitStep(ctx: PlanContext): Row[] | null {
   const input = ctx.step.input;
   if (ctx.step.depth >= 8) return null;
@@ -1137,6 +1160,16 @@ export async function nextStage(ctx: PlanContext): Promise<{
       return output;
     }
     output.next_stage = "review";
+    if (ctx.plan.workflow_version === 1 && ctx.requirements.length === 0) {
+      const sections = legacyWholeReviewSections(ctx);
+      if (!sections.length) throw new ModelError("STAGE_INCOMPLETE");
+      output.steps = [{ task: "review_proposal", input: {
+        requirement_ids: [], legacy_zero_inventory_review_version: 1,
+        review_scope_version: 1, review_source_version: 1, coherence_review: true,
+        section_keys: sections.map((section) => section.key),
+      } }];
+      return output;
+    }
     output.steps = batchGenerationRequirements(
       ctx.requirements,
       "review_proposal",
