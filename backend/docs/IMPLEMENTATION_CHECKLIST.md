@@ -25,6 +25,32 @@ freeze, publication, runtime rollout and customer acceptance remain separate
 pending gates. No image build, publication, database or provider action was
 performed for this wrapper preparation.
 
+## November 8 — separate native grounding-reference boundary regression
+
+The new `boundary_native.py/.ts` harness imports the actual image's exported
+`validateGroundingReport`. It exercises 44 synthetic cases: 24 supplied plain,
+namespaced and requirement UUIDs followed by colon punctuation, ten unknown or
+extended identifiers, six unsupported adjacent quantities/prices, and four
+previously accepted reference/quantity cases. Rejections must retain the exact
+`EVIDENCE_REFERENCE_INVALID` / `numeric_evidence_mismatch` outcome. Every input
+is hashed and checked for mutation; the same input hashes must be exercised in
+the candidate and frozen accepted-poll baseline. No customer text is included.
+
+The original worker entrypoint runs with no container network, a read-only root,
+one read-only fixture mount and a Deno probe without network/write/run permission.
+Receipts bind every copied product file, both actual image identities, both
+harness hashes, all case results and verified owned-container cleanup. The
+existing nine dispatch, twelve prompt and ten accepted-poll controls and their
+historical evidence remain unchanged.
+
+Thirteen Python isolation/negative-receipt controls and backend typecheck pass.
+An actual local probe of frozen production image `492d0716` reproduces all 24
+colon-related numeric rejections and preserves the other 20 outcomes; cleanup
+passes. A separate local source smoke against product `a11352c` passes all 44
+cases with exactly the baseline's input hashes. This source smoke is not a new
+candidate-image receipt. Candidate build/native qualification, publication,
+deployment and actual customer issuance remain separate pending gates.
+
 ## November 8 — distinguish known reference UUID punctuation from factual numbers
 
 Private commercial evidence established that rejected numeric literals were
