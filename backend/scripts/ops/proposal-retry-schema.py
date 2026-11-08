@@ -9,9 +9,12 @@ from __future__ import annotations
 import hashlib
 import importlib.util
 import json
+import os
 from pathlib import Path
 import re
+import subprocess
 import sys
+import time
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[2]
@@ -54,6 +57,41 @@ def source():
 
 def source_sha256():
     return hashlib.sha256(source().encode()).hexdigest()
+
+
+def sql_error_code(stderr):
+    """Expose only fixed migration errors or the server's five-byte SQLSTATE.
+
+    psql verbose diagnostics can contain full SQL and customer row values in
+    DETAIL/CONTEXT. Never return those lines, object names, paths or raw stderr.
+    """
+    if not isinstance(stderr, str) or len(stderr.encode()) > 1024 * 1024:
+        return 'RETRY_SCHEMA_SQL_FAILED'
+    allowed = set(re.findall(r"RAISE EXCEPTION '([A-Z][A-Z0-9_]{0,119})'",
+        Path(__file__).read_text() + (HERE / 'proposal-dispatch-schema.py').read_text() + source(), re.I))
+    allowed = {value for value in allowed if re.fullmatch('[A-Z][A-Z0-9_]{0,119}', value)}
+    errors = re.findall(r'(?:^|\n)[^\n]*?\b(?:ERROR|FATAL):\s+([0-9A-Z]{5}):\s*([^\r\n]*)', stderr)
+    if not errors:
+        return 'RETRY_SCHEMA_SQL_TRANSPORT_FAILED'
+    state, message = errors[0]
+    if message in allowed:
+        return message
+    return 'RETRY_SCHEMA_SQLSTATE_' + state
+
+
+def execute_sql(database, sql):
+    deploy = module('retry_schema_deploy', 'digitalocean-deploy.py')
+    arguments = [os.environ['KUBECTL'], '--request-timeout=30s', 'exec', '-i', database.pod,
+        '-n', deploy.NAMESPACE, '--', 'psql', '-X', '--quiet', '--no-align', '--tuples-only',
+        '--set=ON_ERROR_STOP=1', '--set=VERBOSITY=verbose', '--dbname=' + deploy.DATABASE, '--file=-']
+    try:
+        result = subprocess.run(arguments, input=sql, capture_output=True, text=True, timeout=30)
+    except (OSError, subprocess.TimeoutExpired):
+        raise RetrySchemaError('RETRY_SCHEMA_SQL_TRANSPORT_TIMEOUT') from None
+    if result.returncode:
+        raise RetrySchemaError(sql_error_code(result.stderr)) from None
+    require(isinstance(result.stdout, str) and len(result.stdout.encode()) <= 16384, 'RESULT_SIZE')
+    return result.stdout
 
 
 CONTRACT = """
@@ -188,10 +226,7 @@ COMMIT;
 
 
 def run(database, *, read_only, allow_parent=False):
-    deploy = module('retry_schema_deploy', 'digitalocean-deploy.py')
-    raw = deploy.command(['exec', '-i', database.pod, '-n', deploy.NAMESPACE, '--', 'psql', '-X', '--quiet',
-        '--no-align', '--tuples-only', '--set=ON_ERROR_STOP=1', '--dbname=' + deploy.DATABASE, '--file=-'],
-        payload=script(read_only=read_only, allow_parent=allow_parent), timeout=30)
+    raw = execute_sql(database, script(read_only=read_only, allow_parent=allow_parent))
     require(len(raw.encode()) <= 16384, 'RESULT_SIZE')
     value = json.loads(raw)
     require(isinstance(value, dict) and value.get('release') == RELEASE
@@ -211,3 +246,39 @@ def apply(database):
 
 def verify(database, *, allow_parent=False):
     return run(database, read_only=True, allow_parent=allow_parent)
+
+
+def row_digest_probe_sql():
+    return """BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY;
+SET LOCAL ROLE tdp_app_owner;SET LOCAL search_path=public;
+SET LOCAL statement_timeout='20s';SET LOCAL lock_timeout='5s';
+DO $retry_row_probe$
+DECLARE r record;columns_before jsonb;state jsonb;row_count bigint;row_digest text;
+BEGIN
+ IF current_database()<>'tenderdesk_app' THEN RAISE EXCEPTION 'RETRY_SCHEMA_DATABASE_IDENTITY';END IF;
+ SELECT jsonb_object_agg(signature,cols) INTO columns_before FROM (
+  SELECT format('%I.%I',n.nspname,c.relname) signature,string_agg(quote_ident(a.attname),',' ORDER BY a.attnum) cols
+  FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace JOIN pg_attribute a ON a.attrelid=c.oid
+  WHERE n.nspname IN ('public','app_private') AND c.relkind IN ('r','p') AND a.attnum>0 AND NOT a.attisdropped
+  GROUP BY n.nspname,c.relname)t;
+ __ROWS__
+END $retry_row_probe$;
+SELECT '{"completed":true}'::jsonb;
+ROLLBACK;
+""".replace('__ROWS__', parent.ROWS)
+
+
+def row_digest_probe(database):
+    """Read the same existing row digests; emit duration/code only, no digests."""
+    started = time.monotonic()
+    try:
+        raw = execute_sql(database, row_digest_probe_sql())
+        try:
+            value = json.loads(raw)
+        except (ValueError, TypeError):
+            raise RetrySchemaError('RETRY_SCHEMA_ROW_PROBE_INVALID') from None
+        require(value == {'completed': True}, 'ROW_PROBE_INVALID')
+        result = {'probe': 'existing_full_row_digest', 'completed': True, 'code': None}
+    except RetrySchemaError as error:
+        result = {'probe': 'existing_full_row_digest', 'completed': False, 'code': str(error)}
+    return result | {'duration_seconds': round(time.monotonic() - started, 3), 'read_only': True}

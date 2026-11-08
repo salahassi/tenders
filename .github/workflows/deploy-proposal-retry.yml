@@ -1,6 +1,15 @@
 name: Deploy proposal retry compatibility
 on:
   workflow_dispatch:
+    inputs:
+      mode:
+        description: Inspect exact current schema or apply the reviewed migration
+        required: true
+        type: choice
+        default: inspect
+        options:
+          - inspect
+          - apply
 permissions:
   contents: read
   actions: read
@@ -36,10 +45,14 @@ jobs:
               raise SystemExit('Proposal retry access preparation failed within its reserved budget')
           print('Original-CA access is ready; no runtime mutation was requested.')
           PY
-      - name: Apply and verify only the reviewed retry compatibility SQL
+      - name: Inspect or apply only the reviewed retry compatibility SQL
         env:
           DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
-        run: python3 backend/scripts/ops/proposal-retry-release.py
+          RETRY_RELEASE_MODE: ${{ inputs.mode }}
+        run: |
+          set -euo pipefail
+          case "$RETRY_RELEASE_MODE" in inspect|apply) ;; *) exit 1 ;; esac
+          python3 backend/scripts/ops/proposal-retry-release.py "--$RETRY_RELEASE_MODE"
       - name: Remove only the owned temporary database client
         if: ${{ always() }}
         run: |
