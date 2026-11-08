@@ -13886,3 +13886,32 @@ Added separate worker_dispatch_v7_native Python/Deno harnesses, preserving the f
 Added separate legacy_review_native Python/Deno harnesses, retaining all prior harnesses and receipts. It imports actual image context, prompt, result validation and delivery-assessment functions. Fourteen controls bind the explicit legacy zero-inventory review marker to all saved draft/fixed-template prose and the complete unconfirmed commercial draft, retain the wording-only trust of the review source, reject twelve malformed scopes, and require an accepted review receipt. A complete synthetic receipt set positively reconstructs as machine-eligible draft, while an altered review candidate hash fails; this is offline test evidence, never a real model review or customer acceptance.
 
 The exact deployed successor image 3cc6c7cb (qualification a5e636e8) was executed offline with its original worker entrypoint and no network: it reproduced zero scheduled reviews and retained all 48 legacy wire cases. The candidate source smoke against the isolated marker patch passed all 12 raw controls, scheduled one review, produced 12 new EN/AR writer/repair/verifier wires and preserved the eight legacy context/input hashes and all 48 wire hashes. Both baseline probes confirmed owned-container cleanup. Thirteen Python guard/ownership/isolation tests and the twelve v7 dispatch guards pass; backend typecheck passes. Candidate immutable-image execution, SQL authority gates, publication, deployment and real whole-proposal review remain pending. No customer data was used in these fixtures or added to the repository.
+
+### November 8 — ordinary draft export with a blocking whole review
+
+Added an isolated PostgreSQL proof for the existing canonical
+`export.package.prepare` with `mode=draft`. The synthetic fixture retains 31
+accepted generation records and completes one synthetic accepted whole review
+through normal finalization and reassembly. Calling `fail_generated_delivery`
+then establishes the real failed-plan/completed-stage state with 32 accepted
+records, 17 sections, six blocking findings, null commercial inputs and an
+unresolved pricing question. This proof adds no product SQL or runtime change.
+
+All 11 targeted native controls pass in a network-isolated PostgreSQL container
+limited to one CPU, with cleanup confirmed; see
+[`blocking-review-draft-export-native-20261108.json`](evidence/blocking-review-draft-export-native-20261108.json).
+The canonical command adds exactly one local `render_export` job with its normal
+600-second deadline. Every generation record, paid usage, budget, accepted review,
+issuance, question and approval remains unchanged. Final export without approval,
+stale version revision, changed source and revoked Owner are refused atomically;
+same-key replay adds no work and conflicting replay is refused. Current worker7
+claims the local export and reads its authorized immutable snapshot.
+
+The production render model retains the DRAFT label, all six finding texts,
+missing commercial inputs and the unresolved question. Normal assembly also
+materializes blocking findings as finalization questions: identical finding text
+is de-duplicated under “Required before final approval.” Two fixture assertions
+were corrected to match canonical assembled commercial shape and that visible
+label; no product behavior was changed. This proof does not render/upload/download
+document bytes, grant final approval, clear review findings, or qualify a provider
+response. All content is synthetic; no hosted calls or customer data are used.
