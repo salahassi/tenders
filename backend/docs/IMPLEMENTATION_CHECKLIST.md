@@ -46,11 +46,29 @@ changed for these implementation tests.
 
 ## November 8 — bounded SQL-only retry compatibility release
 
+**Deployed:** [42509645314](https://github.com/salahassi/tenders/actions/runs/42509645314)
+from frozen-runtime source `28e35c4` passed within 45 seconds including queue.
+SQL `fe772e3c`, routine catalog `249d2fe6` and structure `3fea5eec` are recorded in
+their own retry ledger. Atomic apply/readback, all retained images/configuration,
+unchanged business rows and owned cleanup pass. Historical application and
+dispatch ledgers remain intact. No business retry or provider call was initiated.
+The [release receipt](evidence/proposal-retry-passed-20261108-42509645314.json)
+records exact hashes and source. Whole-proposal performance remains separate.
+
+Read-only reconciliation [42509467709](https://github.com/salahassi/tenders/actions/runs/42509467709)
+proved the exact unchanged predecessor catalog and no installed retry ledger
+before the successful apply. Its full row-digest probe completed in 5.516 seconds,
+so a SQL timeout was not established as the earlier cause. Sanitized diagnostics
+and explicit modes were added; no row/authority guard or deadline was weakened.
+The [inspection receipt](evidence/proposal-retry-inspection-20261108-42509467709.json)
+and [initial failure](evidence/proposal-retry-failed-20261108-42508689969.json) retain
+that distinction. All 19 diagnostic/release controls pass.
+
 Hosted attempt [42508689969](https://github.com/salahassi/tenders/actions/runs/42508689969)
 at `9edb0bf` stopped after 56 seconds including queue. Both the apply transport and
 its read-only reconciliation returned the former generic Kubernetes command
-failure; owned cleanup succeeded. That evidence does not prove whether COMMIT
-occurred. No unchanged apply retry is authorized by this receipt.
+failure; owned cleanup succeeded. That evidence alone did not prove whether COMMIT
+occurred; the subsequent read-only inspection above resolved that uncertainty.
 
 The follow-up adds an explicit inspect mode (the workflow default) which only
 verifies the exact predecessor or child schema receipt. Apply requires the
@@ -62,8 +80,8 @@ same full-row digest once in a separate read-only transaction with a 20-second
 SQL limit. It reports only completion, elapsed time and a sanitized error code;
 a probe timeout retains the already proven schema state. This checks the suspected
 cost without changing the migration's row-preservation proof. Insufficient time
-skips the probe and preserves cleanup. Read-only commit reconciliation is the
-next required hosted step before any further migration attempt.
+skips the probe and preserves cleanup. Read-only commit reconciliation completed
+before the subsequent successful migration attempt.
 
 The new release workflow applies only the reviewed modern-routing retry migration;
 all five deployed images, workload definitions, private configuration and provider
