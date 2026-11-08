@@ -1,5 +1,20 @@
 # Implementation status and continuation plan
 
+## November 8 — accepted-poll correction deployed
+
+PR53 merged as `d5f69a31`; redirect-only Pages42519063111 passed within the
+three-minute bound. Release42519090178 from `07c6688` passed in 56 seconds,
+including queue and cleanup. The additive SQL `8d089d8d` is independently read
+back as catalog `36d60b8f`, structure `1b9db070`, with all predecessor ledgers and
+business rows preserved. Worker/scheduler now use qualified `b5e14c0e`; API
+`f573e991`, source-browser `077b06ed`, frontend `522ad1b7` and all private settings
+are retained. Scheduler pause/drain, actual service RPC rejection, readiness,
+resume and final preservation checks passed. See the
+[exact deployment receipt](evidence/proposal-poll-passed-20261108-42519090178.json).
+No business command or new model request was sent by the release. The next
+canonical saved-work trial must bind this image and exact fifth child ledger;
+actual latency and whole-package issuance remain to verify.
+
 ## November 8 — integrated poll package gates reconciled
 
 The full backend run exercised 3,626 tests in 215 files: 3,624 passed and two

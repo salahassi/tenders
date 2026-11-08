@@ -1,0 +1,125 @@
+{
+  "release": "proposal-pending-poll-v1",
+  "status": "passed",
+  "mode": "apply",
+  "source_revision": "07c66884f4fd3722f8d6635feef41201a7f9598a",
+  "artifact_source_revision": "82d42820fc7d35ead78629bca8d31bf9207fe895",
+  "image": "registry.digitalocean.com/tenderdesk-a6093a76/runtime@sha256:b5e14c0e78a3625448bfa7c1a86d27749bfd9649f48859aa0628c0f26c935619",
+  "image_id": "sha256:492d0716ec1a9aa8a301fadd84201e60367da675d69cb3228e5cf2b501abe83d",
+  "qualification_sha256": "1557117fc44b44ff3c5f9beb5244edf3bdb3a0fa67cbff83193a18790dd40c5f",
+  "pending_poll_migration": {
+    "path": "backend/supabase/migrations/20261108194639_prepare_accepted_model_poll.sql",
+    "sha256": "8d089d8d5237fa96e4903ddc54724318afeaeb457737341e88d7e872f49341af"
+  },
+  "registry_identity": {
+    "verification": "immutable_manifest_and_qualified_config_digest",
+    "metadata_only": true,
+    "reference": "registry.digitalocean.com/tenderdesk-a6093a76/runtime@sha256:b5e14c0e78a3625448bfa7c1a86d27749bfd9649f48859aa0628c0f26c935619",
+    "root_manifest_bytes": 5124,
+    "selected_manifest_bytes": 5124,
+    "selected_manifest_digest": "sha256:b5e14c0e78a3625448bfa7c1a86d27749bfd9649f48859aa0628c0f26c935619",
+    "config_digest": "sha256:492d0716ec1a9aa8a301fadd84201e60367da675d69cb3228e5cf2b501abe83d",
+    "config_bytes": 10342,
+    "layer_count": 23,
+    "compressed_layer_bytes": 86386449,
+    "image_layers_downloaded": false
+  },
+  "schema": {
+    "applied": true,
+    "release": "proposal-pending-poll-v1-20261108",
+    "replayed": false,
+    "read_only": false,
+    "row_guard": "transaction_activity_and_storage_v1",
+    "sql_sha256": "8d089d8d5237fa96e4903ddc54724318afeaeb457737341e88d7e872f49341af",
+    "catalog_sha256": "36d60b8f241ca7dccfa3dee954c97190cacacd89aa4e05f16ab2820107b0db76",
+    "parent_release": "proposal-admission-wake-v1-20261108",
+    "structure_sha256": "1b9db0709561ecb718a94a474e13aeda71d72ed641134e06c103da97ada0aa8c",
+    "parent_sql_sha256": "fcde6425b740a60ea9001a4abefea960a4bbe461e3ec27dae70f2099f2f06562",
+    "processing_requested": false,
+    "business_rows_changed": 0,
+    "predecessor_receipts_preserved": true
+  },
+  "schema_readback": {
+    "applied": true,
+    "release": "proposal-pending-poll-v1-20261108",
+    "replayed": true,
+    "read_only": true,
+    "row_guard": "transaction_activity_and_storage_v1",
+    "sql_sha256": "8d089d8d5237fa96e4903ddc54724318afeaeb457737341e88d7e872f49341af",
+    "catalog_sha256": "36d60b8f241ca7dccfa3dee954c97190cacacd89aa4e05f16ab2820107b0db76",
+    "parent_release": "proposal-admission-wake-v1-20261108",
+    "structure_sha256": "1b9db0709561ecb718a94a474e13aeda71d72ed641134e06c103da97ada0aa8c",
+    "parent_sql_sha256": "fcde6425b740a60ea9001a4abefea960a4bbe461e3ec27dae70f2099f2f06562",
+    "processing_requested": false,
+    "business_rows_changed": 0,
+    "predecessor_receipts_preserved": true
+  },
+  "readiness": [
+    {
+      "component": "worker",
+      "ready": true,
+      "unauthorized_maintenance_status": 401
+    },
+    {
+      "rpc": "prepare_accepted_model_poll",
+      "service_route_visible": true,
+      "null_identity_rejected": true,
+      "business_mutations": 0,
+      "provider_calls": 0
+    },
+    {
+      "component": "scheduler",
+      "ready": true,
+      "unauthorized_maintenance_status": null
+    }
+  ],
+  "deployment_targets": [
+    "worker",
+    "scheduler"
+  ],
+  "retained_images": {
+    "source-browser": "registry.digitalocean.com/tenderdesk-a6093a76/runtime@sha256:077b06edd81eb58296ef755e7baa8af32a73dd931c6f06097acc513d3f684e3e",
+    "api": "registry.digitalocean.com/tenderdesk-a6093a76/runtime@sha256:f573e991e622c982e82a4a3b4e6dc6f144e87586ba0f5dd0b3d05381b30dbd6a",
+    "frontend": "registry.digitalocean.com/tenderdesk-a6093a76/frontend@sha256:522ad1b7258f1842bafd94f7f1b8c4c3a4642c098063dea848248f49b3c8e0f3"
+  },
+  "observed_before_images": {
+    "worker": "registry.digitalocean.com/tenderdesk-a6093a76/runtime@sha256:03c68b58ebe05d2d35ee5345df3bad8d9c7a2bc2989bdf78a83d322e1b145a3d",
+    "scheduler": "registry.digitalocean.com/tenderdesk-a6093a76/runtime@sha256:03c68b58ebe05d2d35ee5345df3bad8d9c7a2bc2989bdf78a83d322e1b145a3d",
+    "source-browser": "registry.digitalocean.com/tenderdesk-a6093a76/runtime@sha256:077b06edd81eb58296ef755e7baa8af32a73dd931c6f06097acc513d3f684e3e",
+    "api": "registry.digitalocean.com/tenderdesk-a6093a76/runtime@sha256:f573e991e622c982e82a4a3b4e6dc6f144e87586ba0f5dd0b3d05381b30dbd6a",
+    "frontend": "registry.digitalocean.com/tenderdesk-a6093a76/frontend@sha256:522ad1b7258f1842bafd94f7f1b8c4c3a4642c098063dea848248f49b3c8e0f3"
+  },
+  "worker_resource_envelope": {
+    "limits": {
+      "cpu": "1",
+      "memory": "640Mi"
+    },
+    "requests": {
+      "cpu": "25m",
+      "memory": "192Mi"
+    },
+    "desired_replicas": 1,
+    "cpu_millicores": 1000,
+    "memory_bytes": 671088640,
+    "minimum_cpu_millicores": 1000,
+    "minimum_memory_bytes": 671088640,
+    "hosted_load_qualified": false
+  },
+  "scheduler_quiesced": true,
+  "activation_commit_point_reached": true,
+  "observed_before_scheduler_replicas": 1,
+  "configuration_preserved": true,
+  "customer_processing_requested": false,
+  "providers_activated": false,
+  "business_commands_sent": 0,
+  "customer_completion_verified": false,
+  "cleanup_verified": true,
+  "github_run": {
+    "id": 42519090178,
+    "url": "https://github.com/salahassi/tenders/actions/runs/42519090178",
+    "created_at": "2026-11-08T20:14:15Z",
+    "completed_at": "2026-11-08T20:15:11Z",
+    "total_seconds": 56,
+    "conclusion": "success"
+  }
+}
