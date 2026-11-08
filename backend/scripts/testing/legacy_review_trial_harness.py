@@ -41,9 +41,14 @@ def run(f, x, cases):
         assert snapshot() == before, 'Read-only trial preparation mutated retained state'
         transaction = f.command_sql('generation.retry', prepared['body']['commands'][0]['input'], prepared['command_key'])
         assert transaction.endswith('commit;')
-        # Read the exact accepted lineage in the same test transaction, then
-        # roll it back. Production uses the identical read-only SQL afterward.
-        result = f.sql(transaction[:-len('commit;')] + '\nreset role;\n' + local(request.acceptance_sql(prepared)))
+        # This rollback-only fixture has already mutated the transaction. Keep
+        # the exact readback SELECT/guards/timeouts and final rollback, while
+        # omitting only the nested BEGIN isolation header. Production opens the
+        # original read-only transaction after its committed canonical request.
+        acceptance = request.acceptance_sql(prepared)
+        header = 'BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY;\n'
+        assert acceptance.startswith(header)
+        result = f.sql(transaction[:-len('commit;')] + '\nreset role;\n' + local(acceptance[len(header):]))
         rows = [json.loads(line) for line in result.stdout.splitlines() if line.startswith('{')]
         accepted = rows[-1]
         assert accepted['count'] == 1 and accepted['bound'] is True

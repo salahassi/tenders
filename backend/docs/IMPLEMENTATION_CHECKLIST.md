@@ -1,5 +1,15 @@
 # Implementation status and continuation plan
 
+## November 8 — native ops hook keeps a single rollback transaction
+
+The integrated native hook reached ready proof, exact prepared command and
+canonical admission, then exposed a fixture-only nested transaction error: its
+readback attempted a new repeatable-read header after test writes. The hook now
+omits only that exact nested BEGIN header while retaining the original acceptance
+SELECT, guards, timeouts and final rollback. Production command and read-only
+transaction SQL are unchanged. Python syntax/diff checks pass; the existing native
+qualification rerun remains pending, with no live action performed.
+
 ## November 8 — canonical missing legacy review recovery implemented locally
 
 A direct Owner `generation.retry` may now append one genuine whole-proposal
