@@ -1,0 +1,107 @@
+name: Authorized proposal trial
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Start one authorized request, observe it, or download its issued files
+        required: true
+        type: choice
+        default: observe
+        options:
+          - start
+          - observe
+          - download
+      input_object:
+        description: Encrypted private selection or previous trial report object
+        required: true
+        type: string
+      input_sha256:
+        description: SHA-256 of the private plaintext selection or report
+        required: true
+        type: string
+      activation_confirmed:
+        description: Explicit user authorization for the selected start request and provider calls
+        required: true
+        type: boolean
+        default: false
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: tenderdesk-digitalocean-production
+  cancel-in-progress: false
+jobs:
+  trial:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    env:
+      TRIAL_MODE: ${{ inputs.mode }}
+      TRIAL_INPUT_OBJECT: ${{ inputs.input_object }}
+      TRIAL_INPUT_SHA256: ${{ inputs.input_sha256 }}
+      RUN_PROPOSAL_TRIAL: ${{ inputs.mode == 'start' && inputs.activation_confirmed && 'true' || 'false' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Bind total deadline to run creation including queue time
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 backend/scripts/ops/proposal-trial-runner.py --bind-deadline
+      - name: Validate mode and explicit activation before access preparation
+        run: |
+          python3 - <<'PY'
+          import os,re
+          mode=os.environ['TRIAL_MODE']
+          if mode not in {'start','observe','download'}:raise SystemExit('Invalid trial mode')
+          if mode=='start' and os.environ['RUN_PROPOSAL_TRIAL']!='true':raise SystemExit('Start requires explicit activation')
+          if os.environ['GITHUB_RUN_ATTEMPT']!='1':raise SystemExit('Workflow replay is refused')
+          if not re.fullmatch(r'(requests|diagnostics)/[A-Za-z0-9][A-Za-z0-9._/-]{0,160}\.bundle',os.environ['TRIAL_INPUT_OBJECT']):raise SystemExit('Invalid private input object')
+          if not re.fullmatch(r'[a-f0-9]{64}',os.environ['TRIAL_INPUT_SHA256']):raise SystemExit('Invalid private input hash')
+          print('Trial mode, activation and private reference validated.')
+          PY
+      - name: Prepare bounded original-CA access and private transfer dependency
+        env:
+          DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+        run: |
+          python3 - <<'PY'
+          import os,subprocess,sys,time
+          deadline=int(os.environ['TENDERDESK_RUN_DEADLINE_EPOCH'])
+          steps=[
+              ([sys.executable,'-m','pip','install','--quiet','--disable-pip-version-check','--requirement','backend/scripts/ops/private-transfer-requirements.txt'],25),
+              ([sys.executable,'backend/scripts/ops/digitalocean-runner.py'],35),
+          ]
+          try:
+              for command,limit in steps:
+                  available=int(deadline-time.time())-105
+                  if available<5:raise RuntimeError('SETUP_BUDGET')
+                  result=subprocess.run(command,stdout=subprocess.PIPE,stderr=subprocess.PIPE,timeout=min(limit,available))
+                  if result.returncode:raise RuntimeError('SETUP_FAILED')
+          except Exception:
+              raise SystemExit('Proposal trial access preparation failed within its reserved budget')
+          print('Original-CA access and private transfer dependency are ready.')
+          PY
+      - name: Execute one selected bounded trial mode
+        env:
+          DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+        run: |
+          set -euo pipefail
+          args=(--mode "$TRIAL_MODE" --input-object "$TRIAL_INPUT_OBJECT" --input-sha256 "$TRIAL_INPUT_SHA256")
+          if [ "$RUN_PROPOSAL_TRIAL" = true ]; then args+=(--activate); fi
+          python3 backend/scripts/ops/proposal-trial-runner.py "${args[@]}"
+      - name: Remove only the owned session and temporary database client
+        if: ${{ always() }}
+        run: |
+          if [ -n "${DOKS_WORKDIR:-}" ] && [ -x "${KUBECTL:-}" ]; then
+            python3 backend/scripts/ops/proposal-trial-runner.py --cleanup
+          fi
+      - name: Remove private runner credentials and plaintext
+        if: ${{ always() }}
+        run: |
+          python3 - <<'PY'
+          import os,pathlib,re,shutil
+          run,attempt=os.environ['GITHUB_RUN_ID'],os.environ['GITHUB_RUN_ATTEMPT']
+          if not re.fullmatch(r'[0-9]{1,20}',run) or not re.fullmatch(r'[0-9]{1,6}',attempt):raise SystemExit(1)
+          directory=pathlib.Path(os.environ['RUNNER_TEMP'])/('td-deploy-'+run+'-'+attempt)
+          if directory.exists():shutil.rmtree(directory)
+          print('Private trial credentials and plaintext removed.')
+          PY
