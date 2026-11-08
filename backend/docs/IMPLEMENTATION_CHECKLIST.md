@@ -1,5 +1,24 @@
 # Implementation status and continuation plan
 
+## November 8 — bounded read-only database performance inspection
+
+The selected proposal inspector now records only named RPC execution aggregates,
+function counters, fixed relation sizes/live-dead estimates, selected frozen-context
+byte sizes, and grouped session wait/blocker metadata. Optional statement statistics
+are queried only after checking the extension/view catalog; unavailable or denied
+access is explicit. Tracking settings and full-statistics visibility are reported
+without enabling extensions, changing settings, or exposing SQL, process identities,
+customer values, graph payloads, or credentials. Exact identifier matching keeps
+modern RPC names and overlapping routine names separate.
+
+Each SQL statement has a five-second timeout and one-second lock timeout inside
+the existing 170-second runner bound. Local PGlite query execution covers absent
+statistics and a synthetic available-view branch, including zero-call rows,
+routine-name boundaries and private SQL exclusion. Request/privacy and trial-runner
+checks pass; hosted attribution remains pending. No live call, model request or
+business mutation was performed for this change. Historical aggregate execution
+times and a current wait snapshot cannot alone prove a past lock holder.
+
 ## November 8 — admission wake deployed; third real issuance still incomplete
 
 Admission apply [42515903670](https://github.com/salahassi/tenders/actions/runs/42515903670)

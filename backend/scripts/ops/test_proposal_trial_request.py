@@ -227,6 +227,13 @@ CREATE TABLE app_private.model_graph_checkpoints(thread_id uuid,created_at times
 CREATE TABLE app_private.k8s_dispatch_queue(singleton boolean,generation bigint,acknowledged_generation bigint,
  lease_generation bigint,lease_until timestamptz,next_attempt_at timestamptz,last_periodic_at timestamptz,failures int);
 CREATE TABLE app_private.k8s_dispatch_timers(due_at timestamptz);
+CREATE VIEW public.pg_stat_statements AS SELECT d.oid AS dbid,x.* FROM pg_database d CROSS JOIN (VALUES
+ ('select public.model_graph_store(private_customer_value)',3::bigint,9::float8,5::float8,6::bigint,1::bigint,0::bigint),
+ ('select public.model_graph_store_extra(private_customer_value)',1,99,99,0,0,0),
+ ('select public.model_graph_store(private_plan_only)',0,0,0,0,0,0),
+ ('select public.model_graph_store from pg_stat_statements',7,100,100,0,0,0)
+) x(query,calls,total_exec_time,max_exec_time,shared_blks_hit,shared_blks_read,temp_blks_written)
+WHERE d.datname=current_database();
 INSERT INTO app_private.k8s_dispatch_queue VALUES(true,7,6,null,null,'-infinity',now(),0);
 INSERT INTO app_private.k8s_dispatch_timers VALUES(now()-interval '1 second'),(now()+interval '5 seconds');
 INSERT INTO app_private.model_graph_checkpoints VALUES('00000000-0000-4000-8000-000000000901',now(),'{{"body":"private-checkpoint-payload"}}');
@@ -268,6 +275,8 @@ let input=''; for await(const chunk of process.stdin) input+=chunk;
 const x=JSON.parse(input), db=new PGlite(); await db.exec(x.schema); await db.exec(x.helpers);
 async function read(sql){const r=await db.exec(sql);return r.flatMap(v=>v.rows??[]).find(v=>v.jsonb_build_object)?.jsonb_build_object;}
 const normal=await read(x.inspect), accepted=await read(x.acceptance);
+const performance=await read(x.performance);
+const performanceAvailable=await read(x.performanceAvailable);
 await db.exec(`UPDATE identity_allowlist SET status='disabled'`); const disabled=await read(x.inspect);
 await db.exec(`UPDATE identity_allowlist SET status='active'; INSERT INTO provider_usage(workspace_id,state) VALUES('${x.w}','reserved')`); const reserved=await read(x.inspect);
 await db.exec(`UPDATE provider_usage SET state='unknown'`); const unknown=await read(x.inspect);
@@ -300,14 +309,51 @@ await db.exec(`UPDATE provider_usage SET state='reserved' WHERE id=(SELECT id FR
 const childReserved=await read(x.inspect);
 await db.exec(`INSERT INTO jobs(id,workspace_id,entity_id,status,type,next_attempt_at) SELECT gen_random_uuid(),'${x.w}','${x.g}','queued','draft_section',now()+interval '1 hour' FROM generate_series(1,101)`);
 const queueBounded=await read(x.diagnostic);
-console.log(JSON.stringify({normal,accepted,disabled,reserved,unknown,routed,mismatch,diagnostic,bounded,
+console.log(JSON.stringify({normal,accepted,performance,performanceAvailable,disabled,reserved,unknown,routed,mismatch,diagnostic,bounded,
  parentModern,childUntouched,childFrozen,childRecent,childAged,childManual,childLocalDenied,childLocalAllowed,childReserved,queueBounded})); await db.close();
 """
         result = subprocess.run(['node', '--input-type=module', '-e', script], input=json.dumps({
-            'schema': schema, 'inspect': inspect_sql, 'acceptance': m.acceptance_sql(prepared), 'diagnostic': m.diagnostic_sql(proof['selection']), 'w': W, 'j': J, 'g': G, 'helpers': helpers, 'child': child}),
+            'schema': schema, 'inspect': inspect_sql, 'acceptance': m.acceptance_sql(prepared),
+            'performance': m.performance_sql(proof['selection']),
+            # Isolated availability shim exercises the dynamic query over the
+            # synthetic stats view; operational SQL still requires the extension.
+            'performanceAvailable': m.performance_sql(proof['selection']).replace('IF stats_schema IS NOT NULL THEN',
+                "stats_schema:='public'; IF stats_schema IS NOT NULL THEN", 1),
+            'diagnostic': m.diagnostic_sql(proof['selection']), 'w': W, 'j': J, 'g': G, 'helpers': helpers, 'child': child}),
             text=True, capture_output=True, cwd=HERE.parent.parent, timeout=35)
         self.assertEqual(result.returncode, 0, result.stderr)
         data = json.loads(result.stdout)
+        performance = m.validate_performance_snapshot(data['performance'], proof['selection'])
+        self.assertEqual(performance['statements'], {'status': 'unavailable', 'rows': []})
+        self.assertEqual(performance['selected_context']['plan_id'], G)
+        self.assertGreater(performance['selected_context']['logical_bytes'], 0)
+        self.assertTrue(any(row['relation'] == 'public.jobs' for row in performance['tables']))
+        available_stats = m.validate_performance_snapshot(data['performanceAvailable'], proof['selection'])
+        self.assertEqual(available_stats['statements'], {'status': 'available', 'rows': [{
+            'routine': 'model_graph_store', 'calls': 3, 'total_exec_ms': 9, 'mean_exec_ms': 3,
+            'max_exec_ms': 5, 'shared_blks_hit': 6, 'shared_blks_read': 1, 'temp_blks_written': 0}]})
+        self.assertNotIn('private_customer_value', json.dumps(available_stats))
+        for key, value in [('query', 'private customer SQL'), ('remote_request_id', 'private-remote-id')]:
+            changed = copy.deepcopy(performance); changed[key] = value
+            with self.assertRaisesRegex(m.TrialRequestError, 'PERFORMANCE_INVALID'):
+                m.validate_performance_snapshot(changed, proof['selection'])
+        for row in [{'routine': 'model_graph_store', 'calls': 3, 'total_exec_ms': 9.0, 'mean_exec_ms': 3.0,
+                'max_exec_ms': 5.0, 'shared_blks_hit': 6, 'shared_blks_read': 1, 'temp_blks_written': 0}]:
+            available = copy.deepcopy(performance)
+            available['statements'] = {'status': 'available', 'rows': [row]}
+            m.validate_performance_snapshot(available, proof['selection'])
+            for mutation in ('query', 'routine', 'mean_exec_ms'):
+                changed = copy.deepcopy(available)
+                changed['statements']['rows'][0][mutation] = {'query': 'private SQL', 'routine': 'private_routine',
+                    'mean_exec_ms': float('nan')}[mutation]
+                with self.assertRaisesRegex(m.TrialRequestError, 'PERFORMANCE_INVALID'):
+                    m.validate_performance_snapshot(changed, proof['selection'])
+        snapshot_sql = m.performance_sql(proof['selection'])
+        self.assertIn("statement_timeout='5s'", snapshot_sql)
+        self.assertIn("lock_timeout='1s'", snapshot_sql)
+        self.assertIn("e.extname='pg_stat_statements'", snapshot_sql)
+        self.assertNotRegex(snapshot_sql, r'(?i)\b(insert|update|delete|truncate|grant|revoke)\b|for update')
+        self.assertNotIn('query', {key for row in performance['activity'] for key in row})
         self.assertEqual(m.prepare(data['normal'])['operation'], 'generation.retry')
         self.assertFalse(data['disabled']['guards']['unique_active_owner'])
         self.assertFalse(data['reserved']['guards']['usage_ready'])
