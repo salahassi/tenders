@@ -1,0 +1,48 @@
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile.dispatch
+#1 transferring dockerfile: 1.02kB done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for registry.digitalocean.com/tenderdesk-a6093a76/runtime@sha256:f573e991e622c982e82a4a3b4e6dc6f144e87586ba0f5dd0b3d05381b30dbd6a
+#2 DONE 0.0s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 151B done
+#3 DONE 0.0s
+
+#4 [1/7] FROM registry.digitalocean.com/tenderdesk-a6093a76/runtime@sha256:f573e991e622c982e82a4a3b4e6dc6f144e87586ba0f5dd0b3d05381b30dbd6a
+#4 DONE 0.0s
+
+#5 [internal] load build context
+#5 transferring context: 3.33MB 0.1s done
+#5 DONE 0.1s
+
+#4 [1/7] FROM registry.digitalocean.com/tenderdesk-a6093a76/runtime@sha256:f573e991e622c982e82a4a3b4e6dc6f144e87586ba0f5dd0b3d05381b30dbd6a
+#4 CACHED
+
+#6 [2/7] COPY --chown=deno:deno backend/supabase/functions/ /app/backend/supabase/functions/
+#6 DONE 2.7s
+
+#7 [3/7] COPY --chown=deno:deno backend/scripts/runtime/ /app/backend/scripts/runtime/
+#7 DONE 2.2s
+
+#8 [4/7] COPY --chown=deno:deno frontend/src/lib/renderDocx.ts /app/frontend/src/lib/renderDocx.ts
+#8 DONE 3.5s
+
+#9 [5/7] COPY --chown=deno:deno frontend/src/lib/docxTableStream.ts /app/frontend/src/lib/docxTableStream.ts
+#9 DONE 2.0s
+
+#10 [6/7] COPY --chown=deno:deno frontend/public/fonts/ /app/frontend/public/fonts/
+#10 DONE 0.9s
+
+#11 [7/7] RUN --network=none deno cache --frozen --config=supabase/functions/deno.json scripts/runtime/main.ts supabase/functions/_shared/deliveryRender.process.ts supabase/functions/_shared/deliveryVerify.process.ts && chmod -R a+rX /deno-dir
+#11 DONE 1.3s
+
+#12 exporting to image
+#12 exporting layers
+#12 exporting layers 1.1s done
+#12 writing image sha256:492d0716ec1a9aa8a301fadd84201e60367da675d69cb3228e5cf2b501abe83d
+#12 writing image sha256:492d0716ec1a9aa8a301fadd84201e60367da675d69cb3228e5cf2b501abe83d done
+#12 naming to docker.io/library/tenderdesk-poll:82d42820fc7d35ead78629bca8d31bf9207fe895 done
+#12 DONE 1.1s

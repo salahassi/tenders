@@ -1,5 +1,21 @@
 # Implementation status and continuation plan
 
+## November 8 — actual accepted-poll image qualification captured
+
+An offline build of source `82d42820` produced image `492d0716`. The actual image
+passed all nine dispatch, twelve prompt and ten accepted-poll native controls.
+The last fixture confirms pending GETs, full ready-response validation and
+settlement, exact compatibility of 28 revision-6 wire combinations and two saved
+phase pins, and no generation POST or new reservation. Historical prompt checks
+cover the older 84 combinations and eleven pins. Every harness confirms cleanup
+and zero external/provider calls. The separate qualification receipt is fixed to
+`1557117f`; the existing latency/dispatch receipts remain unchanged.
+
+Backend typecheck passes. The integrated full suite is still running and has
+reported two export integration failures; their detailed outcome and focused
+reconciliation remain open. Publication, deployment, actual elapsed-time
+improvement and completed customer files are not established by native proof.
+
 ## November 8 — independent accepted-poll authority regressions
 
 A synthetic proposal plan and draft step now exercise the accepted-poll seam
