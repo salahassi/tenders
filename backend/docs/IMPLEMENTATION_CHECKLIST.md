@@ -13939,3 +13939,17 @@ were corrected to match canonical assembled commercial shape and that visible
 label; no product behavior was changed. This proof does not render/upload/download
 document bytes, grant final approval, clear review findings, or qualify a provider
 response. All content is synthetic; no hosted calls or customer data are used.
+
+The separate bounded draft-copy helper also passes 11 native PostgreSQL controls;
+see [`blocking-review-draft-ops-native-20261108.json`](evidence/blocking-review-draft-ops-native-20261108.json).
+The test executes its actual inspection, preparation, fresh recheck, idempotency
+acceptance and observation SQL around one canonical authenticated draft command.
+All 17 saved generation/review/paid-history hashes remain identical, and all six
+blocking findings remain visible in observation. Existing package discovery is
+observe-only; a now-stale send intent and altered history/source/actor/version
+pins are refused. Worker7's running local render remains observable without
+changing those history pins. Only the isolated database name and operational
+reader role are adapted; business SQL and authenticated command authority stay
+unchanged. Exact helper/dependency hashes and read-query hashes are in the
+receipt. Cleanup is confirmed, with no HTTP/provider/hosted calls or document
+rendering, uploading or downloading in this proof.
