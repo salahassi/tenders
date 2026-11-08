@@ -99,12 +99,14 @@ def verify_runtime(database=None):
             'RUNTIME_CHANGED')
     release.verify_runtime_contract(original)
     if database:
-        schema = module('trial_runtime_schema', 'proposal-latency-schema.py')
-        require(receipt['source']['source_entries']['backend/scripts/runtime/dispatcher.sql']['sha256'] == schema.parent.PARENT_SQL,
+        schema = module('trial_runtime_schema', 'proposal-admission-schema.py')
+        require(receipt['source']['source_entries']['backend/scripts/runtime/dispatcher.sql']['sha256'] == schema.retry.PARENT_SQL,
                 'DISPATCH_SOURCE_CHANGED')
-        require(receipt['poll_migration'] == {'path': str(schema.SOURCE.relative_to(schema.ROOT)),
-            'sha256': schema.source_sha256()}, 'POLL_SOURCE_CHANGED')
-        schema.verify(database)
+        require(receipt['poll_migration'] == {'path': str(schema.parent.SOURCE.relative_to(schema.ROOT)),
+            'sha256': schema.parent.source_sha256()}, 'POLL_SOURCE_CHANGED')
+        # Accept only the exact deployed latency parent or its explicit,
+        # append-only admission child; historical receipts remain unchanged.
+        schema.verify(database, allow_parent=True)
 
 
 def session_path():

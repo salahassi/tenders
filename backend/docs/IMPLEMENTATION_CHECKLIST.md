@@ -1,5 +1,31 @@
 # Implementation status and continuation plan
 
+## November 8 — SQL-only admission-wake release controls prepared
+
+The scoped admission workflow retains the qualified `03c68b58` runtime pair,
+every other image and all private workload settings. Its atomic child ledger
+requires the exact deployed latency catalog `321a5873`, structure `089a08ae`
+and all predecessor receipts. Only the admission trigger body may change;
+complete existing row digests, routine attributes and schema authority must
+remain identical. The reviewed migration bytes are fixed to `fcde6425`.
+
+Explicit read-only inspection accepts the exact latency parent or the exact
+admission child. Apply sends one transaction; an uncertain response permits only
+readback, never resubmission or DDL reversal. The workflow retains the 170-second
+deadline from run creation including queue time, with bounded reconciliation
+and owned-client cleanup. No image patch, scheduler pause, provider call or
+business command is part of this release. Trial verification explicitly accepts
+either bound schema state without changing historical latency verification.
+
+Sixteen focused admission controls and 15 trial-runner tests pass, including
+actual PostgreSQL execution of the four-level ledger chain, nine mutation fault
+cases, replay, partial receipts, changed source, and unchanged historical
+verification rejecting the later catalog. The current native qualification
+still loads with identical source/image bindings. Python compilation, workflow
+YAML/shell syntax and diff checks pass. Product migration evidence is recorded
+separately below; deployment and measured hosted startup improvement remain
+pending. No live action was performed for these operational controls.
+
 ## November 8 — latency retry reached drafting but still timed out
 
 The actual canonical `generation.retry` in run42512021556 was accepted at
