@@ -16,6 +16,27 @@ issue this package. A real accepted review and guarded continuation are required
 local file retry remains deferred. No content, paid budgets or accepted history
 were reset. See the [sanitized diagnosis](evidence/proposal-delivery-diagnosis-20261108-42529255084.json).
 
+## November 8 — bounded private prospective delivery context enabled
+
+Hosted metadata inspection confirmed31 accepted output/hash bindings: the old
+checkpoint expression finds zero reports, while strict decoding finds all31.
+The same report identifies workflow1, zero requirements and no completed review,
+so a local retry remains blocked pending actual consistency assessment.
+
+The existing encrypted inspect report can now include the exact original delivery
+SELECT projection with only saved report-reference decoding and local prospective
+plan status/error normalization. Stored failed state remains explicit. All actor,
+source/material, active-version and source-resolution checks run; no lease, retry,
+issuance, database update or content acceptance occurs. Context is capped at
+1,250,000 bytes and source failure returns no context. The public receipt omits it.
+
+All18 inspector/trial controls pass. The isolated SQL regression now exercises
+both successful prospective context and source-guard refusal, retains the real
+failed plan in the database, and verifies exact same-thread output/coverage
+selection. A local record variable was renamed to avoid ambiguity with the
+original projection's requirement alias. Actual private-context capture and
+runtime consistency assessment remain pending; no hosted action ran here.
+
 ## November 8 — delivery inspection binds the actual failed issuance state
 
 The initial synthetic inspector fixture assumed the plan remained completed.

@@ -260,7 +260,7 @@ def run(args):
             STAGE = 'read_only_admission_inspection'
             report.update(selection=incoming, proof=request.inspect(database, incoming),
                 admission_diagnostic=request.diagnostic(database, incoming))
-            report['delivery_receipt_snapshot'] = delivery_inspection.capture(database, incoming, request, report['proof'])
+            report['delivery_receipt_snapshot'] = delivery_inspection.capture(database, incoming, request, report['proof'], include_context=True)
             report['commercial_snapshot'] = commercial_inspection.capture(database, incoming, request)
             report['runtime_snapshot'] = runtime_snapshot.capture(d, release.remaining_run_seconds)
             raise InspectionComplete()

@@ -217,7 +217,7 @@ class TrialRunnerTests(unittest.TestCase):
         self.assertNotIn('commercial_snapshot', result)
         self.assertEqual(self.reports[-1]['delivery_receipt_snapshot']['kind'], 'private_generated_delivery_receipt_inspection')
         self.assertNotIn('delivery_receipt_snapshot', result)
-        self.delivery.assert_called_once_with(self.database,self.incoming,m.request,self.reports[-1]['proof'])
+        self.delivery.assert_called_once_with(self.database,self.incoming,m.request,self.reports[-1]['proof'],include_context=True)
         self.commercial.assert_called_once_with(self.database, self.incoming, m.request)
         diagnostic.assert_called_once_with(self.database, self.incoming)
         self.prepare.assert_not_called()

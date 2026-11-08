@@ -28,17 +28,28 @@ create table opportunities(id uuid,workspace_id uuid,archived boolean);
 create table generation_plans(id uuid,workspace_id uuid,opportunity_id uuid,proposal_id uuid,kind text,created_at timestamptz,
  status text,frozen_context jsonb,input_hash text,issuance_request_id uuid,workflow_version int,stage text,error_code text,revision int,updated_at timestamptz);
 create table proposals(id uuid,workspace_id uuid,opportunity_id uuid,active_version_id uuid);
-create table proposal_versions(id uuid,workspace_id uuid,plan_id uuid,content_hash text);
+create table proposal_versions(id uuid,workspace_id uuid,plan_id uuid,content_hash text,section_outline jsonb default '[]');
+create table proposal_sections(id uuid,workspace_id uuid,proposal_version_id uuid,section_key text,ordinal int);
+create table source_obligation_reviews(workspace_id uuid,review_id uuid,reason text,revision int);
 create table jobs(id uuid,workspace_id uuid,entity_id uuid,type text,checkpoint jsonb,created_at timestamptz,status text,error_code text,
  lease_token uuid,lease_until timestamptz,input_hash text,created_by uuid,cancel_requested boolean default false,next_attempt_at timestamptz,revision int default 1,updated_at timestamptz);
 create table proposal_issuance_requests(id uuid,workspace_id uuid,plan_id uuid,outcome text,error_code text,completed_at timestamptz,deadline_at timestamptz,accepted_at timestamptz,requested_by uuid);
 create table audit_events(workspace_id uuid,actor_id uuid,action text,entity_type text,entity_id uuid,details jsonb);
 create table generation_steps(id uuid,job_id uuid,workspace_id uuid,plan_id uuid,task text,ordinal int,status text,output jsonb);
-create table requirements(id uuid,workspace_id uuid,plan_id uuid);
-create table app_private.model_graph_threads(id text,workspace_id uuid,job_id uuid,status text,result_id uuid);
-create table app_private.model_graph_results(id uuid,thread_id text,value jsonb,content_hash text);
+create table requirements(id uuid,workspace_id uuid,plan_id uuid,source_semantics jsonb,source_refs jsonb);
+create table model_attempts(id bigint,workspace_id uuid,job_id uuid,provider text,model text,operation text,usage_id uuid,execution_metadata jsonb,sent boolean,status text);
+create table app_private.model_graph_threads(id text,workspace_id uuid,job_id uuid,status text,result_id uuid,input_hash text default repeat('a',64));
+create table app_private.model_graph_results(id uuid,thread_id text,value jsonb,content_hash text,result_key text default 'synthetic-result');
 create table app_private.model_graph_checkpoints(thread_id text,namespace text,checkpoint_id text,checkpoint jsonb);
-create function app_private.assert_plan_source_resolution(uuid) returns void language plpgsql stable as $$begin return;end$$;
+create table app_private.inspection_source_guard(deny boolean);insert into app_private.inspection_source_guard values(false);
+create function app_private.assert_plan_source_resolution(uuid) returns void language plpgsql stable as $$begin
+ if exists(select 1 from app_private.inspection_source_guard where deny) then raise exception 'SOURCE_RESOLUTION_STALE';end if;end$$;
+create function app_private.delivery_actor(uuid,uuid,boolean) returns void language plpgsql stable as $$begin return;end$$;
+create function app_private.check_delivery_sources(uuid,jsonb) returns void language plpgsql stable as $$begin return;end$$;
+create function app_private.check_delivery_materials(uuid,jsonb) returns void language plpgsql stable as $$begin return;end$$;
+create function app_private.delivery_input(uuid,uuid) returns jsonb language sql stable as $$select '{"input_materials":{"documents":[]}}'::jsonb$$;
+create function app_private.check_source_semantics(uuid,jsonb,jsonb) returns boolean language sql stable as $$select true$$;
+create function app_private.delivery_input_review_complete(uuid,jsonb) returns boolean language sql stable as $$select true$$;
 """
         # Execute the actual production failure chain; do not invent the
         # terminal plan state that the inspector is supposed to diagnose.
@@ -54,7 +65,7 @@ await d.exec(x.setup);const q=(s,a=[])=>d.query(s,a),uid=n=>'00000000-0000-4000-
 await q('insert into workspaces values($1)',[x.w]);await q("insert into memberships values($1,$2,true,'Owner')",[x.w,x.a]);await q("insert into identity_allowlist values($1,$2,'active','Owner')",[x.w,x.a]);
 await q('insert into opportunities values($1,$2,false)',[x.o,x.w]);
 await q("insert into generation_plans values($1,$2,$3,$4,'proposal',now(),'completed',$5,'input',$6,2,'completed',null,1,now())",[x.p,x.w,x.o,x.prop,{generated_delivery_version:3,source_resolution_version:1,private:'FORBIDDEN_CONTEXT'},x.i]);
-await q('insert into proposals values($1,$2,$3,$4)',[x.prop,x.w,x.o,x.v]);await q("insert into proposal_versions values($1,$2,$3,'version')",[x.v,x.w,x.p]);
+await q('insert into proposals values($1,$2,$3,$4)',[x.prop,x.w,x.o,x.v]);await q("insert into proposal_versions(id,workspace_id,plan_id,content_hash) values($1,$2,$3,'version')",[x.v,x.w,x.p]);
 await q("insert into jobs(id,workspace_id,entity_id,type,checkpoint,created_at,status,error_code,lease_token,lease_until,input_hash,created_by) values($1,$2,$3,'prepare_generated_delivery',$4,now(),'running',null,'00000000-0000-4000-8000-000000000099',now()+interval '1 minute','input',$5)",[x.j,x.w,x.p,{generated_version_id:x.v,generated_version_hash:'version',issuance_request_id:x.i},x.a]);
 await q("insert into proposal_issuance_requests values($1,$2,$3,'active',null,null,now()+interval '10 minutes',now(),$4)",[x.i,x.w,x.p,x.a]);
 await q("select public.fail_generated_delivery($1,'00000000-0000-4000-8000-000000000099','GENERATED_DELIVERY_VALIDATION_FAILED')",[x.j]);
@@ -77,16 +88,17 @@ for(let n=0;n<kinds.length;n++){
  // A newer checkpoint in a different namespace must never replace the selected one.
  await q("insert into app_private.model_graph_checkpoints values($1,'other','9999',$2)",[thread,{channel_values:{reportRef:uid(999)}}]);
 }
-const execute=async()=>{const result=await d.exec(x.sql);return result.flatMap(r=>r.rows??[]).find(r=>Object.hasOwn(r,'current_setting')).current_setting;};
-const normal=await execute();
+const execute=async(sql=x.sql)=>{let result;try{result=await d.exec(sql);}catch(e){throw Error(e.message);}return result.flatMap(r=>r.rows??[]).find(r=>Object.hasOwn(r,'current_setting')).current_setting;};
+const normal=await execute();const prospective=await execute(x.context_sql);
+await q('update app_private.inspection_source_guard set deny=true');const blocked=await execute(x.context_sql);await q('update app_private.inspection_source_guard set deny=false');
 if((await q('select status from generation_plans where id=$1',[x.p])).rows[0].status!=='failed')throw Error('INSPECTION_CHANGED_PLAN');
 await q("update proposal_issuance_requests set error_code='OTHER_FAILURE'");let mismatch=false;try{await execute();}catch(e){mismatch=e.message==='PRIVATE_DELIVERY_SELECTION';await d.exec('rollback');}
 if(!mismatch)throw Error('ISSUANCE_MISMATCH_ACCEPTED');await q("update proposal_issuance_requests set error_code='GENERATED_DELIVERY_VALIDATION_FAILED'");
 await q("update memberships set active=false");let refused=false;try{await execute();}catch(e){refused=e.message==='PRIVATE_DELIVERY_SELECTION';await d.exec('rollback');}
-console.log(JSON.stringify({normal,refused}));await d.close();
+console.log(JSON.stringify({normal,prospective,blocked,refused}));await d.close();
 """
         query=m.sql(SELECTION,PROOF).replace("current_database()<>'tenderdesk_app'","current_database()<>'postgres'")
-        result=subprocess.run(['node','--input-type=module','-e',program],input=json.dumps({'setup':setup,'sql':query,'w':W,'o':O,'a':A,'p':P,'v':V,'prop':PROP,'j':J,'i':I}),text=True,capture_output=True,cwd=m.ROOT/'backend',timeout=35)
+        result=subprocess.run(['node','--input-type=module','-e',program],input=json.dumps({'setup':setup,'sql':query,'context_sql':m.sql(SELECTION,PROOF,include_context=True).replace("current_database()<>'tenderdesk_app'","current_database()<>'postgres'"),'w':W,'o':O,'a':A,'p':P,'v':V,'prop':PROP,'j':J,'i':I}),text=True,capture_output=True,cwd=m.ROOT/'backend',timeout=35)
         self.assertEqual(result.returncode,0,result.stderr[-6000:])
         values=json.loads(result.stdout);value=m.validate(values['normal'],SELECTION)
         self.assertTrue(values['refused']);self.assertEqual(value['stored_plan_status'],'failed');self.assertEqual(value['stored_plan_stage'],'completed');self.assertEqual(value['workflow_version'],2);self.assertEqual(value['requirements_count'],0)
@@ -101,6 +113,15 @@ console.log(JSON.stringify({normal,refused}));await d.close();
         for forbidden in ('FORBIDDEN_CONTEXT','FORBIDDEN_CANDIDATE','FORBIDDEN_REPORT','FORBIDDEN_CHECKPOINT','channel_values','lease_token'):
             self.assertNotIn(forbidden,serialized)
         self.assertEqual(value['context_status'],'not_requested');self.assertIsNone(value['prospective_context'])
+        prospective=m.validate(values['prospective'],SELECTION,include_context=True)
+        self.assertEqual(prospective['context_status'],'available')
+        self.assertEqual(prospective['stored_plan_status'],'failed')
+        self.assertEqual(prospective['prospective_context']['plan']['status'],'completed')
+        self.assertIsNone(prospective['prospective_context']['plan']['error_code'])
+        self.assertEqual(len(prospective['prospective_context']['accepted_receipts']),2)
+        self.assertIn('FORBIDDEN_CANDIDATE',json.dumps(prospective['prospective_context']))
+        blocked=m.validate(values['blocked'],SELECTION,include_context=True)
+        self.assertEqual(blocked['context_status'],'source_guard_failed');self.assertIsNone(blocked['prospective_context'])
         for change in ('extra','selection','count'):
             bad=copy.deepcopy(value)
             if change=='extra':bad['steps'][0]['raw']='customer-content'

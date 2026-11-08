@@ -74,7 +74,7 @@ def sql(selection,proof,*,include_context=False):
 SET LOCAL ROLE tdp_app_owner;SET LOCAL statement_timeout='10s';SET LOCAL lock_timeout='1s';
 DO $delivery_inspection$
 DECLARE j public.jobs;p public.generation_plans;v public.proposal_versions;prop public.proposals;issuance public.proposal_issuance_requests;
- r record;decoded jsonb;decoded_bytes bytea;encoded text;direct_ref text;decoded_ref text;decode_status text;
+ inspected_step record;decoded jsonb;decoded_bytes bytea;encoded text;direct_ref text;decoded_ref text;decode_status text;
  direct_report jsonb;decoded_report jsonb;rows jsonb:='[]';decoded_refs jsonb:='[]';result jsonb;row_value jsonb;
  count_steps bigint;source_current boolean:=false;context_status text:='not_requested';
  sections jsonb;requirements jsonb;steps jsonb;receipts jsonb;sources jsonb;manifest jsonb;context jsonb;
@@ -110,7 +110,7 @@ BEGIN
   BEGIN PERFORM app_private.assert_plan_source_resolution(p.id);source_current:=true;
   EXCEPTION WHEN OTHERS THEN source_current:=false;END;
   SELECT count(*) INTO count_steps FROM public.generation_steps WHERE workspace_id='{w}' AND plan_id=p.id AND status='completed';
-  FOR r IN
+  FOR inspected_step IN
    SELECT s.id,s.job_id,s.task,s.ordinal,g.id AS graph_id,g.status AS graph_status,
     accepted.id AS accepted_id,accepted.value=s.output AS accepted_matches_output,
     accepted.content_hash=encode(sha256(convert_to(accepted.value::text,'UTF8')),'hex') AS accepted_hash_bound,
@@ -122,11 +122,11 @@ BEGIN
    LEFT JOIN LATERAL(SELECT checkpoint_id,checkpoint FROM app_private.model_graph_checkpoints WHERE thread_id=g.id AND namespace='' ORDER BY checkpoint_id DESC LIMIT 1) checkpoint ON true
    WHERE s.workspace_id='{w}' AND s.plan_id=p.id AND s.status='completed' ORDER BY s.ordinal,s.id LIMIT {LIMIT}
   LOOP
-   direct_ref:=r.checkpoint#>>'{{channel_values,reportRef}}';decoded_ref:=NULL;decoded:=NULL;encoded:=r.checkpoint->>'data';
-   decode_status:=CASE WHEN r.checkpoint_id IS NULL THEN 'missing' ELSE 'unsupported' END;
-   IF r.checkpoint->>'type'='json' AND jsonb_typeof(r.checkpoint->'data')='string' AND r.checkpoint-ARRAY['type','data']='{{}}'::jsonb THEN
+   direct_ref:=inspected_step.checkpoint#>>'{{channel_values,reportRef}}';decoded_ref:=NULL;decoded:=NULL;encoded:=inspected_step.checkpoint->>'data';
+   decode_status:=CASE WHEN inspected_step.checkpoint_id IS NULL THEN 'missing' ELSE 'unsupported' END;
+   IF inspected_step.checkpoint->>'type'='json' AND jsonb_typeof(inspected_step.checkpoint->'data')='string' AND inspected_step.checkpoint-ARRAY['type','data']='{{}}'::jsonb THEN
     decode_status:='oversized';
-    IF octet_length(r.checkpoint::text)<={MAX_CHECKPOINT} AND length(encoded) BETWEEN 1 AND {MAX_CHECKPOINT} THEN
+    IF octet_length(inspected_step.checkpoint::text)<={MAX_CHECKPOINT} AND length(encoded) BETWEEN 1 AND {MAX_CHECKPOINT} THEN
      decode_status:='malformed';
      BEGIN
       IF length(encoded)%4=0 AND encoded ~ '^[A-Za-z0-9+/]*={{0,2}}$' THEN
@@ -145,24 +145,24 @@ BEGIN
    END IF;
    SELECT jsonb_build_object('hash_bound',checked.content_hash=encode(sha256(convert_to(checked.value::text,'UTF8')),'hex'),
      'coverage_eligible',coalesce(checked.value->>'coverage','')<>'repair_only') INTO direct_report
-    FROM app_private.model_graph_results checked WHERE checked.thread_id=r.graph_id AND checked.id::text=direct_ref;
+    FROM app_private.model_graph_results checked WHERE checked.thread_id=inspected_step.graph_id AND checked.id::text=direct_ref;
    SELECT jsonb_build_object('hash_bound',checked.content_hash=encode(sha256(convert_to(checked.value::text,'UTF8')),'hex'),
      'coverage_eligible',coalesce(checked.value->>'coverage','')<>'repair_only') INTO decoded_report
-    FROM app_private.model_graph_results checked WHERE checked.thread_id=r.graph_id AND checked.id::text=decoded_ref;
-   row_value:=jsonb_build_object('step_id',r.id,'job_id',r.job_id,'task',r.task,'ordinal',r.ordinal,
-    'graph_accepted',coalesce(r.graph_status IN('accepted','committed'),false),'accepted_found',r.accepted_id IS NOT NULL,
-    'accepted_matches_output',coalesce(r.accepted_matches_output,false),'accepted_hash_bound',coalesce(r.accepted_hash_bound,false),
-    'checkpoint_found',r.checkpoint_id IS NOT NULL,'checkpoint_type',CASE WHEN r.checkpoint->>'type'='json' THEN 'json' WHEN r.checkpoint->>'type' IS NULL THEN 'absent' ELSE 'unsupported' END,
-    'checkpoint_data_present',jsonb_typeof(r.checkpoint->'data') IS NOT DISTINCT FROM 'string',
-    'checkpoint_bytes',coalesce(octet_length(r.checkpoint::text),0),'decode_status',decode_status,
+    FROM app_private.model_graph_results checked WHERE checked.thread_id=inspected_step.graph_id AND checked.id::text=decoded_ref;
+   row_value:=jsonb_build_object('step_id',inspected_step.id,'job_id',inspected_step.job_id,'task',inspected_step.task,'ordinal',inspected_step.ordinal,
+    'graph_accepted',coalesce(inspected_step.graph_status IN('accepted','committed'),false),'accepted_found',inspected_step.accepted_id IS NOT NULL,
+    'accepted_matches_output',coalesce(inspected_step.accepted_matches_output,false),'accepted_hash_bound',coalesce(inspected_step.accepted_hash_bound,false),
+    'checkpoint_found',inspected_step.checkpoint_id IS NOT NULL,'checkpoint_type',CASE WHEN inspected_step.checkpoint->>'type'='json' THEN 'json' WHEN inspected_step.checkpoint->>'type' IS NULL THEN 'absent' ELSE 'unsupported' END,
+    'checkpoint_data_present',jsonb_typeof(inspected_step.checkpoint->'data') IS NOT DISTINCT FROM 'string',
+    'checkpoint_bytes',coalesce(octet_length(inspected_step.checkpoint::text),0),'decode_status',decode_status,
     'direct_report_ref_present',coalesce(length(direct_ref)>0,false),'decoded_report_ref_present',decoded_ref IS NOT NULL,
     'direct_report_exists',direct_report IS NOT NULL,'decoded_report_exists',decoded_report IS NOT NULL,
     'direct_report_hash_bound',coalesce((direct_report->>'hash_bound')::boolean,false),'decoded_report_hash_bound',coalesce((decoded_report->>'hash_bound')::boolean,false),
     'direct_coverage_eligible',coalesce((direct_report->>'coverage_eligible')::boolean,false),'decoded_coverage_eligible',coalesce((decoded_report->>'coverage_eligible')::boolean,false),
-    'direct_receipt_eligible',coalesce(r.graph_status IN('accepted','committed') AND r.accepted_matches_output AND (direct_report->>'coverage_eligible')::boolean,false),
-    'decoded_receipt_eligible',coalesce(r.graph_status IN('accepted','committed') AND r.accepted_matches_output AND (decoded_report->>'coverage_eligible')::boolean,false));
+    'direct_receipt_eligible',coalesce(inspected_step.graph_status IN('accepted','committed') AND inspected_step.accepted_matches_output AND (direct_report->>'coverage_eligible')::boolean,false),
+    'decoded_receipt_eligible',coalesce(inspected_step.graph_status IN('accepted','committed') AND inspected_step.accepted_matches_output AND (decoded_report->>'coverage_eligible')::boolean,false));
    rows:=rows||jsonb_build_array(row_value);
-   IF decoded_ref IS NOT NULL THEN decoded_refs:=decoded_refs||jsonb_build_array(jsonb_build_object('step_id',r.id,'ref',decoded_ref));END IF;
+   IF decoded_ref IS NOT NULL THEN decoded_refs:=decoded_refs||jsonb_build_array(jsonb_build_object('step_id',inspected_step.id,'ref',decoded_ref));END IF;
   END LOOP;
   {context_sql}
   result:=result||jsonb_build_object('status','available','workflow_version',p.workflow_version,
