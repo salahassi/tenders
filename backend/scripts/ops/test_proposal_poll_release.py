@@ -59,6 +59,7 @@ class PollReleaseTests(unittest.TestCase):
         self.wait=self.stack.enter_context(patch.object(m.dispatch.d,'wait_deployments'))
         self.drain=self.stack.enter_context(patch.object(m.dispatch.base,'wait_drain'))
         self.accept=self.stack.enter_context(patch.object(m.dispatch,'acceptance',side_effect=lambda name:{'component':name,'ready':True}))
+        self.poll_route=self.stack.enter_context(patch.object(m,'poll_boundary',return_value={'service_route_visible':True}))
 
     def test_sql_precedes_worker_then_scheduler_and_other_state_is_retained(self):
         result=m.release()
@@ -71,6 +72,15 @@ class PollReleaseTests(unittest.TestCase):
         self.assertFalse(result['customer_processing_requested']);self.assertEqual(result['business_commands_sent'],0)
         self.assertTrue(result['scheduler_quiesced']);self.assertTrue(result['activation_commit_point_reached'])
         self.apply.assert_called_once();self.assertEqual(self.verify.call_count,2);self.cleanup.assert_called_once()
+        self.poll_route.assert_called_once()
+
+    def test_missing_postgrest_poll_route_rolls_back_before_activation(self):
+        self.poll_route.side_effect=RuntimeError('RPC_BOUNDARY_ACCEPTANCE')
+        with self.assertRaisesRegex(RuntimeError,'RPC_BOUNDARY_ACCEPTANCE'):m.release()
+        self.assertFalse(m.STATE['resume_attempted'])
+        self.assertEqual(self.work,self.initial)
+        self.assertTrue(m.STATE['schema_retained_on_rollback'])
+        self.assertTrue(m.STATE['cleanup_verified'])
 
     def test_sql_bytes_must_match_the_image_qualification(self):
         self.receipt['pending_poll_migration']['sha256']='e'*64

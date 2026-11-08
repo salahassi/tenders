@@ -1,5 +1,16 @@
 # Implementation status and continuation plan
 
+## November 8 — verify the new HTTP RPC boundary before activation
+
+The poll release additionally probes the new RPC from the candidate worker's
+actual gateway path before resuming the scheduler. Null job/lease identities must
+produce the exact existing `STALE_LEASE` rejection before any writes; a missing
+PostgREST schema-cache entry or changed route prevents activation and triggers
+the existing bounded rollback. Credentials remain inside the worker process.
+The five-second HTTP/eight-second command bounds fit the existing release budget;
+no deadline is extended. A failure-path control confirms restored images and
+retained compatible SQL. Hosted acceptance remains pending.
+
 ## November 8 — actual accepted-poll image qualification captured
 
 An offline build of source `82d42820` produced image `492d0716`. The actual image

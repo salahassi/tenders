@@ -54,6 +54,32 @@ def work_budget():
     return budget
 
 
+def poll_boundary():
+    """Prove PostgREST exposes the service-only RPC before scheduler activation.
+
+    Null identities fail in model_job before any job, usage or attempt write.
+    Only the fixed rejection leaves the pod; credentials remain in its process.
+    """
+    script = """const url=Deno.env.get('SUPABASE_URL');
+const key=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+if(!url||!key)throw Error('POLL_BOUNDARY_CONFIGURATION');
+const response=await fetch(url+'/rest/v1/rpc/prepare_accepted_model_poll',{
+ method:'POST',redirect:'error',signal:AbortSignal.timeout(5000),
+ headers:{'content-type':'application/json',apikey:key,Authorization:'Bearer '+key},
+ body:JSON.stringify({job_id:null,lease:null,thread_id:null,graph_input_hash:null,manifest:[]})});
+const value=await response.json();
+if(response.status!==400||value.code!=='P0001'||value.message!=='STALE_LEASE')throw Error('POLL_BOUNDARY_REJECTED');
+console.log(JSON.stringify({rpc:'prepare_accepted_model_poll',service_route_visible:true,
+ null_identity_rejected:true,business_mutations:0,provider_calls:0}));
+"""
+    raw = dispatch.d.command(['exec', 'deployment/worker', '-n', dispatch.d.NAMESPACE,
+        '--', 'deno', 'eval', '--cached-only', script], timeout=8)
+    expected = {'rpc': 'prepare_accepted_model_poll', 'service_route_visible': True,
+        'null_identity_rejected': True, 'business_mutations': 0, 'provider_calls': 0}
+    require(json.loads(raw) == expected, 'RPC_BOUNDARY_ACCEPTANCE')
+    return expected
+
+
 def verify_unchanged(before, configuration, candidate, *, final=False, restored=False):
     current = dispatch.runtime.workload_snapshot()
     require(set(current) == set(before), 'WORKLOAD_SET_CHANGED')
@@ -224,7 +250,7 @@ def release(*, inspect_only=False):
             STATE['patched'].append('scheduler')
             quiesce.wait_quiet(original['scheduler'], candidate, timeout=10)
             STATE['stage'] = 'pre_resume_acceptance'
-            readiness = [dispatch.acceptance('worker')]
+            readiness = [dispatch.acceptance('worker'), poll_boundary()]
             readback = schema.verify(database)
             verify_unchanged(before, configuration, candidate, final=True)
             STATE['critical_checks_passed'] = True
