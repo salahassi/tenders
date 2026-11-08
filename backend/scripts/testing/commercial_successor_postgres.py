@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 import base64
 import hashlib
+import importlib.util
 import json
 from pathlib import Path
 import re
@@ -19,6 +20,24 @@ from postgres_races import OWNER, PostgresFixture, literal as q
 
 def digest(value):
     return hashlib.sha256(json.dumps(value, ensure_ascii=False, separators=(",", ":")).encode()).hexdigest()
+
+
+def schema_fingerprints(f):
+    path = f.repository / "backend/scripts/ops/proposal-dispatch-schema.py"
+    spec = importlib.util.spec_from_file_location("synthetic_successor_schema", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return f.value("begin isolation level repeatable read read only;set local search_path=public;set local statement_timeout='20s';"
+                   "do $$declare catalog_hash text;structure jsonb;begin " + module.CATALOG + module.structure_snapshot(protected=False) +
+                   "perform set_config('synthetic.successor_fingerprints',jsonb_build_object('scope','isolated_postgresql_fixture',"
+                   "'catalog_sha256',catalog_hash,'structure_sha256',encode(sha256(convert_to(structure::text,'UTF8')),'hex'))::text,true);"
+                   "end$$;select current_setting('synthetic.successor_fingerprints')::jsonb;rollback;")
+
+
+def rpc(f, name, args=(), service=False):
+    role = "service_role" if service else "authenticated"
+    return f.value(f"begin;set local role {role};set local request.jwt.claim.sub={q(OWNER)};"
+                   f"select coalesce(to_jsonb(public.{name}({','.join(q(value) for value in args)})),'null'::jsonb);commit;")
 
 
 def dispatcher_fixture(f):
@@ -329,12 +348,15 @@ def worker_fence(f, x, after, child, job, cases):
     assert five is None
     assert snapshot(f, x) == after
     cases.append({"case": "old-worker-five-cannot-claim-only-version-two-commercial-job", "passed": True})
-    legacy = f.value(f"""begin;do $$declare p public.generation_plans;j uuid;begin
-      select * into p from public.generation_plans where id={q(x['plan']['id'])};
-      j:=app_private.enqueue_generation(p,'advance_plan','{{}}');
-      perform set_config('app.synthetic_legacy_job',j::text,true);end$$;
-      set local role service_role;select jsonb_build_object('expected',current_setting('app.synthetic_legacy_job'),
-        'claimed',public.claim_backend_job_v5());rollback;""")
+    # Use a separate canonical assessment: advance_plan is deliberately blocked
+    # while the same proposal's commercial step remains incomplete.
+    opportunity_revision = int(f.scalar(f"select revision from public.opportunities where id={q(x['plan']['opportunity_id'])}"))
+    assessment = f.command_sql("opportunity.assess", {"id": x["plan"]["opportunity_id"], "expected_revision": opportunity_revision})
+    assessment = assessment.rsplit("commit;", 1)[0] + f"""reset role;set local role service_role;
+      select jsonb_build_object('expected',(select s.job_id from public.generation_steps s join public.generation_plans p on p.id=s.plan_id
+        where p.opportunity_id={q(x['plan']['opportunity_id'])} and p.kind='assessment' order by s.created_at desc limit 1),
+        'claimed',public.claim_backend_job_v5());rollback;"""
+    legacy = json.loads(f.sql(assessment).stdout.strip().splitlines()[-1])
     assert legacy["claimed"]["id"] == legacy["expected"]
     assert legacy["claimed"]["checkpoint"]["minimum_worker_executor"] == 5
     cases.append({"case": "old-worker-five-still-claims-eligible-historical-work", "passed": True})
@@ -392,6 +414,35 @@ def distinct_key_race(f, cases):
     cases.append({"case": "different-key-actual-lock-race-uses-plan-revision-and-once-only-lineage", "passed": True})
 
 
+def archive_roundtrip(f, cases):
+    before = f.value("select jsonb_agg(to_jsonb(l) order by id) from app_private.commercial_successor_lineage l")
+    manifest = rpc(f, "workspace_backup_manifest")
+    archive = []
+    for start in range(0, len(manifest["rows"]), 15):
+        archive += rpc(f, "workspace_backup_rows", ([row["key"] for row in manifest["rows"][start:start + 15]],))
+    assert sum(row["key"].startswith("recovery_commercial_successor_lineage/") for row in archive) == len(before)
+    target = PostgresFixture(container=f.container).start()
+    try:
+        restore = rpc(target, "begin_workspace_restore", (manifest, True))
+        for start in range(0, len(archive), 10):
+            rpc(target, "stage_restore_rows", (restore["id"], archive[start:start + 10]))
+        for item in restore["files"]:
+            rpc(target, "complete_restore_file", (item["id"], OWNER, item["content_hash"], item["expected_size"]), service=True)
+        result = rpc(target, "commit_workspace_restore", (restore["id"],))
+        assert result["state"] == "committed"
+        after = target.value("select jsonb_agg(to_jsonb(l) order by id) from app_private.commercial_successor_lineage l")
+        assert after == [{**row, "workspace_id": target.workspace} for row in before]
+        assert rpc(target, "commit_workspace_restore", (restore["id"],))["state"] == "committed"
+        assert target.value("select jsonb_agg(to_jsonb(l) order by id) from app_private.commercial_successor_lineage l") == after
+        denied = target.sql(f"begin;set local role authenticated;set local request.jwt.claim.sub={q(OWNER)};"
+                            f"select public.begin_workspace_restore({q(manifest)}::jsonb,true);commit;", check=False)
+        assert denied.returncode and "RESTORE_TARGET_NOT_EMPTY" in denied.stderr
+        cases.append({"case": "canonical-archive-roundtrip-retains-spent-lineage-proof-and-refuses-nonempty-restore", "passed": True,
+                      "storage_bytes_exercised": False})
+    finally:
+        target.close()
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--receipt", type=Path)
@@ -400,6 +451,7 @@ def main():
     cases = []
     try:
         f.start()
+        fingerprints = schema_fingerprints(f)
         dispatcher_fixture(f)
         x = setup(f)
         print(json.dumps({"fixture_ready": True, "completed_drafts": 17}), flush=True)
@@ -413,8 +465,13 @@ def main():
         bounded_lineage(f, x, after, cases)
         worker_fence(f, x, after, child, job, cases)
         distinct_key_race(f, cases)
+        archive_roundtrip(f, cases)
         receipt = f.receipt(cases)
-        receipt.update({"passed": True, "production_calls": 0, "provider_calls": 0, "cleanup_confirmed": False})
+        receipt.update({"passed": True, "production_calls": 0, "provider_calls": 0, "cleanup_confirmed": False,
+                        "schema_fingerprints": fingerprints,
+                        "limitations": ["Isolated schema fingerprints include fixture OIDs/roles; production readback is independent.",
+                                        "Auth and Storage SQL stubs; archive file verification tests the service RPC, not physical Storage bytes.",
+                                        "Only external dispatcher side effects are replaced; no HTTP worker/provider generation is exercised."]})
     finally:
         f.close()
     receipt["cleanup_confirmed"] = True

@@ -34,13 +34,21 @@ steps during migration or rollback. SQL changes create no business records;
 replacement occurs only in the later authorized command transaction. The worker
 clarification and operational rollout are separate changes.
 
-The twelve existing full-schema retry/accounting checks pass. Native PostgreSQL
-development checks now pass the actual successor transaction, same-key lock race,
-replay, preserved history, current authority/source/usage guards, partial-write
-rollback, revocation while waiting for the lock, refusal of another successor,
-and ordinary or nested retry regression cases. Final native receipt, mixed
-worker-5/worker-6 claims, archive roundtrip, package gates, image qualification,
-deployment and successful customer file issuance remain pending.
+The twelve existing full-schema retry/accounting checks pass. The
+[native PostgreSQL receipt](evidence/commercial-successor-native-20261108.json)
+records 42 passing checks, including actual concurrent sessions waiting on the
+workspace lock, single-successor replay, unchanged 17 drafts and 12 analyses,
+authority/source/usage refusals, atomic rollback, revocation during a lock wait,
+ordinary and nested retries, refusal of another successor, real worker-5/worker-6
+claims and wake admission, normal new-graph budgets, and a canonical archive
+roundtrip retaining the immutable receipt. Cleanup passed with no hosted or
+provider calls. Isolated catalog/structure fingerprints and exact migration and
+fixture hashes are recorded; production readback is independent. Auth and
+Storage are SQL fixtures, and physical Storage bytes were not exercised.
+
+The product migration is frozen at `1cab7a1a`, first committed in `6641e9c`.
+Package integration and runtime release evidence are tracked separately; this
+change does not establish hosted execution or successful customer file issuance.
 
 ## November 8 — active commercial pipeline fixture uses installed worker capability
 
