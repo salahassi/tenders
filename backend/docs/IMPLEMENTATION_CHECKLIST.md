@@ -1,5 +1,32 @@
 # Implementation status and continuation plan
 
+## November 8 — reference-boundary artifact and package gates captured
+
+Frozen artifact source `698d80fc` built image `c74fd450` offline. The actual image
+passed nine dispatch, twelve prompt, ten accepted-poll and eight boundary controls.
+The boundary harness exercised 44 identical synthetic inputs against both images:
+all 24 known-reference colon cases are corrected and the other 20 outcomes are
+retained. Existing wire hashes and phase pins remain unchanged. Every harness
+confirms owned cleanup and zero provider calls. The independent qualification is
+fixed to `7e351bc3`; the prior deployed image and receipts remain historical.
+
+The full backend suite passed all 3,653 tests in 215 files with two workers and
+unchanged test timeouts (453 seconds). Backend typecheck and build pass. Frontend
+bytes are unchanged from the earlier `47cdca4` 389-test/typecheck/build evidence.
+The [package receipt](evidence/proposal-reference-package-gates-20261108.json)
+records those separate checks. Fifty-nine focused release/qualification/native
+harness/trial-runner controls also pass. Publication and hosted rollout remain
+pending; these results do not establish customer file issuance.
+
+The private inspection in run42522093176 established ten numeric rejections
+containing only digits from exact supplied UUIDs before colon punctuation. Its
+report hash is `bf91fe609f78f8f03cb4be14ca3f4fd94216e1a1560ce1e1ec9c9f967cff784d`.
+The sixth continuation ended with `MODEL_CORRECTION_EXHAUSTED`, and the saved
+commercial candidate still has a separate schema-commentary semantic defect.
+That retained verdict and all paid history remain intact. A bounded authorized
+successor for this failed stage is being prepared separately; no additional
+customer retry is justified by the punctuation fix alone.
+
 ## November 8 — runtime-only reference-boundary release controls prepared
 
 The scoped workflow replaces only the worker and scheduler images from the exact

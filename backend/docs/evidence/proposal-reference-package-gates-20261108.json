@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "kind": "proposal_reference_package_gates",
+  "artifact_source_revision": "698d80fc1abbfecd63a5ace0518395ab4f3f8773",
+  "backend": {
+    "test_source_revision": "5dbc8943304d827a3715e93db8c53b996a62d3ca",
+    "runtime_inputs_unchanged_through_artifact": true,
+    "test_files": 215,
+    "tests": 3653,
+    "passed": 3653,
+    "failed": 0,
+    "duration_seconds": 453,
+    "max_workers": 2,
+    "test_timeout_unchanged": true,
+    "typecheck": "passed",
+    "build": "passed",
+    "log": {
+      "path": "backend/docs/evidence/proposal-reference-backend-full-20261108.log",
+      "sha256": "60d96eed995ea8b802b709ccc9451d1cfd60e9b5106befe33ff308be0f2e2fec"
+    }
+  },
+  "frontend": {
+    "status": "reused_unchanged_source",
+    "baseline_revision": "47cdca4d115276dfff54ee7ff7e06eb142ee5b5e",
+    "tests": 389,
+    "typecheck": "passed",
+    "build": "passed"
+  },
+  "focused_ops_tests": 59,
+  "actual_image_controls": 39,
+  "boundary_cases": 44,
+  "provider_calls": 0,
+  "customer_completion_verified": false
+}
