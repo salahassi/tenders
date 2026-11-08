@@ -1,5 +1,20 @@
 # Implementation status and continuation plan
 
+## November 8 — exhausted commercial continuation reconciled
+
+Read-only run42524650965 at `375f638` confirms the sixth continuation failed
+with `MODEL_CORRECTION_EXHAUSTED` at 20:47:45 UTC, before its original
+20:52:54 deadline. The one remaining commercial job made one accepted request
+and four poll attempts in that continuation. No complete package was issued.
+The report hash is `6add2110d370f9f7bdec7023378a770abefe40249c412e81f2f47d29797c7111`;
+cleanup passed and the observation sent no business command. See the
+[terminal receipt](evidence/proposal-commercial-exhausted-20261108-42524650965.json).
+
+The deployed reference correction does not reset the old graph's two spent
+semantic repairs. The separate commercial successor remains under local
+qualification, preserving all 17 completed draft sections and 12 analyses.
+Deployment, actual authorized successor admission and file delivery remain open.
+
 ## November 8 — worker executor-6 claim and wake boundary
 
 The new worker calls only the version-6 primary claim, local claim and guarded

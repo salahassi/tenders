@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "kind": "proposal_commercial_exhaustion_observation",
+  "workflow_run_id": 42524650965,
+  "workflow_url": "https://github.com/salahassi/tenders/actions/runs/42524650965",
+  "source_revision": "375f638e6ca6f46bce9aa39deba7e52382f99b1c",
+  "private_report_sha256": "6add2110d370f9f7bdec7023378a770abefe40249c412e81f2f47d29797c7111",
+  "mode": "observe",
+  "request_sent": false,
+  "cleanup_verified": true,
+  "outcome": "failed",
+  "code": "MODEL_CORRECTION_EXHAUSTED",
+  "whole_package_issued": false,
+  "issuance": {
+    "outcome": "failed",
+    "error_code": "MODEL_CORRECTION_EXHAUSTED",
+    "accepted_at": "2026-11-08T20:42:54.603434+00:00",
+    "deadline_at": "2026-11-08T20:52:54.603434+00:00",
+    "completed_at": "2026-11-08T20:47:45.737255+00:00"
+  },
+  "job_progress": {
+    "total": 1,
+    "groups": [
+      {
+        "type": "plan_commercial",
+        "count": 1,
+        "status": "failed",
+        "updated_at": "2026-11-08T20:47:45.725748+00:00"
+      }
+    ],
+    "completed": 0
+  },
+  "attempt_progress": {
+    "total": 5,
+    "poll_attempts": 4,
+    "accepted_waits": 3,
+    "last_started_at": "2026-11-08T20:47:44.1135+00:00",
+    "last_finished_at": "2026-11-08T20:47:45.186093+00:00",
+    "skipped_attempts": 0,
+    "accepted_http_attempts": 1
+  },
+  "limits": [
+    "Read-only terminal observation; no new generation command.",
+    "UUID correction deployment does not change exhausted historical graph budgets.",
+    "Actual whole-package issuance and authenticated download remain unproved."
+  ]
+}
