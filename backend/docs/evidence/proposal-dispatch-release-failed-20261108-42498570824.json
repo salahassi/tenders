@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "run_id": 42498570824,
+  "run_url": "https://github.com/salahassi/tenders/actions/runs/42498570824",
+  "source_revision": "a22fc8f763ad2dc6ebf01c128dae186dd1b79558",
+  "elapsed_seconds_including_queue": 52,
+  "job_conclusion": "failure",
+  "receipt": {
+    "release": "proposal-dispatch-v2",
+    "status": "failed",
+    "code": "DISPATCH_RELEASE_FAILED",
+    "state": {
+      "stage": "preflight",
+      "patched": [],
+      "rolled_back": [],
+      "rollback_failed": [],
+      "schema_applied": false,
+      "schema_retained_on_rollback": false
+    }
+  },
+  "cleanup": {
+    "owned_client": true,
+    "private_runner_credentials": true
+  },
+  "diagnosis": {
+    "release_step_elapsed_seconds": 40.25,
+    "candidate_pull_limit_seconds": 40,
+    "probable_cause": "Full candidate image pull exceeded the 40-second preflight subprocess bound; raw exception text is intentionally suppressed.",
+    "mutations_reached": false
+  },
+  "customer_processing_retried": false
+}

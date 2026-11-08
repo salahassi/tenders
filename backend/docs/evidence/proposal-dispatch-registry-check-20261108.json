@@ -1,0 +1,15 @@
+{
+  "compressed_layer_bytes": 86213844,
+  "config_bytes": 10342,
+  "config_digest": "sha256:4b04acaa20d627581cdeb9669d603653633ae5b6d435e673232ff943f983b431",
+  "elapsed_seconds": 0.817,
+  "image_layers_downloaded": false,
+  "layer_count": 23,
+  "metadata_only": true,
+  "reference": "registry.digitalocean.com/tenderdesk-a6093a76/runtime@sha256:c6f7cce500dbec1b6028668ca7677d3026dc41a927f2972fb84dc0330e94a606",
+  "root_manifest_bytes": 5123,
+  "selected_manifest_bytes": 5123,
+  "selected_manifest_digest": "sha256:c6f7cce500dbec1b6028668ca7677d3026dc41a927f2972fb84dc0330e94a606",
+  "temporary_credentials_removed": true,
+  "verification": "immutable_manifest_and_qualified_config_digest"
+}

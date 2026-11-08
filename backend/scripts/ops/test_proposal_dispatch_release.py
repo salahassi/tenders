@@ -1,9 +1,11 @@
 import copy
+import hashlib
 import importlib.util
 import json
 import os
 from pathlib import Path
 import sys
+import subprocess
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -260,6 +262,83 @@ class QualificationGuards(unittest.TestCase):
         q.validate_build(build, receipt)
         with self.assertRaises(q.QualificationError):
             q.validate_build({**build, 'source_after': {'files': 'edited'}}, receipt)
+
+    def registry_fixture(self):
+        receipt = {'image': {'Id': 'sha256:' + '1' * 64, 'Os': 'linux', 'Architecture': 'amd64',
+                            'Variant': '', 'RootFS': {'Type': 'layers', 'Layers': ['sha256:' + '2' * 64]}}}
+        manifest = {'schemaVersion': 2, 'mediaType': 'application/vnd.docker.distribution.manifest.v2+json',
+                    'config': {'mediaType': 'application/vnd.docker.container.image.v1+json',
+                               'size': 10342, 'digest': receipt['image']['Id']},
+                    'layers': [{'mediaType': 'application/vnd.docker.image.rootfs.diff.tar.gzip',
+                                'size': 123456, 'digest': 'sha256:' + '3' * 64}]}
+        return receipt, manifest
+
+    def raw_manifest(self, manifest):
+        raw = json.dumps(manifest, sort_keys=True).encode()
+        reference = q.REGISTRY + '@sha256:' + hashlib.sha256(raw).hexdigest()
+        return reference, raw
+
+    def test_registry_metadata_binds_exact_manifest_and_native_config_without_pulling_layers(self):
+        receipt, manifest = self.registry_fixture()
+        reference, raw = self.raw_manifest(manifest)
+        with patch.object(q, 'docker', return_value=raw) as command:
+            result = q.registry_identity(reference, receipt)
+        command.assert_called_once_with('buildx', 'imagetools', 'inspect', '--raw', reference, timeout=12, binary=True)
+        self.assertEqual(result['config_digest'], receipt['image']['Id'])
+        self.assertEqual(result['compressed_layer_bytes'], 123456)
+        self.assertTrue(result['metadata_only'])
+        self.assertFalse(result['image_layers_downloaded'])
+
+    def test_registry_rejects_corrupt_bytes_and_even_one_added_newline(self):
+        receipt, manifest = self.registry_fixture()
+        reference, raw = self.raw_manifest(manifest)
+        for changed in (raw + b'\n', raw.replace(b'10342', b'10343')):
+            with self.subTest(changed=changed[-12:]), self.assertRaises(q.QualificationError):
+                q.registry_identity(reference, receipt, fetch=lambda _: changed)
+
+    def test_registry_rejects_wrong_native_config_or_external_layer_urls(self):
+        receipt, manifest = self.registry_fixture()
+        for change in ('config', 'layer_url', 'layer_count'):
+            changed = copy.deepcopy(manifest)
+            if change == 'config':
+                changed['config']['digest'] = 'sha256:' + '9' * 64
+            elif change == 'layer_url':
+                changed['layers'][0]['urls'] = ['https://foreign.example/layer']
+            else:
+                changed['layers'].append(copy.deepcopy(changed['layers'][0]))
+            reference, raw = self.raw_manifest(changed)
+            with self.subTest(change=change), self.assertRaises(q.QualificationError):
+                q.registry_identity(reference, receipt, fetch=lambda _: raw)
+
+    def test_registry_oci_index_requires_unique_platform_and_exact_child_bytes(self):
+        receipt, manifest = self.registry_fixture()
+        child_reference, child = self.raw_manifest(manifest)
+        selection = {'mediaType': manifest['mediaType'], 'digest': child_reference.split('@')[1], 'size': len(child),
+                     'platform': {'os': 'linux', 'architecture': 'amd64'}}
+        index = {'schemaVersion': 2, 'mediaType': 'application/vnd.oci.image.index.v1+json', 'manifests': [selection]}
+        reference, raw = self.raw_manifest(index)
+        result = q.registry_identity(reference, receipt, fetch={reference: raw, child_reference: child}.__getitem__)
+        self.assertEqual(result['selected_manifest_digest'], selection['digest'])
+        for change in ('platform', 'ambiguous', 'size', 'digest'):
+            changed = copy.deepcopy(index)
+            if change == 'platform':
+                changed['manifests'][0]['platform']['architecture'] = 'arm64'
+            elif change == 'ambiguous':
+                changed['manifests'].append(copy.deepcopy(selection))
+            elif change == 'size':
+                changed['manifests'][0]['size'] += 1
+            else:
+                changed['manifests'][0]['digest'] = 'sha256:' + '0' * 64
+            bad_reference, bad_raw = self.raw_manifest(changed)
+            with self.subTest(change=change), self.assertRaises(q.QualificationError):
+                q.registry_identity(bad_reference, receipt, fetch=lambda selected: bad_raw if selected == bad_reference else child)
+
+    def test_registry_timeout_has_fixed_stage_specific_error_code(self):
+        receipt, manifest = self.registry_fixture()
+        reference, _ = self.raw_manifest(manifest)
+        with patch.object(q.subprocess, 'run', side_effect=subprocess.TimeoutExpired('docker', 12)):
+            with self.assertRaisesRegex(q.QualificationError, '^DISPATCH_QUALIFICATION_REGISTRY_TIMEOUT$'):
+                q.registry_identity(reference, receipt)
 
 
 if __name__ == '__main__':

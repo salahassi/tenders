@@ -2,6 +2,22 @@
 
 ## November 8 — remove synchronous proposal dispatch waits
 
+The first rollout [42498570824](https://github.com/salahassi/tenders/actions/runs/42498570824)
+at merged source `a22fc8f` stopped in preflight after 52 seconds including queue
+time. It reached no schema or image mutation; both cleanup stages passed. The
+release step consumed 40.25 seconds against its initial full-image pull's
+40-second subprocess bound. The failure receipt preserves the generic error
+and identifies this as the probable cause, not a confirmed network diagnosis.
+The corrected runner will verify immutable registry manifest/configuration
+metadata against the already pull-verified publication, avoiding another full
+image download before the actual cluster rollout. Deployment remains pending.
+The corrected helper's actual registry check passes in 0.817 seconds, binding the
+exact 5,123-byte manifest to native-qualified config `4b04acaa` and 23 layers.
+All 26 focused release/schema controls pass, including digest corruption,
+wrong configuration, ambiguous platforms, external URLs and timeout rejection.
+Independent review confirms that the original full publication/source proof is
+retained; the hosted preflight now downloads metadata only.
+
 Implementation separates persistent worker foreground processing from awaited
 housekeeping. The foreground returns a validated future-poll hint without
 sleeping; the scheduler records that hint in a durable outbox, immediately
