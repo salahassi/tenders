@@ -1,6 +1,7 @@
 import { beforeAll, afterAll, beforeEach, afterEach, it, expect } from "vitest";
 import { writeFile, readFile, mkdir } from "node:fs/promises";
 import { workflowFixture } from "./workflowFixture.ts";
+import { modelGraphCheckpointFixture } from "./modelGraphCheckpointFixture.ts";
 import {
   taskInput,
   nextStage,
@@ -438,13 +439,15 @@ async function storeSyntheticAcceptedGraph(fixture: any) {
       "update app_private.model_graph_threads set result_id=$1 where id=$2",
       [receipt.receipt_id, thread],
     );
+    const packed = await modelGraphCheckpointFixture(
+      receipt.verification_receipt_id,
+    );
     await f.db.query(
-      "insert into app_private.model_graph_checkpoints(thread_id,checkpoint_id,checkpoint,metadata) values($1,'0001',$2::jsonb,'{}')",
+      "insert into app_private.model_graph_checkpoints(thread_id,checkpoint_id,checkpoint,metadata) values($1,'0001',$2::jsonb,$3::jsonb)",
       [
         thread,
-        JSON.stringify({
-          channel_values: { reportRef: receipt.verification_receipt_id },
-        }),
+        JSON.stringify(packed.checkpoint),
+        JSON.stringify(packed.metadata),
       ],
     );
     await f.db.query(

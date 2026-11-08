@@ -12,6 +12,7 @@ import { readFile } from "node:fs/promises";
 import { workflowFixture } from "./workflowFixture";
 import { currentIssuanceObservation } from "./currentIssuanceObserverFixture";
 import { generatedDeliveryFixture } from "./generatedDeliveryFixture";
+import { modelGraphCheckpointFixture } from "./modelGraphCheckpointFixture";
 import { assessGeneratedDelivery } from "../../supabase/functions/_shared/generatedProposalConsistency";
 import {
   buildGeneratedPayload,
@@ -378,13 +379,15 @@ async function setup(
       "update app_private.model_graph_threads set result_id=$1 where id=$2",
       [receipt.receipt_id, thread],
     );
+    const packed = await modelGraphCheckpointFixture(
+      receipt.verification_receipt_id,
+    );
     await f.db.query(
-      "insert into app_private.model_graph_checkpoints(thread_id,checkpoint_id,checkpoint,metadata) values($1,'0001',$2::jsonb,'{}')",
+      "insert into app_private.model_graph_checkpoints(thread_id,checkpoint_id,checkpoint,metadata) values($1,'0001',$2::jsonb,$3::jsonb)",
       [
         thread,
-        JSON.stringify({
-          channel_values: { reportRef: receipt.verification_receipt_id },
-        }),
+        JSON.stringify(packed.checkpoint),
+        JSON.stringify(packed.metadata),
       ],
     );
     await f.db.query(
@@ -475,6 +478,156 @@ function transport() {
   };
   return { backend: backend as unknown as Backend, objects };
 }
+it("reads every accepted receipt from actual ModelGraphStore.put checkpoints", async () => {
+  const { j, p } = await setup();
+  const job = await claim(j.id);
+  const oldProjection = await row(
+    `select count(*)::int n from public.generation_steps s
+     join app_private.model_graph_threads g on g.job_id=s.job_id
+     join app_private.model_graph_checkpoints c on c.thread_id=g.id
+     join app_private.model_graph_results r on r.thread_id=g.id
+       and r.id::text=c.checkpoint#>>'{channel_values,reportRef}'
+     where s.plan_id=$1 and s.status='completed'`,
+    [p.id],
+  );
+  expect(oldProjection.n).toBe(0);
+  const ctx = await rpc("generated_delivery_context", {
+    job_id: j.id,
+    lease: job.lease_token,
+  });
+  const completed = ctx.steps.filter(
+    (s: any) => s.status === "completed" && s.task !== "advance_plan",
+  );
+  expect(completed.length).toBeGreaterThan(0);
+  expect(ctx.accepted_receipts.map((r: any) => r.step_id).sort()).toEqual(
+    completed.map((s: any) => s.id).sort(),
+  );
+  expect((await assessGeneratedDelivery(ctx)).blockers).toEqual([]);
+});
+it("fails closed on malformed or foreign latest checkpoint references without searching older reports", async () => {
+  const { j } = await setup();
+  const job = await claim(j.id);
+  const args = { job_id: j.id, lease: job.lease_token };
+  const original = await rpc("generated_delivery_context", args);
+  const [chosen, foreign] = original.accepted_receipts;
+  expect(foreign.thread_id).not.toBe(chosen.thread_id);
+  const valid = await modelGraphCheckpointFixture(
+    chosen.verification_receipt_id,
+    "0002",
+  );
+  const unknown = await modelGraphCheckpointFixture(
+    crypto.randomUUID(),
+    "0002",
+  );
+  const crossThread = await modelGraphCheckpointFixture(
+    foreign.verification_receipt_id,
+    "0002",
+  );
+  const bad = [
+    { type: "bytes", data: valid.checkpoint.data },
+    { type: "json", data: "%%%=" },
+    { type: "json", data: Buffer.from("not json").toString("base64") },
+    { channel_values: { reportRef: chosen.verification_receipt_id } },
+    {
+      ...valid.checkpoint,
+      channel_values: { reportRef: chosen.verification_receipt_id },
+    },
+    unknown.checkpoint,
+    crossThread.checkpoint,
+  ];
+  for (const checkpoint of bad) {
+    await f.db.exec("savepoint malformed_checkpoint");
+    try {
+      await f.db.query(
+        "insert into app_private.model_graph_checkpoints(thread_id,checkpoint_id,checkpoint,metadata) values($1,'0002',$2::jsonb,$3::jsonb)",
+        [
+          chosen.thread_id,
+          JSON.stringify(checkpoint),
+          JSON.stringify(valid.metadata),
+        ],
+      );
+      const ctx = await rpc("generated_delivery_context", args);
+      expect(ctx.accepted_receipts).toHaveLength(
+        original.accepted_receipts.length - 1,
+      );
+      expect(
+        ctx.accepted_receipts.some((r: any) => r.step_id === chosen.step_id),
+      ).toBe(false);
+      expect((await assessGeneratedDelivery(ctx)).blockers).toContainEqual(
+        expect.objectContaining({
+          code: "ACCEPTED_VERIFICATION_REQUIRED",
+          step_id: chosen.step_id,
+        }),
+      );
+    } finally {
+      await f.db.exec(
+        "rollback to savepoint malformed_checkpoint; release savepoint malformed_checkpoint",
+      );
+    }
+  }
+  expect(
+    (await rpc("generated_delivery_context", args)).accepted_receipts,
+  ).toEqual(original.accepted_receipts);
+});
+it("preserves accepted output, exact source job, namespace, and current-input guards", async () => {
+  const { j, p } = await setup();
+  const job = await claim(j.id);
+  const args = { job_id: j.id, lease: job.lease_token };
+  const original = await rpc("generated_delivery_context", args);
+  const [chosen, foreign] = original.accepted_receipts;
+  const changes: Array<[string, unknown[]]> = [
+    [
+      "update app_private.model_graph_threads set status='needs_review' where id=$1",
+      [chosen.thread_id],
+    ],
+    [
+      "update app_private.model_graph_threads set result_id=$1 where id=$2",
+      [foreign.receipt_id, chosen.thread_id],
+    ],
+    [
+      "update app_private.model_graph_results set value=value||'{\"unexpected\":true}'::jsonb where id=$1",
+      [chosen.receipt_id],
+    ],
+    [
+      "update public.jobs set checkpoint=jsonb_set(checkpoint,'{graph_thread}',to_jsonb($1::text)) where id=(select job_id from public.generation_steps where id=$2)",
+      [foreign.thread_id, chosen.step_id],
+    ],
+    [
+      "update app_private.model_graph_checkpoints set namespace='unrelated' where thread_id=$1",
+      [chosen.thread_id],
+    ],
+  ];
+  for (const [sql, parameters] of changes) {
+    await f.db.exec("savepoint receipt_guard");
+    try {
+      await f.db.query(sql, parameters);
+      const ctx = await rpc("generated_delivery_context", args);
+      expect(ctx.accepted_receipts).toHaveLength(
+        original.accepted_receipts.length - 1,
+      );
+      expect((await assessGeneratedDelivery(ctx)).blockers).toContainEqual(
+        expect.objectContaining({
+          code: "ACCEPTED_VERIFICATION_REQUIRED",
+          step_id: chosen.step_id,
+        }),
+      );
+    } finally {
+      await f.db.exec(
+        "rollback to savepoint receipt_guard; release savepoint receipt_guard",
+      );
+    }
+  }
+  await expect(
+    rpc("generated_delivery_context", { ...args, lease: crypto.randomUUID() }),
+  ).rejects.toMatchObject({ code: "STALE_LEASE" });
+  await f.db.query(
+    "update public.generation_plans set input_hash=repeat('d',64) where id=$1",
+    [p.id],
+  );
+  await expect(rpc("generated_delivery_context", args)).rejects.toMatchObject({
+    code: "STALE_INPUT",
+  });
+});
 it("projects actual accepted responses, renders verified DOCX, and keeps human approval pending", async () => {
   const { j, v, issuance } = await setup();
   expect(await rpc("claim_backend_local_job_v3")).toBeNull();

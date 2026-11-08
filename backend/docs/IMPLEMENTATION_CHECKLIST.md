@@ -40,6 +40,28 @@ production diagnosis are under implementation. Further local projection retry
 is deferred until actual receipt/context checks establish the complete cause.
 No completed content or model budget is being reset.
 
+## November 8 — generated delivery checkpoint decoding fixed locally
+
+The production saver has used typed JSON/base64 checkpoints since its original
+`7efbd9e` implementation. The generated-delivery receipt join instead read a raw
+`channel_values.reportRef`, so legitimate saved verification receipts disappeared
+from the delivery context. New migration
+`20261108220203_generated_delivery_checkpoint_report_ref.sql` (`6bf6a506`)
+changes only that reference extraction. It strictly decodes the latest selected
+checkpoint within the existing 262144-byte store limit; malformed, unsupported,
+noncanonical, foreign and missing references remain unavailable. Graph/job,
+accepted-output, coverage, source, actor, lease and version guards stay intact.
+
+Both affected full-schema pipeline fixtures now capture the real
+`ModelGraphStore.put` serializer output. All23 tests pass, including the old
+join returning zero receipts, the corrected complete receipt set, malformed and
+foreign latest references with no older fallback, unaccepted/mismatched results,
+namespace, source-job, stale input/lease guards, and actual DOCX preparation.
+An isolated PostgreSQL17 helper proof passes29 format/ACL controls. The native
+publication race fixture also uses the real serializer; its recheck and the
+complete package gates remain pending. No hosted database change, provider call,
+customer command or generated-file success is claimed by these local tests.
+
 ## November 8 — commercial successor capability deployed
 
 PR55 merged as `7b509dfb`; Pages42527133564 passed. Release42527251795 from
