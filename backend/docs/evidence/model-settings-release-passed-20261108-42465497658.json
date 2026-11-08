@@ -1,0 +1,341 @@
+{
+  "workflow_run": 42465497658,
+  "workflow_url": "https://github.com/salahassi/tenders/actions/runs/42465497658",
+  "receipt": {
+    "release": "model-settings-scoped-refresh",
+    "status": "passed",
+    "source_revision": "c804cffa87c5d95ef3be837b9911863496ec3edf",
+    "artifact_source": "f5e4e5a16f802ee48479d322b6f6309dc723cc64",
+    "frontend_image": "registry.digitalocean.com/tenderdesk-a6093a76/frontend@sha256:522ad1b7258f1842bafd94f7f1b8c4c3a4642c098063dea848248f49b3c8e0f3",
+    "deployment_targets": [
+      "frontend"
+    ],
+    "schema_manifest": "ada21f57461fa81e3b45778685d86438117ef419ad8c31ceaac86c06dcb2dba3",
+    "schema_catalog": "8f82c88194713bff62224f307d8ab6744a42f4d7fa57a3559fafc4d083cddc04",
+    "schema_mutations": 0,
+    "configuration_preserved": true,
+    "frontend_artifact": {
+      "index_sha256": "7c8fe2520e4781513f8589b08385fd64bc79f598bcea761b63749bb7e91c2ad5",
+      "code_assets": 55,
+      "source": "immutable_frontend_image",
+      "container_never_started": true,
+      "inspection_container_removed": true,
+      "workspace_browser_fixture_passed": true
+    },
+    "isolated_toggle_acceptance": {
+      "kind": "model_settings_browser_fixture",
+      "status": "passed",
+      "startup_requests": 27,
+      "saves": [
+        {
+          "kind": "connection",
+          "enabled": false,
+          "requests": 6
+        },
+        {
+          "kind": "connection",
+          "enabled": true,
+          "requests": 6
+        },
+        {
+          "kind": "model",
+          "enabled": false,
+          "requests": 6
+        },
+        {
+          "kind": "model",
+          "enabled": true,
+          "requests": 6
+        }
+      ],
+      "first_poll_requests": 1,
+      "changed_poll_requests": 6,
+      "unchanged_poll_requests": 1,
+      "navigation_bootstrap_requests": 1,
+      "external_requests": 0,
+      "model_requests": 0
+    },
+    "production_read_only_acceptance": {
+      "version": 1,
+      "kind": "actual_workspace_startup",
+      "settings_ready": true,
+      "skeleton_visible": false,
+      "browser_errors": 0,
+      "blocked_requests": 0,
+      "api_requests": 39,
+      "resources": {
+        "status": {
+          "requests": 3,
+          "records": 0,
+          "bytes": 5916,
+          "nonempty_pages": 0,
+          "min_page_size": null,
+          "max_page_size": 0,
+          "statuses": {
+            "200": 3
+          }
+        },
+        "bootstrap": {
+          "requests": 1,
+          "records": 0,
+          "bytes": 2741,
+          "nonempty_pages": 0,
+          "min_page_size": null,
+          "max_page_size": 0,
+          "statuses": {
+            "200": 1
+          }
+        },
+        "sources": {
+          "requests": 1,
+          "records": 36,
+          "bytes": 66297,
+          "nonempty_pages": 1,
+          "min_page_size": 36,
+          "max_page_size": 36,
+          "statuses": {
+            "200": 1
+          }
+        },
+        "source-runs": {
+          "requests": 1,
+          "records": 32,
+          "bytes": 16226,
+          "nonempty_pages": 1,
+          "min_page_size": 32,
+          "max_page_size": 32,
+          "statuses": {
+            "200": 1
+          }
+        },
+        "opportunities": {
+          "requests": 3,
+          "records": 119,
+          "bytes": 553891,
+          "nonempty_pages": 3,
+          "min_page_size": 6,
+          "max_page_size": 57,
+          "statuses": {
+            "200": 3
+          }
+        },
+        "knowledge": {
+          "requests": 1,
+          "records": 0,
+          "bytes": 103,
+          "nonempty_pages": 0,
+          "min_page_size": null,
+          "max_page_size": 0,
+          "statuses": {
+            "200": 1
+          }
+        },
+        "job-summaries": {
+          "requests": 4,
+          "records": 1808,
+          "bytes": 822402,
+          "nonempty_pages": 4,
+          "min_page_size": 308,
+          "max_page_size": 500,
+          "statuses": {
+            "200": 4
+          }
+        },
+        "notifications": {
+          "requests": 2,
+          "records": 179,
+          "bytes": 120633,
+          "nonempty_pages": 2,
+          "min_page_size": 79,
+          "max_page_size": 100,
+          "statuses": {
+            "200": 2
+          }
+        },
+        "proposals": {
+          "requests": 1,
+          "records": 1,
+          "bytes": 591,
+          "nonempty_pages": 1,
+          "min_page_size": 1,
+          "max_page_size": 1,
+          "statuses": {
+            "200": 1
+          }
+        },
+        "documents": {
+          "requests": 1,
+          "records": 1,
+          "bytes": 127394,
+          "nonempty_pages": 1,
+          "min_page_size": 1,
+          "max_page_size": 1,
+          "statuses": {
+            "200": 1
+          }
+        },
+        "proposal-versions": {
+          "requests": 1,
+          "records": 0,
+          "bytes": 103,
+          "nonempty_pages": 0,
+          "min_page_size": null,
+          "max_page_size": 0,
+          "statuses": {
+            "200": 1
+          }
+        },
+        "proposal-sections": {
+          "requests": 1,
+          "records": 0,
+          "bytes": 103,
+          "nonempty_pages": 0,
+          "min_page_size": null,
+          "max_page_size": 0,
+          "statuses": {
+            "200": 1
+          }
+        },
+        "questions": {
+          "requests": 1,
+          "records": 0,
+          "bytes": 103,
+          "nonempty_pages": 0,
+          "min_page_size": null,
+          "max_page_size": 0,
+          "statuses": {
+            "200": 1
+          }
+        },
+        "review-inputs": {
+          "requests": 1,
+          "records": 0,
+          "bytes": 103,
+          "nonempty_pages": 0,
+          "min_page_size": null,
+          "max_page_size": 0,
+          "statuses": {
+            "200": 1
+          }
+        },
+        "regeneration-requests": {
+          "requests": 1,
+          "records": 0,
+          "bytes": 103,
+          "nonempty_pages": 0,
+          "min_page_size": null,
+          "max_page_size": 0,
+          "statuses": {
+            "200": 1
+          }
+        },
+        "requirements": {
+          "requests": 1,
+          "records": 0,
+          "bytes": 103,
+          "nonempty_pages": 0,
+          "min_page_size": null,
+          "max_page_size": 0,
+          "statuses": {
+            "200": 1
+          }
+        },
+        "fit-assessments": {
+          "requests": 4,
+          "records": 106,
+          "bytes": 862961,
+          "nonempty_pages": 4,
+          "min_page_size": 8,
+          "max_page_size": 34,
+          "statuses": {
+            "200": 4
+          }
+        },
+        "opportunity-discovery": {
+          "requests": 2,
+          "records": 119,
+          "bytes": 54596,
+          "nonempty_pages": 2,
+          "min_page_size": 19,
+          "max_page_size": 100,
+          "statuses": {
+            "200": 2
+          }
+        },
+        "other-api": {
+          "requests": 8,
+          "records": 30,
+          "bytes": 19387,
+          "nonempty_pages": 6,
+          "min_page_size": 1,
+          "max_page_size": 12,
+          "statuses": {
+            "200": 8
+          }
+        },
+        "model-routing": {
+          "requests": 1,
+          "records": 1,
+          "bytes": 541,
+          "nonempty_pages": 1,
+          "min_page_size": 1,
+          "max_page_size": 1,
+          "statuses": {
+            "200": 1
+          }
+        }
+      },
+      "business_mutations": 0,
+      "model_requests": 0,
+      "index_sha256": "7c8fe2520e4781513f8589b08385fd64bc79f598bcea761b63749bb7e91c2ad5",
+      "network_settled": true,
+      "startup_api_requests": 37,
+      "startup_elapsed_ms": 8898,
+      "model_poll_checks": [
+        {
+          "settled": true,
+          "api_requests": 1,
+          "status_reads": 1,
+          "catalog_reads": 0,
+          "business_reads": 0
+        },
+        {
+          "settled": true,
+          "api_requests": 1,
+          "status_reads": 1,
+          "catalog_reads": 0,
+          "business_reads": 0
+        }
+      ],
+      "models_visible": true,
+      "alert_count": 0,
+      "elapsed_ms": 9913,
+      "table_counts": {
+        "jobs": 1808,
+        "sources": 36,
+        "documents": 1,
+        "proposals": 1,
+        "questions": 0,
+        "source_runs": 32,
+        "requirements": 0,
+        "notifications": 179,
+        "opportunities": 119,
+        "review_inputs": 0,
+        "fit_assessments": 106,
+        "knowledge_items": 0,
+        "proposal_sections": 0,
+        "proposal_versions": 0,
+        "opportunity_discovery": 119,
+        "regeneration_requests": 0
+      },
+      "source_revision": "c804cffa87c5d95ef3be837b9911863496ec3edf",
+      "auth_session_logged_out": true,
+      "owned_client_removed": true
+    }
+  },
+  "workflow_timing": {
+    "created_at": "2026-11-08T09:03:02Z",
+    "updated_at": "2026-11-08T09:04:55Z",
+    "seconds_including_queue": 113.0
+  }
+}

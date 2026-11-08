@@ -17,8 +17,16 @@ The workflow checks the exact image in isolated Chromium, then real authenticate
 settings startup and two accelerated status polls with same-origin GETs only.
 It also compares public code assets and exercises the actual PDF worker. The
 110-second coordinator reserves time for owned rollback/cleanup inside the
-three-minute Actions bound. Monitor queue time too. Deployment is pending;
-use the checklist and final receipt for acceptance, not this planned path alone.
+three-minute Actions bound. Monitor queue time too.
+[Run42465497658](https://github.com/salahassi/tenders/actions/runs/42465497658)
+passed at `c804cffa` in 113 seconds including queue time. Frontend is now
+`522ad1b7` (artifact source `f5e4e5a`, public index SHA `7c8fe252`); API and
+other runtime images are retained. Settings opened in 8.898 seconds with 37
+startup reads; two accelerated polls each made one status request and no
+business-history reads. Image-bound toggle tests, public assets/PDF, logout and
+owned cleanup all pass. See [the final receipt](evidence/model-settings-release-passed-20261108-42465497658.json).
+This one-time release is complete: its previous-image guard deliberately rejects
+redispatch. Establish the current baseline before a subsequent release.
 
 ## Reopened workspace startup: API pagination completion
 
@@ -84,8 +92,8 @@ config/layer/label guards remain enforced. Inspection `42370741371` passed.
 
 ## Current images and original release baseline
 
-The November 7 full-startup receipt above is the current image authority: API
-`f573e991`, three retained runtime targets `077b06ed`, frontend `b2201c24`.
+The November 8 model-settings receipt above is the current image authority: API
+`f573e991`, three retained runtime targets `077b06ed`, frontend `522ad1b7`.
 The schema ledger/catalog and original release baseline below remain unchanged.
 Startup acceptance does not close the separate proposal issuance, provider or
 export acceptance gates. The following November 5 release is historical.
