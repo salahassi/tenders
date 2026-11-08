@@ -49,6 +49,27 @@ class NativeGuards(unittest.TestCase):
             bad = native(); bad[key] = value
             with self.assertRaises(m.NativeError): m.validate_probe(bad, False, SOURCES)
 
+    def test_baseline_normalizes_only_absent_optional_inspection_fields(self):
+        historical = {'image': metadata(m.BASELINE_IMAGE)}
+        historical['image']['Variant'] = ''
+        historical['image']['Config']['Env'] = ['DENO_DIR=/deno-dir']
+        inspected = copy.deepcopy(historical['image'])
+        inspected.pop('Variant')
+        inspected['Config'].update(OnBuild=None, Volumes=None)
+        m.validate_metadata(inspected, m.BASELINE_IMAGE, historical)
+        inspected['Variant'] = None
+        m.validate_metadata(inspected, m.BASELINE_IMAGE, historical)
+        for field, value in [('OnBuild', ['RUN false']), ('Volumes', {'/app': {}}),
+                             ('Env', ['DENO_DIR=/tmp']), ('UnknownConfigField', None)]:
+            changed = copy.deepcopy(inspected); changed['Config'][field] = value
+            with self.assertRaisesRegex(m.NativeError, 'BASELINE_METADATA_CHANGED'):
+                m.validate_metadata(changed, m.BASELINE_IMAGE, historical)
+        for field, value in [('RootFS', {'Type': 'layers', 'Layers': ['changed']}), ('Variant', 'v8'),
+                             ('Variant', False)]:
+            changed = copy.deepcopy(inspected); changed[field] = value
+            with self.assertRaisesRegex(m.NativeError, 'BASELINE_METADATA_CHANGED'):
+                m.validate_metadata(changed, m.BASELINE_IMAGE, historical)
+
     def test_changed_source_policy_or_zero_reduction_blocks_native_evidence(self):
         for key, value in [('source_sha256', {}), ('baseline', True), ('provider_calls', 1),
                            ('compact_saved_characters', 0), ('passed', False)]:

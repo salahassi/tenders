@@ -13,6 +13,24 @@ cover rejected fallback, accepted exact retry, observation without sending and
 invalid restrictions. No runtime, database, provider or customer action is part
 of this operational change; the post-release retry remains pending.
 
+## November 8 — actual native prompt proof and inspection normalization
+
+The first prompt probe stopped before container creation because Docker's raw
+inspection includes null `OnBuild`/`Volumes` configuration fields that its
+formatted historical receipt omits. The fixture now normalizes only these
+absent/null fields and the absent/null platform variant. All other frozen
+configuration, labels, environment, layers and image identity remain exact;
+nonempty optional fields, unknown fields and altered platform values fail.
+
+Thirteen focused fixture guards pass. An offline scratch execution against the
+actual `34b00bcc` candidate and immutable `4b04acaa` baseline passes all twelve
+native prompt controls, including all 84 historical wire cases and eleven
+accepted pins, with verified container cleanup. This is preliminary image
+evidence: the final source-bound build, native receipts and qualification capture
+must be repeated after committing the harness fix at the frozen release source.
+No registry publication, production action or provider call was made by this
+fixture correction.
+
 ## November 8 — separate latency runtime qualification preparation
 
 The latency candidate has its own build, qualification and publication paths;

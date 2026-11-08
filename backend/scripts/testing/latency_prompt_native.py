@@ -106,8 +106,17 @@ def validate_metadata(metadata, image, historical):
             and config.get('Cmd') == old['Cmd'] and config.get('User') == 'deno'
             and config.get('WorkingDir') == '/app/backend', 'ORIGINAL_ENTRYPOINT')
     if image == BASELINE_IMAGE:
-        for name in ('Id', 'Os', 'Architecture', 'RootFS', 'Config'):
-            require(metadata.get(name) == historical['image'].get(name), 'BASELINE_METADATA_CHANGED')
+        def identity(value):
+            # Docker's array and formatted inspection serialize these absent
+            # optional fields differently. Preserve every meaningful config
+            # value rather than comparing their serialization shape.
+            config = dict(value.get('Config', {}))
+            for name in ('OnBuild', 'Volumes'):
+                if config.get(name) is None:
+                    config.pop(name, None)
+            return {**{name: value.get(name) for name in ('Id', 'Os', 'Architecture', 'RootFS')},
+                    'Variant': '' if value.get('Variant') is None else value['Variant'], 'Config': config}
+        require(identity(metadata) == identity(historical['image']), 'BASELINE_METADATA_CHANGED')
 
 
 def validate_probe(value, baseline, expected_sources):
