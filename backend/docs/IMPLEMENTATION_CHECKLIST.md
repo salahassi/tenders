@@ -39,6 +39,33 @@ backend build pass; the separate SQL
 successor/rollout capability fence, native qualification, deployment and real
 issuance remain independent gates. No live call or customer command ran here.
 
+## November 8 — separate executor-six/commercial-successor image qualification prepared
+
+The new `proposal-successor-runtime.py` keeps the deployed UUID-corrected image
+`c74fd450` / registry `2097a079` / qualification `7e351bc3` as its immutable
+baseline. Exactly five copied files may differ: commercial context/writing guide
+and the three worker claim/wake callers. Every other runtime file, including
+`modelGrounding.ts`, and all supplementary build inputs must match that baseline.
+Historical qualification, publication and native fixture bytes stay unchanged.
+
+Candidate qualification requires its own executor-six dispatch, existing prompt,
+accepted-poll and UUID-boundary receipts, plus the new commercial-V2 native receipt.
+The latter binds four legacy context cases, 24 legacy wires, 12 V2 wires, exact
+fixture inputs, English/Arabic export-model and verified DOCX text hashes,
+localized missing-tax labels and both source/image identities. The v6 dispatch
+receipt requires all ten controls and exact v6 RPC paths. Offline isolation,
+actual entrypoint, harness bytes and owned cleanup remain mandatory.
+
+Both parent polling policy hashes and the exact successor migration path/hash
+are bound in build and qualification evidence; SQL qualification/apply remain
+separate. Thirty-eight focused Python controls pass, including all new fixture
+controls, narrowed source scope, legacy-wire/render tampering, v5 RPC rejection,
+image/config/layer changes, SQL binding and unfrozen publication rejection.
+Python syntax and diff checks pass. The new receipt hash remains unset: actual
+build/native execution, capture/freeze, SQL authority gates, publication,
+rollout and customer issuance are pending. No image build or live action ran
+for this preparation.
+
 ## November 8 — executor-6 dispatch native fixture prepared
 
 The separate `worker_dispatch_v6_native.py/.ts` fixture retains all nine worker
