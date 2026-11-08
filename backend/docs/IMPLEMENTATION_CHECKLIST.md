@@ -1,5 +1,61 @@
 # Implementation status and continuation plan
 
+## November 8 — canonical verifier/capacity repair applied
+
+The read-only settings plan42514420334 was reviewed against the selected failed
+plan and a successful configured gpt-6.1-sol verifier. Owner batch42514569074
+from `88f2e2b` then applied exactly two commands, returned HTTP200 and passed
+independent command-receipt/readback checks. The verifier route advances from
+revision2 to3, becomes explicit with that one existing model, and retains its
+priority strategy and null profile. Execution advances from revision3 to4,
+changing only parallel requests from two to four. Enabled state, admitted-after,
+providers, models, default/other routes, allowances and saved catalogs remain
+unchanged. Owned cleanup passed. See the [settings receipt](evidence/proposal-settings-repair-passed-20261108-42514569074.json).
+
+Admission apply42514254147 separately failed with statement timeout57014. Its
+read-only reconciliation proves the exact unchanged latency parent and no new
+child; the [failed receipt](evidence/proposal-admission-timeout-20261108-42514254147.json)
+retains that result. PR51 merged as `fcd44e04`; redirect-only Pages42514220894
+passed in28 seconds. The faster scoped row proof above is ready for a corrected
+apply; no deadline was extended.
+
+Actual retry42514772640 was accepted at19:23:56.598872 UTC, deadline19:33:56.598872,
+starting in saved drafting rather than repeating analysis/planning. At the
+second read-only observation, six current-issuance jobs were complete but twelve
+were still queued with one pending remote request. Some saved catalogs retain
+the old verifier by design. Effective parallel occupancy and whole-package
+completion remain open; configuration acceptance alone does not close them.
+
+## November 8 — bound admission migration proof without reading customer payloads
+
+Hosted admission apply42514254147 stopped with SQLSTATE `57014` at the unchanged
+20-second statement limit. Its explicit readback proved the exact latency parent
+catalog `321a5873` and structure `089a08ae`, with no admission child applied;
+owned cleanup passed. The full-row preservation proof serialized every existing
+customer/model response twice. The exact point within that statement was not
+instrumented, so payload hashing remains the identified expensive operation,
+not a separately timed attribution of the timeout.
+
+Only the frozen `fcde6425` function-body replacement now uses immediate
+transaction-local inserted/updated/deleted tuple counters and relation storage
+identities before and after execution. Counts must be enabled. Concurrent
+application connections cannot change these backend-local counters; TRUNCATE
+or heap rewrites change storage identity. The guard runs before the three new
+ledger rows. Full catalog, attributes, authority, source checksum and predecessor
+receipt checks are unchanged. Any explicit noncanonical fault payload retains
+the previous complete row digest in addition to this guard. SQL/transport/Actions
+deadlines remain 20/30/170 seconds.
+
+Eighteen admission tests pass. Actual PostgreSQL18/PGlite directly executes the
+new fast guard without a row digest in 15 mutation cases: ordinary and same-value
+DML, delete/reinsert, insert/delete, swapped values, TRUNCATE/repopulation,
+committed/aborted subtransactions, hidden function writes, stats snapshot/shared
+counter resets and partition-leaf writes. Disabled tracking is rejected and
+unchanged work passes. The complete four-level ledger/fault chain still passes.
+The current runtime qualification remains identical; this change touches only
+the release proof and its tests. A new hosted apply and exact child readback
+remain pending; no production call was made for this optimization.
+
 ## November 8 — verified routing diagnosis and final admission gates
 
 Read-only inspection42513550842 from `0c1613d` passed with owned cleanup and no

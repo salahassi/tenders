@@ -1,0 +1,34 @@
+{
+  "release": "proposal-admission-wake",
+  "status": "failed",
+  "code": "ADMISSION_SCHEMA_SQLSTATE_57014",
+  "state": {
+    "stage": "read_only_commit_reconciliation",
+    "mode": "apply",
+    "apply_attempted": true,
+    "apply_acknowledged": false,
+    "schema_confirmed": false,
+    "reconciled_after_unknown": false,
+    "cleanup_verified": true,
+    "apply_error": "ADMISSION_SCHEMA_SQLSTATE_57014",
+    "uncertain_commit_readback": {
+      "applied": false,
+      "release": "proposal-admission-wake-v1-20261108",
+      "replayed": false,
+      "read_only": true,
+      "sql_sha256": "fcde6425b740a60ea9001a4abefea960a4bbe461e3ec27dae70f2099f2f06562",
+      "catalog_sha256": "321a58736a816779365267a76b584f0bf978c23add2adb8b4e6dbfe44869f214",
+      "parent_release": "proposal-latency-v1-20261108",
+      "structure_sha256": "089a08ae6da42d032ab8e11e9fd6cb952de3c3356015a1fdf2087f39300fac52",
+      "parent_sql_sha256": "d2c683dd7c6b7e9c5b2736f5d07fea1bcdbaea37ddcba20877f5f74b2127cc1a",
+      "processing_requested": false,
+      "business_rows_changed": 0,
+      "predecessor_receipts_preserved": true
+    },
+    "reconciliation_error": "ADMISSION_SCHEMA_SQLSTATE_57014",
+    "failure_stage": "read_only_commit_reconciliation"
+  },
+  "workflow_run_id": 42514254147,
+  "workflow_url": "https://github.com/salahassi/tenders/actions/runs/42514254147",
+  "source_revision": "88f2e2b6b5c38a7613e1db321b15fae5246011eb"
+}

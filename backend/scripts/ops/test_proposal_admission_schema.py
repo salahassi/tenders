@@ -22,6 +22,70 @@ old = module('latency_dispatch_fixture', 'test_proposal_dispatch_schema.py')
 
 
 class AdmissionSchemaTests(unittest.TestCase):
+    def test_only_frozen_payload_skips_full_customer_value_hashing(self):
+        canonical = m.script(read_only=False)
+        arbitrary = m.script(read_only=False, payload=m.source()+'\n-- explicit fault payload\n')
+        self.assertNotIn('md5(to_jsonb(x)::text)', canonical)
+        self.assertIn('md5(to_jsonb(x)::text)', arbitrary)
+        for sql in (canonical, arbitrary):
+            self.assertIn('pg_stat_get_xact_tuples_inserted', sql)
+            self.assertIn('pg_relation_filenode', sql)
+            self.assertLess(sql.index('IF row_activity IS DISTINCT FROM row_activity_before'),
+                sql.index('INSERT INTO app_private.application_release_history'))
+            self.assertIn("SET LOCAL statement_timeout='20s'", sql)
+
+    def test_fast_activity_guard_itself_rejects_dml_truncate_and_reset_attempts(self):
+        # This matrix contains no full-row digest. It directly executes the
+        # exact production activity/storage proof against actual PostgreSQL.
+        mutations = {
+            'insert': "INSERT INTO saved VALUES(3,'new');",
+            'update': "UPDATE saved SET body='changed' WHERE id=1;",
+            'same_value_update': 'UPDATE saved SET body=body WHERE id=1;',
+            'delete': 'DELETE FROM saved WHERE id=1;',
+            'delete_reinsert': "DELETE FROM saved WHERE id=1;INSERT INTO saved VALUES(1,'saved');",
+            'insert_delete': "INSERT INTO saved VALUES(3,'new');DELETE FROM saved WHERE id=3;",
+            'swap': "UPDATE saved SET body=CASE id WHEN 1 THEN 'other' ELSE 'saved' END;",
+            'truncate': 'TRUNCATE saved;',
+            'truncate_reinsert': "TRUNCATE saved;INSERT INTO saved VALUES(1,'saved'),(2,'other');",
+            'subtransaction_commit': "DO $nested$BEGIN UPDATE saved SET body='nested' WHERE id=1;END$nested$;",
+            'subtransaction_abort': "DO $nested$BEGIN UPDATE saved SET body='nested' WHERE id=1;RAISE EXCEPTION 'rollback';EXCEPTION WHEN OTHERS THEN NULL;END$nested$;",
+            'hidden_function_dml': 'PERFORM hidden_write();',
+            'clear_snapshot': "UPDATE saved SET body='changed' WHERE id=1;PERFORM pg_stat_clear_snapshot();",
+            'reset_shared_stats': "UPDATE saved SET body='changed' WHERE id=1;PERFORM pg_stat_reset_single_table_counters('saved'::regclass);",
+            'partition_leaf': "INSERT INTO partitioned VALUES(1,'leaf');",
+        }
+        template = """BEGIN ISOLATION LEVEL REPEATABLE READ;
+DO $guard$
+DECLARE relations_before oid[];row_activity jsonb;row_activity_before jsonb;
+BEGIN
+ SELECT array_agg(c.oid) INTO relations_before FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
+ WHERE n.nspname IN ('public','app_private');
+ __GUARD__ row_activity_before:=row_activity;
+ __MUTATION__
+ __GUARD__
+ IF row_activity IS DISTINCT FROM row_activity_before
+ THEN RAISE EXCEPTION 'ADMISSION_SCHEMA_EXISTING_ROWS_CHANGED';END IF;
+END $guard$;COMMIT;""".replace('__GUARD__',m.ROW_ACTIVITY)
+        data = {'cases': {key:template.replace('__MUTATION__',sql) for key,sql in mutations.items()},
+            'noop':template.replace('__MUTATION__','PERFORM 1;'),
+            'off':template.replace('__MUTATION__','PERFORM 1;').replace('DO $guard$',"SET LOCAL track_counts=off;DO $guard$",1)}
+        program = r"""
+import {PGlite} from '@electric-sql/pglite';let input='';for await(const part of process.stdin)input+=part;
+const x=JSON.parse(input),db=new PGlite();
+await db.exec(`create table saved(id int primary key,body text);insert into saved values(1,'saved'),(2,'other');
+create table partitioned(id int,body text) partition by range(id);create table leaf partition of partitioned for values from(0) to(10);
+create function hidden_write() returns void language plpgsql as $$begin update saved set body='hidden' where id=1;end$$;`);
+const reject=async(sql,code)=>{let found;try{await db.exec(sql);}catch(e){found=e.message;await db.exec('rollback');}if(found!==code)throw Error('EXPECTED '+code+' GOT '+found);};
+for(const [name,sql]of Object.entries(x.cases)){await reject(sql,'ADMISSION_SCHEMA_EXISTING_ROWS_CHANGED');}
+await reject(x.off,'ADMISSION_SCHEMA_ROW_TRACKING_DISABLED');await db.exec(x.noop);
+if(JSON.stringify((await db.query('select * from saved order by id')).rows)!==JSON.stringify([{id:1,body:'saved'},{id:2,body:'other'}]))throw Error('MUTATION_ESCAPED');
+await db.close();console.log('direct_fast_guard_cases='+Object.keys(x.cases).length);
+"""
+        result = subprocess.run(['node','--input-type=module','-e',program],input=json.dumps(data),
+            capture_output=True,text=True,cwd=m.ROOT/'backend',timeout=30)
+        self.assertEqual(result.returncode,0,result.stderr[-3000:])
+        self.assertIn('direct_fast_guard_cases=15',result.stdout)
+
     def test_unreviewed_source_bytes_cannot_be_applied_or_inspected(self):
         with tempfile.TemporaryDirectory() as directory:
             changed = Path(directory) / 'migration.sql'
