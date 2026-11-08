@@ -257,7 +257,7 @@ class TrialRunnerBoundaryTests(unittest.TestCase):
              patch.object(m.release.u, 'deployment', side_effect=lambda name: {'image': expected[name]}), \
              patch.object(m.release.base, 'image_of', side_effect=lambda value: value['image']), \
              patch.object(m.release, 'verify_runtime_contract'), patch.object(m, 'module',
-                side_effect=lambda name, filename: qualification if filename == 'proposal-poll-runtime.py' else schema):
+                side_effect=lambda name, filename: qualification if filename == 'proposal-reference-runtime.py' else schema):
             database = object()
             m.verify_runtime(database)
             schema.verify.assert_called_once_with(database)

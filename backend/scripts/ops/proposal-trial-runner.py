@@ -94,7 +94,7 @@ def bind_deadline():
 def verify_runtime(database=None):
     release.verify_checkout()
     d.probe.validate_cluster()
-    qualification = module('trial_poll_qualification', 'proposal-poll-runtime.py')
+    qualification = module('trial_reference_qualification', 'proposal-reference-runtime.py')
     receipt, image = qualification.publication()
     expected = {**release.BASELINES, 'worker': image, 'scheduler': image}
     original = {name: release.u.deployment(name) for name in expected}

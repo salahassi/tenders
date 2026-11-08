@@ -1,5 +1,32 @@
 # Implementation status and continuation plan
 
+## November 8 — runtime-only reference-boundary release controls prepared
+
+The scoped workflow replaces only the worker and scheduler images from the exact
+deployed `b5e14c0e` pair. API, source-browser, frontend and retained configuration
+remain fixed. Database operations are limited to read-only verification of the
+existing polling SQL `8d089d8d`, catalog `36d60b8f`, structure `1b9db070`, and the
+existing null-identity route rejection. There is no SQL apply, migration or
+ledger-write path in the coordinator.
+
+The owned single scheduler replica is paused and drained before replacing the
+worker, then its template is updated while paused. Worker readiness, service
+route visibility, exact schema and configuration checks precede activation.
+Pre-activation failures restore the original pair; any activation attempt uses
+actual-state readback and forward recovery. Read-only inspection can inspect a
+paused known pair without enabling it. The original 170-second deadline includes
+queue time; work, recovery and cleanup reserves are unchanged.
+
+Twenty coordinator tests, eleven separate qualification tests and fifteen trial
+runner tests pass. Every coordinator test asserts that SQL apply is never called;
+schema drift, resource limits, failed readiness, ambiguous mutations, rollback,
+activation, inspection and cleanup failures are covered. Independent review
+reran all 46 controls and found no blocking issue. Python compilation, workflow
+YAML/shell syntax and diff checks pass. The trial runner selects the new immutable
+qualification while retaining existing schema and command guards. Actual native
+candidate qualification, publication, deployment and customer recovery remain
+separate pending gates; no build, publication or live action occurred here.
+
 ## November 8 — exact reference-boundary image qualification prepared
 
 The reference correction has separate build, native, qualification and
