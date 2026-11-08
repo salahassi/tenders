@@ -14,15 +14,37 @@ remain authoritative.
 Focused worker controls pass 64 tests and scheduler controls pass 24 tests.
 The actual dispatcher SQL passes isolated PostgreSQL tests for due-wake races,
 expired leases, multiple independent future timers, maintenance and role restrictions.
-Both groups pass backend typecheck. Complete package validation, exact-image
-native qualification and production rollout are being collected; none is
-represented by these focused results. Production schema application must precede
+Both groups pass backend typecheck. Candidate runtime `4b04acaa`, built from
+`e2e209d` using an offline dependency cache, passes all nine native controls
+with the actual default worker and actual scheduler entrypoints. With maintenance
+held, a ready response takes 9 ms and returns the 30,000 ms poll hint; idle
+responses take 7 ms and 2 ms. These are isolated synthetic RPC fixtures, not
+customer model latency. The original image fails the idle-maintenance negative
+control. Exact copied sources, image configuration/layers and container cleanup
+are bound in the build/native/qualification receipts. Published immutable runtime
+`c6f7cce5` was pulled and reverified with temporary registry credentials removed.
+All 389 frontend tests, both package typechecks and both builds pass. The frozen
+backend suite passes 3,513/3,514 tests; one existing delivery integration exceeds
+its unchanged five-second timeout under the complete suite. Its unchanged file
+passes all 18 tests in isolation. This retains the full-suite limitation rather
+than claiming a green full backend run. All new worker regressions pass in the
+complete run. Production rollout remains pending. Schema application must precede
 worker readiness and scheduler replacement; rollback restores scheduler first.
 The schema change is additive and legacy dispatch acknowledgement is retained.
+All 21 focused release/schema controls pass. Independent review closed findings
+on partially restored pods, paused-scheduler detection, elapsed queue/setup
+budget and owned observer cleanup. The workflow binds its deadline to GitHub run
+creation and reserves rollback/cleanup inside 170 seconds, below the three-minute
+owner limit. It does not activate a paused scheduler or initiate a generation.
 
 This correction addresses the reproduced synchronous wait and maintenance
 coupling. It does not establish a new full-proposal completion time. No new
 customer generation or paid-provider evaluation is started for these tests.
+The accepted-model poll policy remains 30 seconds. With twelve analysis chunks,
+two accepted-request slots and at least writer/verification phases, an idealized
+all-pending case already needs approximately 360 seconds of poll-slot time for
+analysis before later proposal stages or repairs. This conditional estimate is
+not a measured production duration; full issuance acceptance remains separate.
 
 ## November 8 — read-only diagnosis of the ten-minute proposal failure
 

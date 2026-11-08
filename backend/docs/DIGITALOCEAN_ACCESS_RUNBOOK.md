@@ -5,6 +5,25 @@ The repository-root [AGENTS.md](../../AGENTS.md) points here so the established
 route is available in every checkout, without relying on conversation history.
 Last reviewed: November 8, 2026.
 
+## Proposal dispatch correction (November 8, prepared)
+
+`deploy-proposal-dispatch.yml` and `proposal-dispatch-release.py` apply the
+additive durable-timer/maintenance outbox SQL, then replace worker before
+scheduler. Only these two runtime targets may change. Their baseline is
+`077b06ed`; API `f573e991`, source-browser `077b06ed`, frontend `522ad1b7` and
+private configuration are retained. Candidate `c6f7cce5` has a separate exact
+worker/scheduler qualification from source `e2e209d`; historical API/render
+qualification is not reused as evidence of the changed dispatch behavior.
+
+Read the workflow, release helper, qualifier and schema wrapper before use.
+The three-minute bound includes queue time. Schema application records its own
+checksum/catalog/structure ledger without changing existing business records or
+the original release manifest. Rollback drains scheduler before worker and
+retains the compatible additive schema; it does not claim a schema rollback.
+Native dispatch behavior and hosted readiness/authority checks are separate
+from actual proposal completion. This entry is preparation, not deployment
+evidence; reconcile it with the final release receipt after rollout.
+
 ## Model settings refresh correction (November 8)
 
 `deploy-model-settings.yml` and `model-settings-release.py` are the scoped

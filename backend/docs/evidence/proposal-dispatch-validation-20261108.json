@@ -1,0 +1,48 @@
+{
+  "backend": {
+    "build": "passed",
+    "full_suite": {
+      "failed_file": "generatedDeliveryPipeline.integration.test.ts",
+      "failure": "Existing 5000ms integration timeout; unchanged failing file passes all18 tests in isolation.",
+      "passed": 3513,
+      "total": 3514
+    },
+    "isolated_delivery_file": {
+      "passed": 18,
+      "total": 18
+    },
+    "new_worker_regressions": "passed_in_full_suite",
+    "typecheck": "passed"
+  },
+  "external_provider_calls": 0,
+  "focused": {
+    "dispatcher_sql": "passed_real_PGlite18.6_multiple_timers_restart_races_and_acl",
+    "native_image": {
+      "passed": 9,
+      "receipt": "proposal-dispatch-native-20261108.json",
+      "total": 9
+    },
+    "scheduler": 24,
+    "worker": 64
+  },
+  "frontend": {
+    "build": "passed",
+    "full_suite": {
+      "passed": 389,
+      "total": 389
+    },
+    "typecheck": "passed"
+  },
+  "log_sha256": {
+    "backend-build-final.log": "8652d82be3115ea6597ae3b7dcf42d83bc898c68ec15888bbf53917a98ebac84",
+    "backend-delivery-isolated.log": "fb4b362b5d3c72bc26b9626d5411bc718a1af607682e4e98125b2f9ed0781138",
+    "backend-test-final.log": "3c3f9a4de6833f22a5e421d2d0a530140b18f7971b048f5b25df1975542270b0",
+    "backend-typecheck-final.log": "537fdd9af319d22fba80875202b6f4eed7027692e77332c3979971609ba8b220",
+    "frontend-build.log": "b09b55a2d870d803240b1be7ae163db8f0b0c04fc7d22e540fea830a0f8afce3",
+    "frontend-test.log": "f38e38497e0eaade45244b9e270ea7d247447a7988f9d56efafb9ed850ac1894",
+    "frontend-typecheck.log": "fcb5cdebec3bda0095f0e9251f60fcc4fc98a10fb4e6f77ef494c1c5e3f0efec"
+  },
+  "production_acceptance": false,
+  "source_revision": "e2e209d5ec0098e67774b5c2d77def7e5bf74b8a",
+  "version": 1
+}
