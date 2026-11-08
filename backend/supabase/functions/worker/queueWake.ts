@@ -19,7 +19,7 @@ export async function wakeReadyQueue(
   options: { waitForRetry?: boolean } = {},
 ) {
   const args = { job_id: job.id, lease: job.lease_token };
-  const result = await backend.internal("wake_backend_queue_status_v5", args);
+  const result = await backend.internal("wake_backend_queue_status_v6", args);
   const delay = result?.retry_after_ms;
   const remotePoll = result?.wait_kind === "accepted_remote_poll";
   const revision = result?.job_revision;
@@ -43,8 +43,8 @@ export async function wakeReadyQueue(
   if (remaining() <= POST_WAKE_MARGIN_MS) return;
   await backend.internal(
     remotePoll
-      ? "wake_backend_queue_revision_v5"
-      : "wake_backend_queue_status_v5",
+      ? "wake_backend_queue_revision_v6"
+      : "wake_backend_queue_status_v6",
     remotePoll ? { ...args, expected_revision: revision } : args,
   );
 }

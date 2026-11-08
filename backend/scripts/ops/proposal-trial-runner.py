@@ -94,7 +94,7 @@ def bind_deadline():
 def verify_runtime(database=None):
     release.verify_checkout()
     d.probe.validate_cluster()
-    qualification = module('trial_reference_qualification', 'proposal-reference-runtime.py')
+    qualification = module('trial_successor_qualification', 'proposal-successor-runtime.py')
     receipt, image = qualification.publication()
     expected = {**release.BASELINES, 'worker': image, 'scheduler': image}
     original = {name: release.u.deployment(name) for name in expected}
@@ -102,13 +102,15 @@ def verify_runtime(database=None):
             'RUNTIME_CHANGED')
     release.verify_runtime_contract(original)
     if database:
-        schema = module('trial_runtime_schema', 'proposal-poll-schema.py')
+        schema = module('trial_runtime_schema', 'proposal-successor-schema.py')
         require(receipt['source']['source_entries']['backend/scripts/runtime/dispatcher.sql']['sha256'] == schema.retry.PARENT_SQL,
                 'DISPATCH_SOURCE_CHANGED')
         require(receipt['poll_migration'] == {'path': str(schema.latency.SOURCE.relative_to(schema.ROOT)),
             'sha256': schema.latency.source_sha256()}, 'POLL_SOURCE_CHANGED')
-        require(receipt['pending_poll_migration'] == {'path': str(schema.SOURCE.relative_to(schema.ROOT)),
-            'sha256': schema.source_sha256()}, 'PENDING_POLL_SOURCE_CHANGED')
+        require(receipt['pending_poll_migration'] == {'path': str(schema.parent.SOURCE.relative_to(schema.ROOT)),
+            'sha256': schema.parent.source_sha256()}, 'PENDING_POLL_SOURCE_CHANGED')
+        require(receipt['successor_migration'] == {'path': str(schema.SOURCE.relative_to(schema.ROOT)),
+            'sha256': schema.source_sha256()}, 'SUCCESSOR_SOURCE_CHANGED')
         schema.verify(database)
 
 

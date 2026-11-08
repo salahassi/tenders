@@ -245,11 +245,14 @@ class TrialRunnerBoundaryTests(unittest.TestCase):
         schema = Mock(ROOT=Path('/synthetic'))
         schema.latency.SOURCE = Path('/synthetic/backend/supabase/migrations/poll.sql')
         schema.latency.source_sha256.return_value = 'c' * 64
-        schema.SOURCE = Path('/synthetic/backend/supabase/migrations/pending.sql')
-        schema.source_sha256.return_value = 'f' * 64
+        schema.parent.SOURCE = Path('/synthetic/backend/supabase/migrations/pending.sql')
+        schema.parent.source_sha256.return_value = 'f' * 64
+        schema.SOURCE = Path('/synthetic/backend/supabase/migrations/successor.sql')
+        schema.source_sha256.return_value = 'a' * 64
         schema.retry.PARENT_SQL = 'e' * 64
         receipt = {'poll_migration': {'path': 'backend/supabase/migrations/poll.sql', 'sha256': 'c' * 64},
             'pending_poll_migration': {'path': 'backend/supabase/migrations/pending.sql', 'sha256': 'f' * 64},
+            'successor_migration': {'path': 'backend/supabase/migrations/successor.sql', 'sha256': 'a' * 64},
             'source': {'source_entries': {'backend/scripts/runtime/dispatcher.sql': {'sha256': 'e' * 64}}}}
         qualification = Mock()
         qualification.publication.return_value = (receipt, candidate)
@@ -257,7 +260,7 @@ class TrialRunnerBoundaryTests(unittest.TestCase):
              patch.object(m.release.u, 'deployment', side_effect=lambda name: {'image': expected[name]}), \
              patch.object(m.release.base, 'image_of', side_effect=lambda value: value['image']), \
              patch.object(m.release, 'verify_runtime_contract'), patch.object(m, 'module',
-                side_effect=lambda name, filename: qualification if filename == 'proposal-reference-runtime.py' else schema):
+                side_effect=lambda name, filename: qualification if filename == 'proposal-successor-runtime.py' else schema):
             database = object()
             m.verify_runtime(database)
             schema.verify.assert_called_once_with(database)
@@ -265,10 +268,14 @@ class TrialRunnerBoundaryTests(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, 'POLL_SOURCE_CHANGED'):
                 m.verify_runtime(database)
             schema.latency.source_sha256.return_value = 'c' * 64
-            schema.source_sha256.return_value = 'd' * 64
+            schema.parent.source_sha256.return_value = 'd' * 64
             with self.assertRaisesRegex(RuntimeError, 'PENDING_POLL_SOURCE_CHANGED'):
                 m.verify_runtime(database)
-            schema.source_sha256.return_value = 'f' * 64
+            schema.parent.source_sha256.return_value = 'f' * 64
+            schema.source_sha256.return_value = 'd' * 64
+            with self.assertRaisesRegex(RuntimeError, 'SUCCESSOR_SOURCE_CHANGED'):
+                m.verify_runtime(database)
+            schema.source_sha256.return_value = 'a' * 64
             expected['api'] = candidate
             with self.assertRaisesRegex(RuntimeError, 'RUNTIME_CHANGED'):
                 m.verify_runtime()

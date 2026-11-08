@@ -1,0 +1,34 @@
+
+> tenderdesk-backend@0.2.0 test
+> vitest run tests/backend --maxWorkers=2
+
+
+ RUN  v5.0.4 /workspace/work/tenders-diagnosis/backend
+
+ ❯ tests/backend/generatedDeliveryPipeline.integration.test.ts (18 tests | 1 failed) 28204ms
+   × projects actual accepted responses, renders verified DOCX, and keeps human approval pending 5027ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/backend/generatedDeliveryPipeline.integration.test.ts > projects actual accepted responses, renders verified DOCX, and keeps human approval pending
+Error: Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+ ❯ tests/backend/generatedDeliveryPipeline.integration.test.ts:478:1
+    476|   return { backend: backend as unknown as Backend, objects };
+    477| }
+    478| it("projects actual accepted responses, renders verified DOCX, and kee…
+       | ^
+    479|   const { j, v, issuance } = await setup();
+    480|   expect(await rpc("claim_backend_local_job_v3")).toBeNull();
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed | 216 passed (217)
+      Tests  1 failed | 3663 passed (3664)
+   Start at  21:37:28
+   Duration  485.78s (tests 94%, import 6%)
+
+    Isolate  217 workers spawned · ~101ms startup each (spawn + environment, per file)
+             at least ~10.82s faster with isolate: false — reuses workers across files instead of one per file
+

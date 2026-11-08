@@ -81,6 +81,27 @@ export async function claimModelWorker5(
   }
 }
 
+/** Use the installed active worker for a full model pipeline. Historical
+ * migration-boundary fixtures continue to call claimModelWorker5 explicitly.
+ * As above, model-only tests cancel local render work; SQL still makes every
+ * admission/lease/capability decision through the actual public claim RPC.
+ */
+export async function claimCurrentModelWorker(
+  fixture: Pick<Awaited<ReturnType<typeof workflowFixture>>, "db">,
+  rpc: (name: string) => Promise<any>,
+) {
+  const installed = (
+    await fixture.db.query<{ installed: boolean }>(
+      "select to_regprocedure('public.claim_backend_job_v6()') is not null installed",
+    )
+  ).rows[0].installed;
+  if (!installed) return claimModelWorker5(fixture, rpc);
+  await fixture.db.query(
+    "update public.jobs set status='canceled',lease_token=null,lease_until=null where type='render_delivery' and checkpoint->>'delivery_renderer_version'='1' and status in ('queued','retry_wait','quota_wait')",
+  );
+  return rpc("claim_backend_job_v6");
+}
+
 /** Seed an explicitly historical proposal before the new admission policy.
  * Only this fixture's creation transaction disables the new admission trigger;
  * it is re-enabled before any worker, retry or recovery operation under test.

@@ -1,5 +1,307 @@
 # Implementation status and continuation plan
 
+## November 8 — successor immutable registry publication verified
+
+Qualified image `3cc6c7cb` from artifact source `6b3eddc` is published as
+`de4312a0`, with qualification `a5e636e8` and SQL `1cab7a1a`. Immutable registry
+pull/readback and copied-source verification pass; temporary credentials were
+removed. The [publication receipt](evidence/proposal-successor-publication-20261108.json)
+binds those identities. All 80 integrated non-schema operations/native-harness
+controls pass; the separately recorded four schema tests include 22 native
+fault cases. These are overlapping evidence sets, not additive product checks.
+
+Product/package, 51 image-native controls and 42 authority/archive cases have
+passed with the retained delivery-test timeout and successful unchanged recheck
+recorded. Hosted rollout and actual customer files remain pending. Publication
+sent no business command and invoked no model.
+
+## November 8 — commercial successor schema source frozen
+
+The operational schema helper now accepts only migration `1cab7a1a` from product
+commit `6641e9c`. The final native PostgreSQL run separately passed42 authority,
+retry, mixed-worker/wake, concurrency and archive cases with owned cleanup; its
+receipt is maintained with that fixture. No production fingerprint is inferred
+from an isolated database.
+
+All59 release/schema/trial/qualification controls pass again against those exact
+SQL bytes, including22 full-schema PostgreSQL fault injections, the deterministic
+renamed-function selfqualification check, preserved16 predecessor receipt rows
+and the19-row child chain. The
+[schema guard receipt](evidence/proposal-successor-schema-guards-20261108.json)
+binds the actual tested source hashes and distinguishes isolated SQL proofs from
+mocked release coordination. Final image/native qualification, publication,
+hosted deployment and customer issuance remain separate gates. No hosted call,
+provider request or production mutation occurred in this verification.
+
+## November 8 — successor package checks reconciled
+
+The complete backend run covered 3,664 tests in 217 files at source `6b3eddc`:
+3,663 passed and one delivery test hit its unchanged 5,000 ms timeout while
+other local native checks were active. After those checks finished, the affected
+18-test file passed alone with unchanged source and timeouts. Both logs remain
+in the [package receipt](evidence/proposal-successor-package-gates-20261108.json);
+there are no unresolved failures. Backend typecheck/build pass. Frontend bytes
+remain exact to the earlier `47cdca4` 389-test/typecheck/build evidence.
+
+The separate native PostgreSQL proof passed all 42 cases, including canonical
+backup/restore, real lock races and mixed-worker claims; its receipt and fixture
+are committed. Actual image qualification retains all 51 passing controls.
+Publication, hosted rollout and actual customer files remain pending.
+
+## November 8 — actual successor image qualification captured
+
+Frozen artifact source `6b3eddc` built image `3cc6c7cb` offline, binding the
+exact successor SQL `1cab7a1a`. Its own 51 native controls pass: ten executor-six
+dispatch, twelve prompt, ten accepted-poll, eight UUID-boundary and eleven
+commercial input/render controls. They preserve 24 legacy prompt wires and
+validate 12 new wires, both actual English/Arabic DOCX archives, all 44 reference
+boundary cases, copied-source identity, isolation and owned cleanup. No provider
+was called. Qualification is frozen to `a5e636e8`; deployed baseline `2097a079`
+and all earlier receipts remain unchanged.
+
+This is image qualification only. Final SQL authority/restore proof, package
+checks, publication, rollout and actual customer issuance remain separate gates.
+The full backend suite is still running; an initial delivery test failed after
+about five seconds during concurrent local qualification. Its cause must be
+confirmed and the affected checks rerun before package acceptance. No live action ran here.
+
+## November 8 — bounded commercial successor under review
+
+A direct Owner `generation.retry` may replace one exhausted legacy commercial
+step only when retained application diagnostics prove the known UUID-colon
+numeric false positive. The predecessor remains linked to its original step,
+graph, candidates, reports, budgets and provider usage; completed draft and
+analysis steps remain unchanged. A private immutable lineage receipt bounds the
+replacement to once per plan and records the authorizing command. The successor
+uses a new input version and normal new-job accounting, with full grounding and
+the same newly authorized 600-second issuance deadline.
+
+New commercial input version 2 requires worker executor 6. Historical flag-absent
+steps retain their original prompt, and older workers cannot claim new-version
+steps during migration or rollback. SQL changes create no business records;
+replacement occurs only in the later authorized command transaction. The worker
+clarification and operational rollout are separate changes.
+
+The twelve existing full-schema retry/accounting checks pass. The
+[native PostgreSQL receipt](evidence/commercial-successor-native-20261108.json)
+records 42 passing checks, including actual concurrent sessions waiting on the
+workspace lock, single-successor replay, unchanged 17 drafts and 12 analyses,
+authority/source/usage refusals, atomic rollback, revocation during a lock wait,
+ordinary and nested retries, refusal of another successor, real worker-5/worker-6
+claims and wake admission, normal new-graph budgets, and a canonical archive
+roundtrip retaining the immutable receipt. Cleanup passed with no hosted or
+provider calls. Isolated catalog/structure fingerprints and exact migration and
+fixture hashes are recorded; production readback is independent. Auth and
+Storage are SQL fixtures, and physical Storage bytes were not exercised.
+
+The product migration is frozen at `1cab7a1a`, first committed in `6641e9c`.
+Package integration and runtime release evidence are tracked separately; this
+change does not establish hosted execution or successful customer file issuance.
+
+## November 8 — active commercial pipeline fixture uses installed worker capability
+
+The current full-pipeline synthetic fixture now chooses the real worker-six
+claim RPC when that API is installed, retaining the existing worker-five helper
+for older migration boundaries. It cancels only the fixture's local render jobs
+as before. The complete flexible-input pipeline asserts that newly enqueued
+commercial work carries input version 2 and minimum executor 6 through the
+actual migrated queue and task context. Frozen generation/generation-plan-status
+fixtures and direct v5 capability, fairness and historical claim controls remain
+unchanged; no global RPC remapping is introduced.
+
+With the successor SQL draft copied only into an isolated local test checkout,
+27 flexible-pipeline/worker-capability controls pass and backend typecheck passes.
+Separately, 117 real queue-wake/ordinary-export/empty-intake controls pass against
+that draft and the worker-six runtime. The draft SQL and dependency links are not
+part of this test-only change. Final frozen-SQL full-package, native authority,
+publication, deployment and customer issuance gates remain pending. No live
+call, model request or customer record edit ran here.
+
+## November 8 — exhausted commercial continuation reconciled
+
+Read-only run42524650965 at `375f638` confirms the sixth continuation failed
+with `MODEL_CORRECTION_EXHAUSTED` at 20:47:45 UTC, before its original
+20:52:54 deadline. The one remaining commercial job made one accepted request
+and four poll attempts in that continuation. No complete package was issued.
+The report hash is `6add2110d370f9f7bdec7023378a770abefe40249c412e81f2f47d29797c7111`;
+cleanup passed and the observation sent no business command. See the
+[terminal receipt](evidence/proposal-commercial-exhausted-20261108-42524650965.json).
+
+The deployed reference correction does not reset the old graph's two spent
+semantic repairs. The separate commercial successor remains under local
+qualification, preserving all 17 completed draft sections and 12 analyses.
+Deployment, actual authorized successor admission and file delivery remain open.
+
+## November 8 — worker executor-6 claim and wake boundary
+
+The new worker calls only the version-6 primary claim, local claim and guarded
+wake RPCs. The SQL capability layer separately fences new version-2 commercial
+jobs at executor 6 while retaining the historical version-5 functions. Worker
+response metadata, processing order, business/model permissions, deadlines,
+model-executor pins and stored prompt identities are unchanged. A missing v6
+RPC fails; it never silently falls back to an older worker capability.
+
+Current worker mocks and guarded-wake integration calls use the new RPCs;
+historical direct-SQL v5 assertions remain v5. HTTP adapter tests preserve
+unmodified stored job identities at floors 1/2/5/6 and reject fallback. All 49
+focused worker/adapter/wake tests and backend typecheck/build pass. Actual
+mixed-worker claims, native dispatch and full-schema gates belong to the
+separate SQL/native qualification changes and must pass before rollout.
+No live call, provider request, configuration change or budget reset ran here.
+
+## November 8 — versioned commercial business-input instructions
+
+Only fresh `plan_commercial` steps carrying numeric `commercial_input_version: 2`
+receive the corrected instruction context. Missing tax category uses the existing
+empty-string contract and localized missing-input rendering; nullable quantities,
+rate IDs, periods, effort, allocation and duration remain null. Questions ask for
+approved business tax inputs and needed terminology clarification. Output prose
+must omit application/schema/type commentary and unsourced acronym expansions.
+Only version-2 commercial writer/repair/verification envelopes receive matching
+source-bound acronym writing guidance; legacy and other-task guides stay exact.
+No output schema, model enum, acceptance rule or correction budget is changed.
+
+Synthetic frozen hashes prove absent/version-1 context, complete task input and
+model prompt bytes remain exact. Version-2 tests retain identical source evidence,
+manifest and completed-section scope while excluding predecessor candidates,
+usage and lineage bodies from the prompt. Existing schema tests reject a null
+tax category and new enum values, and actual English/Arabic rendering preserves
+the localized missing-tax label. All 83 focused checks, backend typecheck and
+backend build pass; the separate SQL
+successor/rollout capability fence, native qualification, deployment and real
+issuance remain independent gates. No live call or customer command ran here.
+
+## November 8 — bounded commercial successor release controls prepared
+
+The separate successor release binds deployed worker/scheduler `2097a079` and
+exact fifth-child SQL `8d089d8d`, catalog `36d60b8f`, structure `1b9db070`.
+Its sixth ledger appends three receipts atomically with the reviewed DDL. Every
+existing business row and historical receipt remains protected by transaction
+activity/storage checks; only the frozen source avoids full row serialization.
+Existing routine changes are limited to two bodies and one exact command rename
+with exact selfqualification replacement and owner-only delegate authority. The approved jobs trigger, private lineage
+and recovery view, new helpers and service-only executor-6 RPCs are checked.
+The new lineage table must remain empty during installation.
+
+After exact SQL readback, the scheduler is paused and drained, then worker and
+scheduler images are replaced. Readiness, the existing null-identity poll
+rejection, all four v6 routes through a bounded read-only OpenAPI request, exact
+schema and retained configuration are required before activation. Earlier
+failures restore the old pair while retaining the child and capability fence;
+V2 jobs require a subsequent explicit forward release. Activation ambiguity
+requires actual-state inspection and forward recovery. The 170-second total
+including queue, SQL20/transport30 limits, recovery and cleanup reserves remain.
+
+Twenty-seven release/boundary controls, fifteen trial-runner controls and thirteen
+qualification controls pass together. The actual isolated full-schema PostgreSQL
+proof passes22 mutation/authority/structure fault cases plus read-only parent,
+atomic child replay, all16 unchanged predecessor rows and the19-row ledger.
+That proof locally binds the current candidate SQL bytes; the operational SQL
+hash remains deliberately unfrozen until product tests and review finish. The
+trial runner now selects the successor image/child while preserving both earlier
+SQL policy bindings and canonical issuance identity. No live command, build,
+publication or deployment occurred. Final SQL freeze, native artifact capture,
+full package gates and hosted customer completion remain separate pending work.
+
+## November 8 — separate executor-six/commercial-successor image qualification prepared
+
+The new `proposal-successor-runtime.py` keeps the deployed UUID-corrected image
+`c74fd450` / registry `2097a079` / qualification `7e351bc3` as its immutable
+baseline. Exactly five copied files may differ: commercial context/writing guide
+and the three worker claim/wake callers. Every other runtime file, including
+`modelGrounding.ts`, and all supplementary build inputs must match that baseline.
+Historical qualification, publication and native fixture bytes stay unchanged.
+
+Candidate qualification requires its own executor-six dispatch, existing prompt,
+accepted-poll and UUID-boundary receipts, plus the new commercial-V2 native receipt.
+The latter binds four legacy context cases, 24 legacy wires, 12 V2 wires, exact
+fixture inputs, English/Arabic export-model and verified DOCX text hashes,
+localized missing-tax labels and both source/image identities. The v6 dispatch
+receipt requires all ten controls and exact v6 RPC paths. Offline isolation,
+actual entrypoint, harness bytes and owned cleanup remain mandatory.
+
+Both parent polling policy hashes and the exact successor migration path/hash
+are bound in build and qualification evidence; SQL qualification/apply remain
+separate. Thirty-eight focused Python controls pass, including all new fixture
+controls, narrowed source scope, legacy-wire/render tampering, v5 RPC rejection,
+image/config/layer changes, SQL binding and unfrozen publication rejection.
+Python syntax and diff checks pass. The new receipt hash remains unset: actual
+build/native execution, capture/freeze, SQL authority gates, publication,
+rollout and customer issuance are pending. No image build or live action ran
+for this preparation.
+
+## November 8 — executor-6 dispatch native fixture prepared
+
+The separate `worker_dispatch_v6_native.py/.ts` fixture retains all nine worker
+and scheduler behavioral controls and adds `worker_executor6_rpc_paths`. The
+actual persistent worker must exercise `claim_backend_job_v6`,
+`claim_backend_local_job_v6` and `wake_backend_queue_status_v6`; legacy, generic
+or unexpected RPC paths fail even when a receipt claims success. The separate
+nonpersistent revision-wake path remains part of its product/SQL tests. Frozen
+executor-5 fixture files and existing native receipts remain unchanged.
+
+The new driver starts the image's original worker entrypoint and uses its exact
+Cmd for the scheduler child. It requires an immutable local image ID, network
+isolation, a read-only filesystem and one read-only harness mount. It binds every
+copied source file and both harnesses before/after execution. All container
+operations after ownership inspection use the full immutable container ID;
+foreign name collisions, mutable-name replacement, shutdown failures and
+ambiguous cleanup errors cannot produce successful evidence.
+
+Twelve focused Python guards, backend typecheck, Python compilation and diff
+checks pass. These are harness implementation checks. No image build, native
+candidate execution, qualification, publication, deployment or provider request
+was performed for this change. Actual image proof requires the frozen product
+with all executor-6 RPC paths; SQL authority and hosted customer issuance remain
+separate acceptance gates.
+
+## November 8 — separate native commercial-input V2 and DOCX proof prepared
+
+The new `commercial_v2_native.py/.ts` harness invokes actual image exports for
+commercial context construction, prompt serialization, schema validation,
+Word rendering and archive/content verification. Its 11 controls bind a synthetic
+fixture to the currently deployed `c74fd450` image and qualification `7e351bc3`.
+It compares four legacy context/input hashes and 24 prompt wires covering absent
+and version-1 inputs, both languages, writer/repair/verifier phases and legacy
+plus current pinned policies. Twelve version-2 wires must differ while preserving
+evidence, accepted sections, manifests and required IDs. Failed candidates,
+paid history and predecessor identifiers must remain outside the prompt.
+
+Both actual images render synthetic English and Arabic DOCX archives using their
+own copied fonts and renderer, then validate each archive against the exact
+render model. Missing tax categories retain the existing localized input-required
+label; nullable business inputs remain nullable and malformed schema alternatives
+remain rejected. Receipts retain each archive's byte length/hash separately,
+while model and visible-content hashes must match the baseline. This establishes
+archive/content behavior, not visual review or customer-file issuance.
+
+Thirteen focused Python isolation/negative-receipt controls and backend typecheck
+pass. The actual deployed baseline passed all 24 legacy wire cases and both
+DOCX checks with verified cleanup. A separate source smoke against `8fe889f`
+passes the 12 new wires, identical legacy bytes and render-content comparison.
+No product file was mounted over an image; every copied source and harness is
+hashed, network access is disabled and no provider was called. Existing native
+fixtures and receipts remain unchanged. Candidate-image qualification, SQL
+authority qualification, publication, deployment and actual issuance are pending.
+
+## November 8 — reference UUID punctuation correction deployed
+
+PR54 merged as `0d0de308`; Pages42523934582 passed within the three-minute bound.
+Release42523959464 from `d62904e` passed in 44 seconds including queue and cleanup.
+Worker/scheduler now use `2097a079`, qualified image `c74fd450` from artifact source
+`698d80fc`, qualification `7e351bc3`. The exact fifth-child schema remains SQL
+`8d089d8d`, catalog `36d60b8f`, structure `1b9db070`; no SQL apply was attempted.
+API `f573e991`, source-browser `077b06ed`, frontend `522ad1b7` and configuration
+are retained. Scheduler pause/drain, worker authorization, service RPC rejection,
+resume/readiness and cleanup passed. See the
+[deployment receipt](evidence/proposal-reference-passed-20261108-42523959464.json).
+
+No business command or model request was issued by deployment. The selected
+commercial job remains exhausted with its retained schema-commentary defect.
+Do not retry it unchanged: a separately authorized, bounded successor is under
+implementation, preserving all prior candidates, usage and completed sections.
+Actual customer file issuance remains open.
+
 ## November 8 — reference-boundary artifact and package gates captured
 
 Frozen artifact source `698d80fc` built image `c74fd450` offline. The actual image

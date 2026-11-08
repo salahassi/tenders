@@ -1,0 +1,53 @@
+{
+  "version": 1,
+  "kind": "proposal_successor_schema_release_guards",
+  "status": "passed",
+  "migration": {
+    "path": "backend/supabase/migrations/20261108212048_commercial_uuid_colon_successor.sql",
+    "sha256": "1cab7a1a875b1f7180d9c1ed3faf927bb981183874bdda7463b89b779ab67935"
+  },
+  "migration_revision": "6641e9c",
+  "controls_revision": "733ddd01a9742650bb2052b171f47417bc3f68cc",
+  "tested_source_sha256": {
+    "backend/scripts/ops/proposal-successor-schema.py": "475b14561b3dc93ee38ab972ed7523fa4f095a4d6272789f88542212b65c8b71",
+    "backend/scripts/ops/proposal-successor-release.py": "fb673968532dbff94fe48cf56e2ef3616e6df7414d087edcb727adc1e0840a0a",
+    "backend/scripts/ops/test_proposal_successor_schema.py": "2670890db6b42cf7c3bb2d79d8888f37145d46a405e3abf4ee5df29d76fcb414",
+    "backend/scripts/ops/test_proposal_successor_release.py": "0a905fbefa3b94041c5d7dfed029e55a4910b7135b85b6df976be147be522509",
+    "backend/scripts/ops/test_proposal_trial_runner.py": "4ceec65284390ce3386480f53b44b65464ea4218fbadcc888fcc78e12c57af31",
+    "backend/scripts/ops/test_proposal_successor_runtime.py": "6a6b0c10b44170738a9712981dd9439f9904369f0728408781b01503a8006272"
+  },
+  "tests": {
+    "total": 59,
+    "failed": 0,
+    "errors": 0,
+    "duration_seconds": 13.953,
+    "schema_methods": 4,
+    "schema_injected_fault_cases": 22,
+    "release_and_boundary_methods": 27,
+    "trial_methods": 15,
+    "qualification_methods": 13
+  },
+  "schema_checks": {
+    "full_migration_chain_loaded": true,
+    "atomic_fault_rollback": true,
+    "exact_rename_selfqualification_only": true,
+    "existing_rows_authority_attributes_preserved": true,
+    "new_lineage_empty_on_apply": true,
+    "parent_receipt_rows_preserved": 16,
+    "child_receipt_row_count": 19,
+    "read_only_parent_and_child": true,
+    "idempotent_child_replay": true
+  },
+  "scope": "Isolated full-schema PGlite PostgreSQL and mocked release coordinator. Synthetic fixture catalog identities are not production fingerprints.",
+  "provider_calls": 0,
+  "hosted_calls": 0,
+  "production_mutations": 0,
+  "limits": [
+    "Native mixed-worker, concurrency and archive proofs are recorded separately.",
+    "Actual deployment and customer completion remain separate acceptance."
+  ],
+  "separate_native_sql_proof": {
+    "path": "backend/docs/evidence/commercial-successor-native-20261108.json",
+    "sha256": "7badcfacafe3e8d966448a82d2d064cf1df2ffa2767e5d10b871e83c0160ec66"
+  }
+}
