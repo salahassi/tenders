@@ -1,5 +1,196 @@
 # Implementation status and continuation plan
 
+## November 8 — checkpoint decoder complete backend package gates pass
+
+The complete backend suite passes217 files and3667 tests with two workers and
+unchanged timeouts in452.787 measured seconds. Exact product/test/dependency
+inputs at `6548ec2` remain identical through `132e2fb`; only operations and
+status evidence changed while the suite ran. Backend typecheck/build pass.
+Frontend inputs remain byte-identical to the previously qualified `47cdca4`,
+so its recorded gates remain applicable. The [package receipt](evidence/generated-delivery-checkpoint-package-20261108.json)
+binds the exact log hash, timestamps and revisions.
+
+The31 actual verification receipts and separate missing whole-proposal review
+remain distinct from local regression success. SQL-only deployment is ready;
+customer file issuance is still pending the real review continuation.
+
+## November 8 — actual delivery diagnosis confirms two separate blockers
+
+Read-only inspection42529255084 from `6548ec2` completed within56seconds,
+with no command sent and owned cleanup confirmed. The private current failed
+projection has31 accepted model outputs, all matching their completed steps and
+retained hashes. The raw checkpoint join finds zero eligible receipts; decoding
+the actual saver envelope finds all31. Source resolution is current.
+
+The same observation confirms workflow1, zero extracted requirements,17 draft
+sections and completed commercial planning, but no whole-proposal review.
+The legacy commercial transition schedules zero reviews for an empty inventory;
+delivery correctly refuses a missing review. Checkpoint decoding alone cannot
+issue this package. A real accepted review and guarded continuation are required;
+local file retry remains deferred. No content, paid budgets or accepted history
+were reset. See the [sanitized diagnosis](evidence/proposal-delivery-diagnosis-20261108-42529255084.json).
+
+## November 8 — bounded private prospective delivery context enabled
+
+Hosted metadata inspection confirmed31 accepted output/hash bindings: the old
+checkpoint expression finds zero reports, while strict decoding finds all31.
+The same report identifies workflow1, zero requirements and no completed review,
+so a local retry remains blocked pending actual consistency assessment.
+
+The existing encrypted inspect report can now include the exact original delivery
+SELECT projection with only saved report-reference decoding and local prospective
+plan status/error normalization. Stored failed state remains explicit. All actor,
+source/material, active-version and source-resolution checks run; no lease, retry,
+issuance, database update or content acceptance occurs. Context is capped at
+1,250,000 bytes and source failure returns no context. The public receipt omits it.
+
+All18 inspector/trial controls pass. The isolated SQL regression now exercises
+both successful prospective context and source-guard refusal, retains the real
+failed plan in the database, and verifies exact same-thread output/coverage
+selection. A local record variable was renamed to avoid ambiguity with the
+original projection's requirement alias. Actual private-context capture and
+runtime consistency assessment remain pending; no hosted action ran here.
+
+## November 8 — delivery inspection binds the actual failed issuance state
+
+The initial synthetic inspector fixture assumed the plan remained completed.
+Review caught that the real failure chain marks its status failed while leaving
+its stage completed; no hosted inspection ran with that incorrect guard.
+The selector now binds the exact failed preparation job, current failed issuance
+and matching error, completed stage and active version. The regression invokes
+the actual `fail_generated_delivery` and `fail_proposal_issuance` SQL and verifies
+read-only inspection retains that failed state and rejects issuance mismatch.
+All18 inspector/trial controls pass with this real transition.
+
+Optional context remains disabled. Its prepared projection normalizes status
+and error only in a local PL/pgSQL row variable, matching the prospective local
+retry state; stored status/stage/error remain explicit in metadata. It does not
+change the database, request a new issuance, acquire a lease or accept content.
+Actual-context validation and hosted diagnosis are still pending.
+
+## November 8 — private generated-delivery receipt diagnosis prepared
+
+The existing encrypted trial inspection now includes one private metadata field
+for the exact current failed `prepare_generated_delivery` job/version. It keeps
+runtime, selected Owner, opportunity, plan, active-version, source-resolution and
+lease-free read checks. The read-only query compares direct checkpoint report
+references with the actual strict JSON/base64 envelope, capped at262144 bytes,
+using the latest empty-namespace checkpoint and exact pinned graph/result.
+It records booleans/counts for output equality, report presence, content hashes,
+coverage, workflow version, requirements and completed tasks. No candidate,
+report, checkpoint body or credential appears in the default snapshot or public
+receipt. The query acquires no lease and issues no retry, model call or write.
+
+Eighteen inspector/trial controls pass, including actual PostgreSQL valid,
+malformed, oversized, wrong-thread, repair-only and hash/output mismatch cases,
+namespace selection, revoked-Owner refusal and public/private report separation.
+Independent query review requested the262144-byte parity adjustment, which is
+included. Optional prospective context projection is prepared but disabled in
+the runner; it retains original source checks and needs actual-context validation
+before use or any local retry. Hosted metadata capture, diagnosis confirmation,
+SQL correction and completed customer files remain pending.
+
+## November 8 — actual commercial recovery completed; delivery projection failed
+
+Canonical retry42527441822 at `4288562` was accepted21:54:10 UTC. The new
+commercial job completed after215.993 seconds, with the saved drafts retained.
+The request then failed at local `prepare_generated_delivery` with
+`GENERATED_DELIVERY_VALIDATION_FAILED`; terminal observation42527728717 confirms
+three completed jobs and one failed projection, four accepted model submissions,
+thirteen polls and no skipped calls. No whole package was issued. See the
+[terminal receipt](evidence/proposal-successor-trial-delivery-failed-20261108-42527728717.json).
+
+Source review identified an independent receipt-resolution defect: delivery SQL
+reads raw checkpoint channel values although the real graph saver stores a typed
+base64 envelope. The old delivery fixture used the raw shape and missed that
+boundary. A strict decoder, genuine serializer fixture and bounded read-only
+production diagnosis are under implementation. Further local projection retry
+is deferred until actual receipt/context checks establish the complete cause.
+No completed content or model budget is being reset.
+
+## November 8 — checkpoint decoding SQL release prepared
+
+`deploy-proposal-checkpoint.yml` defaults to inspection and requires explicit
+apply mode for the seventh schema child. Its only reviewed footprint is the
+private checkpoint report-reference decoder and the body change in the existing
+generated-delivery context function. The schema wrapper requires the deployed
+commercial-successor SQL `1cab7a1a`, catalog `8654608b`, structure `c75f3187`, and
+all 19 preceding ledger rows. Those rows, existing business records and every
+existing routine attribute are retained; exactly three child receipt rows are
+added atomically with the reviewed SQL. Runtime `de4312a0`, qualification
+`a5e636e8`, all other images and private configuration remain unchanged.
+
+The exact frozen DDL uses transaction-local row-activity and storage-identity
+guards. Arbitrary fault payloads retain the additional complete row-value proof.
+The helper must remain private, immutable and SECURITY INVOKER. Apply and
+read-only readback reject source, parent, child-catalog and authority drift;
+unknown commits receive one read-only reconciliation and are never resubmitted
+or followed by DDL rollback. Queue/setup time is included in the existing
+170-second deadline, with reconciliation and owned cleanup reserved.
+
+Local release tests pass 13 controls and the schema suite passes four tests,
+including full-migration PGlite execution, 19 atomic fault injections, rejection
+of corruption in every predecessor receipt, and 19-to-22-row chain preservation.
+Workflow YAML, shell and embedded Python checks pass. Current immutable runtime
+qualification verifies locally without rebuilding or pulling an image.
+Independent review found no blocking issue and reran all 13 coordinator checks.
+The [guard receipt](evidence/proposal-checkpoint-schema-guards-20261108.json)
+binds the exact tested operations sources and separates this synthetic SQL proof
+from the native decoder and concurrent-publication receipts.
+The operational source is frozen to `6bf6a506` after the exact product native
+PostgreSQL publication and decoder-authority acceptance. No hosted inspection,
+migration, business command
+or provider request has been issued by this preparation. Actual customer files
+remain a separate acceptance result.
+
+## November 8 — generated delivery checkpoint decoding fixed locally
+
+The production saver has used typed JSON/base64 checkpoints since its original
+`7efbd9e` implementation. The generated-delivery receipt join instead read a raw
+`channel_values.reportRef`, so legitimate saved verification receipts disappeared
+from the delivery context. New migration
+`20261108220203_generated_delivery_checkpoint_report_ref.sql` (`6bf6a506`)
+changes only that reference extraction. It strictly decodes the latest selected
+checkpoint within the existing 262144-byte store limit; malformed, unsupported,
+noncanonical, foreign and missing references remain unavailable. Graph/job,
+accepted-output, coverage, source, actor, lease and version guards stay intact.
+
+Both affected full-schema pipeline fixtures now capture the real
+`ModelGraphStore.put` serializer output. All 23 tests pass, including the old
+join returning zero receipts, the corrected complete receipt set, malformed and
+foreign latest references with no older fallback, unaccepted/mismatched results,
+namespace, source-job, stale input/lease guards, and actual DOCX preparation.
+The [isolated PostgreSQL17 decoder proof](evidence/generated-delivery-checkpoint-decoder-20261108.json)
+passes 29 format/ACL controls using actual saver output; its committed runner is
+`backend/scripts/testing/generated_delivery_checkpoint.py`. All three
+[real PostgreSQL publication races](evidence/generated-delivery-checkpoint-publication-20261108.json)
+also pass using the real serializer: one
+publication wins duplicate contenders, and source edits or actor revocation
+while waiting publish nothing. Backend typecheck/build pass; the complete
+package gate remains pending. No hosted database change, provider call,
+customer command or generated-file success is claimed by these local tests.
+
+## November 8 — commercial successor capability deployed
+
+PR55 merged as `7b509dfb`; Pages42527133564 passed. Release42527251795 from
+`9cfe601` passed in55 seconds including queue, applying exact SQL `1cab7a1a`
+and deploying worker/scheduler `de4312a0` (image `3cc6c7cb`, artifact `6b3eddc`,
+qualification `a5e636e8`). Production catalog is `8654608b`, structure `c75f3187`;
+all predecessor receipts remain intact. Original API/source-browser/frontend
+images and private configuration are retained. Scheduler drain, all four v6
+service routes, null-identity rejection, activation, readiness and cleanup pass.
+See the [deployment receipt](evidence/proposal-successor-passed-20261108-42527251795.json).
+
+The merge also automatically started credential-sync verification42527133597
+because the shared Backend claim caller changed. It was canceled within65seconds,
+while still in package verification: discover/bind/reload/recovery had zero
+executed steps. Its long unrelated verification was not replayed; scoped package
+and release proof are recorded above. No credential changes resulted.
+
+Deployment issued no customer command and changed no existing business rows.
+The next authorized canonical retry will be the actual commercial recovery and
+file-generation trial; completion remains unproved until that trial succeeds.
+
 ## November 8 — successor immutable registry publication verified
 
 Qualified image `3cc6c7cb` from artifact source `6b3eddc` is published as

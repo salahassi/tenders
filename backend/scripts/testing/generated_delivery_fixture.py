@@ -3,7 +3,7 @@
 The records model a previously accepted graph result solely to exercise database
 publication/issuance/lease races. They do not prove provider output correctness.
 """
-import hashlib,json,uuid
+import hashlib,json,uuid,subprocess
 from postgres_races import OWNER,literal
 
 def uid():return str(uuid.uuid4())
@@ -26,8 +26,13 @@ def setup(f, remaining_seconds=600):
  f.sql(f"insert into app_private.model_graph_threads(id,workspace_id,job_id,input_hash,task,status) values({literal(thread)},{w},{literal(j)},repeat('b',64),'draft_section','committed');")
  checked={'result':{'checked_candidate_hash':h,'reviewed_all_content':True,'claims':[],'findings':[]},'coverage':'aggregate'}
  f.sql(f"insert into app_private.model_graph_results(id,thread_id,result_key,value,content_hash) values({literal(receipt)},{literal(thread)},'accepted',{literal(candidate)}::jsonb,{literal(h)}),({literal(verification)},{literal(thread)},'chosen-verification',{literal(checked)}::jsonb,repeat('d',64));update app_private.model_graph_threads set result_id={literal(receipt)} where id={literal(thread)};")
- checkpoint={'channel_values':{'reportRef':verification}}
- f.sql(f"insert into app_private.model_graph_checkpoints(thread_id,checkpoint_id,checkpoint,metadata) values({literal(thread)},'0001',{literal(checkpoint)}::jsonb,'{{}}');update public.jobs set checkpoint=jsonb_build_object('graph_thread',{literal(thread)},'model_executor',2) where id={literal(j)};")
+ # Use the actual ModelGraphStore serializer; raw channel_values was never the
+ # production persistence format and concealed the delivery receipt join bug.
+ packed=subprocess.run(['node','--experimental-transform-types','--input-type=module','-e',
+  "import {readFileSync} from 'node:fs';import {modelGraphCheckpointFixture} from './tests/backend/modelGraphCheckpointFixture.ts';process.stdout.write(JSON.stringify(await modelGraphCheckpointFixture(JSON.parse(readFileSync(0,'utf8')))));"],
+  input=json.dumps(verification),cwd=f.repository/'backend',text=True,capture_output=True,timeout=15,check=True)
+ packed=json.loads(packed.stdout)
+ f.sql(f"insert into app_private.model_graph_checkpoints(thread_id,checkpoint_id,checkpoint,metadata) values({literal(thread)},'0001',{literal(packed['checkpoint'])}::jsonb,{literal(packed['metadata'])}::jsonb);update public.jobs set checkpoint=jsonb_build_object('graph_thread',{literal(thread)},'model_executor',2) where id={literal(j)};")
  f.sql(f"insert into public.proposal_versions(id,workspace_id,proposal_id,ordinal,content_hash,created_by,plan_id,evidence_revision,section_outline) select {literal(v)},id,{literal(base['proposal_id'])},1,repeat('c',64),{actor},{literal(p)},evidence_revision,jsonb_build_object('version',1,'groups','[]'::jsonb) from public.workspaces where id={w};")
  f.sql(f"insert into public.proposal_sections(workspace_id,proposal_version_id,section_key,title,body,ordinal,evidence_refs,created_by,content_blocks,requirement_ids,volume,fixed,company_claims) values({w},{literal(v)},'approach','Approach',{literal(body)},0,'[]',{actor},{literal(blocks)}::jsonb,'[]','technical',false,'[]');update public.proposals set active_version_id={literal(v)},state='draft' where id={literal(base['proposal_id'])};")
  issuance=f.scalar(f"insert into public.proposal_issuance_requests(workspace_id,plan_id,requested_by,operation,idempotency_key,accepted_at,deadline_at) select {w},{literal(p)},{actor},'proposal.generate',{literal(uid())},accepted,accepted+interval '600 seconds' from (select clock_timestamp()-make_interval(secs=>{600-remaining_seconds}) accepted) t returning id")

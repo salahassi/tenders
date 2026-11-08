@@ -38,6 +38,8 @@ class TrialRunnerTests(unittest.TestCase):
         self.cleanup = self.stack.enter_context(patch.object(m, 'cleanup'))
         self.snapshot = self.stack.enter_context(patch.object(m.runtime_snapshot, 'capture', return_value={
             'version': 1, 'kind': 'proposal_runtime_snapshot', 'status': 'skipped_budget'}))
+        self.delivery = self.stack.enter_context(patch.object(m.delivery_inspection, 'capture', return_value={
+            'version': 1, 'kind': 'private_generated_delivery_receipt_inspection', 'status': 'not_found'}))
         self.commercial = self.stack.enter_context(patch.object(m.commercial_inspection, 'capture', return_value={
             'version': 1, 'kind': 'private_commercial_inspection', 'status': 'not_found'}))
         self.inspect = self.stack.enter_context(patch.object(m.request, 'inspect', return_value={'actor_id': 'synthetic-actor'}))
@@ -213,6 +215,9 @@ class TrialRunnerTests(unittest.TestCase):
         self.snapshot.assert_called_once_with(m.d, m.release.remaining_run_seconds)
         self.assertEqual(self.reports[-1]['commercial_snapshot']['kind'], 'private_commercial_inspection')
         self.assertNotIn('commercial_snapshot', result)
+        self.assertEqual(self.reports[-1]['delivery_receipt_snapshot']['kind'], 'private_generated_delivery_receipt_inspection')
+        self.assertNotIn('delivery_receipt_snapshot', result)
+        self.delivery.assert_called_once_with(self.database,self.incoming,m.request,self.reports[-1]['proof'],include_context=True)
         self.commercial.assert_called_once_with(self.database, self.incoming, m.request)
         diagnostic.assert_called_once_with(self.database, self.incoming)
         self.prepare.assert_not_called()

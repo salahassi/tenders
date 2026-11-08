@@ -1,0 +1,59 @@
+{
+  "version": 1,
+  "kind": "proposal_successor_trial_terminal",
+  "start_workflow_run_id": 42527441822,
+  "start_report_sha256": "64fbb81ee672d0139f18a982d6f1737077090aeb503ee474642037c2149b0833",
+  "observation_workflow_run_id": 42527728717,
+  "private_report_sha256": "c753c46c4128d3897e548f1aad2a7a2d266cf1c21cbdfc720d11ca9aeffd86dc",
+  "source_revision": "42885626200a27a70f445b68eabd0bbae5a3e157",
+  "outcome": "failed",
+  "code": "GENERATED_DELIVERY_VALIDATION_FAILED",
+  "whole_package_issued": false,
+  "cleanup_verified": true,
+  "issuance": {
+    "accepted_at": "2026-11-08T21:54:10.494487+00:00",
+    "deadline_at": "2026-11-08T22:04:10.494487+00:00",
+    "completed_at": "2026-11-08T21:57:47.355658+00:00",
+    "outcome": "failed",
+    "error_code": "GENERATED_DELIVERY_VALIDATION_FAILED"
+  },
+  "commercial_completion_seconds_from_retry_acceptance": 215.992857,
+  "job_progress": {
+    "total": 4,
+    "groups": [
+      {
+        "type": "advance_plan",
+        "count": 2,
+        "status": "succeeded",
+        "updated_at": "2026-11-08T21:57:46.904976+00:00"
+      },
+      {
+        "type": "plan_commercial",
+        "count": 1,
+        "status": "succeeded",
+        "updated_at": "2026-11-08T21:57:46.487344+00:00"
+      },
+      {
+        "type": "prepare_generated_delivery",
+        "count": 1,
+        "status": "failed",
+        "updated_at": "2026-11-08T21:57:47.349652+00:00"
+      }
+    ],
+    "completed": 3
+  },
+  "attempt_progress": {
+    "total": 17,
+    "poll_attempts": 13,
+    "accepted_waits": 13,
+    "last_started_at": "2026-11-08T21:57:45.346687+00:00",
+    "last_finished_at": "2026-11-08T21:57:45.76206+00:00",
+    "skipped_attempts": 0,
+    "accepted_http_attempts": 4
+  },
+  "limits": [
+    "Saved commercial successor completed; prior drafting is outside this timing.",
+    "Local generated-delivery projection failed before issuing files.",
+    "No further retry or model request was sent by the terminal observation."
+  ]
+}

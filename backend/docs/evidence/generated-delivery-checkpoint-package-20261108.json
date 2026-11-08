@@ -1,0 +1,28 @@
+{
+  "source_revision": "6548ec294d11c0ef4710849b61f1eee6d3b42037",
+  "source_revision_after": "132e2fb6157bab118f792c7dd6c4ab6751062025",
+  "command": [
+    "npm",
+    "test",
+    "--",
+    "--maxWorkers=2"
+  ],
+  "started_at": "2026-11-08T22:15:38.068018+00:00",
+  "finished_at": "2026-11-08T22:23:10.852962+00:00",
+  "duration_seconds": 452.787,
+  "exit_code": 0,
+  "log_sha256": "8c5825736436e47e1d546a278d24a73c407d1807cf4460ae19d7615f9ccb0d96",
+  "log_bytes": 464,
+  "max_workers": 2,
+  "timeouts_changed": false,
+  "kind": "generated_delivery_checkpoint_package_gate",
+  "test_files_passed": 217,
+  "tests_passed": 3667,
+  "backend_typecheck": "passed",
+  "backend_build": "passed",
+  "backend_product_test_dependency_inputs_unchanged_between_revisions": true,
+  "frontend_unchanged_from": "47cdca4",
+  "frontend_prior_gates_retained": true,
+  "hosted_deployment": false,
+  "customer_files_issued": false
+}

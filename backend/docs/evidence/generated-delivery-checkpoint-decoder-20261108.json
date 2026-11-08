@@ -1,0 +1,141 @@
+{
+  "passed": true,
+  "scope": "native-checkpoint-decoder-and-acl",
+  "cases": [
+    {
+      "case": "actual-model-graph-store-put-wire",
+      "passed": true
+    },
+    {
+      "case": "actual-model-graph-store-put-alternate-ref",
+      "passed": true
+    },
+    {
+      "case": "raw-checkpoint-rejected",
+      "passed": true
+    },
+    {
+      "case": "missing-envelope-type",
+      "passed": true
+    },
+    {
+      "case": "missing-envelope-data",
+      "passed": true
+    },
+    {
+      "case": "unsupported-serializer",
+      "passed": true
+    },
+    {
+      "case": "raw-fallback-in-envelope-rejected",
+      "passed": true
+    },
+    {
+      "case": "nonstring-data",
+      "passed": true
+    },
+    {
+      "case": "invalid-base64-characters",
+      "passed": true
+    },
+    {
+      "case": "noncanonical-padding-bits",
+      "passed": true
+    },
+    {
+      "case": "missing-base64-padding",
+      "passed": true
+    },
+    {
+      "case": "invalid-utf8",
+      "passed": true
+    },
+    {
+      "case": "invalid-json",
+      "passed": true
+    },
+    {
+      "case": "json-scalar",
+      "passed": true
+    },
+    {
+      "case": "channels-array",
+      "passed": true
+    },
+    {
+      "case": "missing-report-ref",
+      "passed": true
+    },
+    {
+      "case": "invalid-report-uuid",
+      "passed": true
+    },
+    {
+      "case": "noncanonical-report-uuid",
+      "passed": true
+    },
+    {
+      "case": "nonstring-report-ref",
+      "passed": true
+    },
+    {
+      "case": "json-escaped-nul",
+      "passed": true
+    },
+    {
+      "case": "json-numeric-overflow",
+      "passed": true
+    },
+    {
+      "case": "oversized-envelope",
+      "passed": true
+    },
+    {
+      "case": "json-null",
+      "passed": true
+    },
+    {
+      "case": "execute-denied-anon",
+      "passed": true
+    },
+    {
+      "case": "execute-denied-authenticated",
+      "passed": true
+    },
+    {
+      "case": "execute-denied-service_role",
+      "passed": true
+    },
+    {
+      "case": "execute-denied-tdp_app_anon",
+      "passed": true
+    },
+    {
+      "case": "execute-denied-tdp_app_authenticated",
+      "passed": true
+    },
+    {
+      "case": "execute-denied-tdp_app_service",
+      "passed": true
+    }
+  ],
+  "source_revision": "cbdf129d1de4e9eec81bf9ec83b9e090413d3c51",
+  "sql_sha256": "6bf6a506c53bf5113a17dfbb9c12ec09fc4ee0090599931776c34ed8e2614e53",
+  "source_hashes": {
+    "backend/supabase/migrations/20261108220203_generated_delivery_checkpoint_report_ref.sql": "6bf6a506c53bf5113a17dfbb9c12ec09fc4ee0090599931776c34ed8e2614e53",
+    "backend/supabase/functions/_shared/modelGraphStore.ts": "dac7fd89af77f78042ab2e6d56e01b95ffb84539f6023f5ef273c31265bde0f2",
+    "backend/tests/backend/modelGraphCheckpointFixture.ts": "fd9fda34deeb4d361221fc0a9138db8b09155eb08a206ba8ed03b6d3a8f96b05",
+    "backend/package-lock.json": "8b7b79f42970cf43e5f873bcd6d59eec07c342a0f620b43f6c5618d770343dea",
+    "backend/scripts/testing/generated_delivery_checkpoint.py": "b93b69615e5e424ea4ea68c94ff931e878c333f2f9cbbd9ec00819591e68f078"
+  },
+  "serializer": "actual ModelGraphStore.put via modelGraphCheckpointFixture",
+  "wire_sha256": [
+    "a15f0f271475fe3b6e69243b06dd1c41698f1811b864a4aab3796879a89d3288",
+    "5d4e408bffb409910b1ac34e4e685d51df8a75282c7a67379cc61c4c739c7f00"
+  ],
+  "postgres_image": "postgres:17.6-alpine@sha256:ef257d85f76e48da1c64832459b59fcaba1a4dac97bf5d7450c77753542eee94",
+  "network": "none",
+  "production_calls": 0,
+  "provider_calls": 0,
+  "cleanup_confirmed": true
+}

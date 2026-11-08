@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "kind": "proposal_delivery_receipt_diagnosis",
+  "run_id": 42529255084,
+  "source_revision": "6548ec294d11c0ef4710849b61f1eee6d3b42037",
+  "private_report_sha256": "ab6fc089cd18a579dd8e09029668d13e61aae767847add454cdbc99f4c5a1fc9",
+  "request_sent": false,
+  "cleanup_verified": true,
+  "status": "available",
+  "workflow_version": 1,
+  "requirements_count": 0,
+  "completed_steps": 36,
+  "task_counts": {
+    "advance_plan": 5,
+    "analyze_chunk": 12,
+    "draft_section": 17,
+    "plan_proposal": 1,
+    "plan_commercial": 1
+  },
+  "receipt_counts": {
+    "accepted_found": 31,
+    "graph_accepted": 31,
+    "checkpoint_found": 31,
+    "accepted_hash_bound": 31,
+    "direct_report_exists": 0,
+    "decoded_report_exists": 31,
+    "accepted_matches_output": 31,
+    "checkpoint_data_present": 31,
+    "direct_receipt_eligible": 0,
+    "decoded_receipt_eligible": 31,
+    "direct_coverage_eligible": 0,
+    "direct_report_hash_bound": 0,
+    "decoded_coverage_eligible": 31,
+    "decoded_report_hash_bound": 31,
+    "direct_report_ref_present": 0,
+    "decoded_report_ref_present": 31
+  },
+  "source_resolution_current": true,
+  "stored_plan_status": "failed",
+  "stored_plan_stage": "completed",
+  "stored_plan_error_code": "GENERATED_DELIVERY_VALIDATION_FAILED",
+  "files_issued": false,
+  "findings": [
+    "Saved typed checkpoints yield31 eligible receipts; direct raw read yields0.",
+    "Legacy zero-requirement path completed without a whole-proposal review; decoded receipts alone cannot qualify delivery."
+  ]
+}
