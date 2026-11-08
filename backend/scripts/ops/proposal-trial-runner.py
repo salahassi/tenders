@@ -98,8 +98,10 @@ def verify_runtime(database=None):
             'RUNTIME_CHANGED')
     release.verify_runtime_contract(original)
     if database:
-        schema = module('trial_runtime_schema', 'proposal-dispatch-schema.py')
-        schema.verify(database, receipt['source']['source_entries']['backend/scripts/runtime/dispatcher.sql']['sha256'])
+        schema = module('trial_runtime_schema', 'proposal-retry-schema.py')
+        require(receipt['source']['source_entries']['backend/scripts/runtime/dispatcher.sql']['sha256'] == schema.PARENT_SQL,
+                'DISPATCH_SOURCE_CHANGED')
+        schema.verify(database, allow_parent=True)
 
 
 def session_path():

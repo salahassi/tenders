@@ -188,7 +188,7 @@ class TrialRunnerBoundaryTests(unittest.TestCase):
     def test_runtime_verification_requires_qualified_worker_but_preserves_other_baselines(self):
         candidate = 'registry/synthetic-runtime@sha256:' + 'b' * 64
         expected = m.release.BASELINES | {'worker': candidate, 'scheduler': candidate}
-        schema = Mock()
+        schema = Mock(PARENT_SQL='c' * 64)
         receipt = {'source': {'source_entries': {'backend/scripts/runtime/dispatcher.sql': {'sha256': 'c' * 64}}}}
         with patch.object(m.release, 'verify_checkout'), patch.object(m.d.probe, 'validate_cluster'), \
              patch.object(m.release.qualification, 'publication', return_value=(receipt, candidate)), \
@@ -197,7 +197,11 @@ class TrialRunnerBoundaryTests(unittest.TestCase):
              patch.object(m.release, 'verify_runtime_contract'), patch.object(m, 'module', return_value=schema):
             database = object()
             m.verify_runtime(database)
-            schema.verify.assert_called_once_with(database, 'c' * 64)
+            schema.verify.assert_called_once_with(database, allow_parent=True)
+            schema.PARENT_SQL = 'd' * 64
+            with self.assertRaisesRegex(RuntimeError, 'DISPATCH_SOURCE_CHANGED'):
+                m.verify_runtime(database)
+            schema.PARENT_SQL = 'c' * 64
             expected['api'] = candidate
             with self.assertRaisesRegex(RuntimeError, 'RUNTIME_CHANGED'):
                 m.verify_runtime()
