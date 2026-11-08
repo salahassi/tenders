@@ -1,5 +1,34 @@
 # Implementation status and continuation plan
 
+## November 8 — modern model routing in saved proposal resume
+
+The canonical whole-plan retry guard still recognized only the legacy
+`model_routing.enabled` setting. Modern task-model routes use a separate
+execution setting and retain their own automatic route checkpoints, so unrelated
+historical unknown usage could prevent an otherwise eligible current proposal
+from resuming. The new migration changes only that admission predicate beneath
+the existing Owner, revision, evidence, source, current-contract and idempotency
+checks. It recognizes the actual modern admission cutoff and existing catalog
+continuations without converting old manual checkpoints or paid work. Local
+stage transitions are distinguished from model calls; local-only work retains
+the admission requirement for future model steps.
+
+Reserved usage still blocks whole-plan retry. A current ambiguous call on a
+resumed model job still blocks; eligible old ambiguity retains every receipt and
+model allowance and gets the existing recovery audit. Provider reservation
+continues to enforce account, model, input and phase identity. No usage row,
+provider setting, frozen input or previous issuance is rewritten. The added
+helper is private, SECURITY INVOKER, and inaccessible to browser/service roles.
+
+Implementation and independent review are complete in an isolated worktree.
+The 12 latest-schema retry regressions and 15 issuance tests pass, including
+new issuance admission, unchanged 600-second clock on replay, preserved unknown
+and reserved accounting, nonempty model budgets, manual policy, cutoff changes,
+local transitions, frozen routes and private helper privileges. Backend
+typecheck/build pass. Full backend/frontend tests and frontend build are in
+progress. Deployment and hosted retry acceptance remain pending; this change
+has made no live command, provider, deployment or customer-data mutation.
+
 ## November 8 — authorized technical and financial proposal trial
 
 The Owner explicitly selected an actual technical/financial proposal generation
