@@ -1,0 +1,77 @@
+{
+  "started_at": "2026-11-12T13:57:35.236948+00:00",
+  "authorization": "Owner: delete everything, following explicit permanent-data-deletion question",
+  "resources": [
+    {
+      "kind": "space",
+      "identity": "tenderdesk-migration-a6093a76-sfo3",
+      "delete_http": 204,
+      "verified_http": 404,
+      "deleted_versions": 87,
+      "deleted_objects": 0,
+      "aborted_uploads": 0,
+      "temporary_key_revoked": true
+    },
+    {
+      "kind": "volume",
+      "identity": "633136fe-d0c2-11f1-9d3c-7ead5ec5ab7a",
+      "delete_http": 204,
+      "verified_http": 404
+    },
+    {
+      "kind": "volume",
+      "identity": "62fc3929-d0c2-11f1-9d3c-7ead5ec5ab7a",
+      "delete_http": 204,
+      "verified_http": 404
+    },
+    {
+      "kind": "registry",
+      "identity": "tenderdesk-a6093a76",
+      "delete_http": 204,
+      "verified_absent": true
+    },
+    {
+      "kind": "database",
+      "identity": "d08678a8-7201-4906-98bd-204978a7eec9",
+      "name": "tenderdesk-dev",
+      "delete_http": 204,
+      "verified_http": 404
+    },
+    {
+      "kind": "project",
+      "identity": "b4a678e6-4c0d-4169-bb6f-89ebfc004559",
+      "name": "tenderdesk",
+      "delete_http": 204,
+      "verified_http": 404
+    }
+  ],
+  "errors": [],
+  "github_repository_delete_http": 403,
+  "finished_at": "2026-11-12T13:58:03.630018+00:00",
+  "final_verification": {
+    "observed_at": "2026-11-12T13:58:47.592584+00:00",
+    "kubernetes_clusters": 0,
+    "droplets": 0,
+    "apps": 0,
+    "databases": 0,
+    "volumes": 0,
+    "load_balancers": 0,
+    "snapshots": 0,
+    "floating_ips": 0,
+    "registries": 0,
+    "keys": 0,
+    "endpoints": 0,
+    "namespaces": 0,
+    "registry_subscription_http": 404,
+    "default_project_resource_count": 0
+  },
+  "github": {
+    "repository": "salahassi/tenders",
+    "repository_delete_http": 403,
+    "repository_still_present": true,
+    "file_workflows_disabled": 60,
+    "managed_pages_workflow_active": true,
+    "pages_unpublish_http": 403,
+    "new_workflows_dispatched": false
+  }
+}

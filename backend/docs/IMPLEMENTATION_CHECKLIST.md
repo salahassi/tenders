@@ -1,5 +1,40 @@
 # Implementation status and continuation plan
 
+## November 12 — permanent DigitalOcean deletion completed; GitHub deletion blocked
+
+After the assistant identified the retained resources and explained that
+deletion would permanently destroy their stored data, the Owner instructed:
+"delete everything." This explicitly authorizes permanent deletion and
+supersedes the retention decision in the earlier shutdown entry below.
+
+Stage 7 (operations): the migration Space
+`tenderdesk-migration-a6093a76-sfo3`, all 87 listed file versions and the Space
+itself were deleted. No unfinished multipart uploads remained. The temporary
+Spaces credential was revoked. Both detached volumes (20 GiB and 1 GiB),
+registry `tenderdesk-a6093a76`, PostgreSQL database `tenderdesk-dev`, and the
+empty `tenderdesk` project were also deleted. Each deletion returned HTTP 204;
+the Space, volumes, database and project then returned HTTP 404, and the
+registry was absent from the registry list. The registry subscription also
+returns HTTP 404. The default project was preserved and contains zero resources.
+
+Final management-interface inventories report zero clusters, droplets, apps,
+databases, volumes, load balancers, snapshots, reserved IP addresses, registries,
+Spaces access keys, content-delivery endpoints and function namespaces. These
+checks verify resource removal; they do not erase charges already accrued or
+constitute a final billing statement. The
+[sanitized deletion receipt](evidence/tenders-deletion-20261112.json) records
+the observed results without credentials or stored customer content.
+
+The GitHub repository deletion request returned HTTP 403, as did another Pages
+unpublishing request. Repository `salahassi/tenders` and its published Pages
+site therefore remain. All 60 repository-defined workflows remain disabled;
+the managed Pages workflow is still active. No runs are queued or in progress.
+No new workflow, application test, deployment or model request was started.
+The GitHub Actions artifact list is empty, and there are no releases. Full
+GitHub deletion requires the Owner to use repository Settings with sufficient
+administrative access. The deletion is blocked by credential permissions,
+not by missing Owner authorization. Do not recreate the removed resources.
+
 ## November 12 — project suspended at the Owner's request
 
 The Owner instructed the assistant to stop everything related to the tenders
