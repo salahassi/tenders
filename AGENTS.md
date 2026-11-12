@@ -1,5 +1,7 @@
 # Working in this repository
 
+The Owner stopped the tenders project on November 12, 2026 and requested disconnection of its GitHub and DigitalOcean automation and resources. The project is suspended. Do not enable workflows, deploy or recreate workloads, reconnect services, or resume customer/provider processing without a new explicit Owner instruction. The shutdown evidence and remaining access/billing limits are recorded at the top of `backend/docs/IMPLEMENTATION_CHECKLIST.md`.
+
 Tenderdesk is connected-only as requested by the owner on October 15, 2026. Never expose demo routes, populate user workspaces with synthetic records, or fall back to local simulated persistence. The Owner explicitly requested real official source seeders on October 17, 2026; the reviewed source directory in `backend/seeders/` is authorized reference data. Seed it only into an explicitly selected workspace, preserving existing records and collection states. Synthetic records belong only in automated test fixtures. Keep zero external model/payment/portal calls until explicitly activated. Do not implement simulated connected success.
 
 - Application code is organized into `frontend/` and `backend/` at the owner's explicit request. Keep frontend assets and build configuration in `frontend/`, and Supabase functions, migrations, contracts and backend tests in `backend/`.

@@ -1,5 +1,54 @@
 # Implementation status and continuation plan
 
+## November 12 — project suspended at the Owner's request
+
+The Owner instructed the assistant to stop everything related to the tenders
+project and disconnect its scheduled workflows, workloads and resources in
+GitHub and DigitalOcean. This suspension supersedes the historical continuation
+plans below. Do not resume operations without a new explicit Owner instruction.
+
+Stage 7 (operations): all 60 repository-defined GitHub Actions workflows are
+verified `disabled_manually`, including the provider-credential synchronization
+scheduled every 15 minutes. An older queued run,
+[40877808998](https://github.com/salahassi/tenders/actions/runs/40877808998),
+was canceled and verified `completed` / `cancelled`. Separate paginated checks
+for queued, in-progress, waiting, pending and requested runs found zero remaining
+runs. No new workflow was dispatched for this shutdown.
+
+DigitalOcean's management interface reports zero Kubernetes clusters, droplets,
+App Platform apps, load balancers, content-delivery endpoints and function
+namespaces. The former cluster `a6093a76-a2d6-47fd-8697-579d41ed316f` returns
+HTTP 404. These resources were already absent when inspected; this shutdown
+does not claim to have deleted them. Both retained block-storage volumes are
+detached. The managed PostgreSQL database `tenderdesk-dev` remains online, but
+its previously unrestricted firewall now allows only `192.0.2.1`, a reserved
+documentation address, to block normal external clients. The exact rule was
+read back after the successful update. No database SQL or internal cron jobs
+were inspected or modified. The migration Space rejects anonymous bucket
+access, and the account has zero existing Spaces access keys.
+
+Remaining limits: GitHub's managed `pages-build-deployment` workflow cannot be
+disabled through its workflow endpoint (HTTP 422). The available integration
+cannot unpublish the existing Pages site or inspect/remove repository secrets,
+webhooks or self-hosted runners (HTTP 403). The Pages site therefore remains
+published. Disabling its repository-defined publishing workflow does not prove
+that GitHub's managed workflow is disabled or that credentials are revoked.
+
+The database, two volumes (20 GiB and 1 GiB), Basic container registry
+`tenderdesk-a6093a76`, and migration Space
+`tenderdesk-migration-a6093a76-sfo3` are retained. Permanent deletion was not
+authorized by the disconnection request, so zero ongoing charges are not
+claimed. Deleting these resources requires an explicit Owner instruction about
+permanent data loss; clearing the remaining GitHub limits requires an account
+with the relevant administrative permissions.
+
+Verification consists of the actual service responses and final state checks
+in the [sanitized shutdown receipt](evidence/tenders-shutdown-20261112.json).
+The operational source baseline was `12f95e71`; application code and schema
+were unchanged. No application test suite, image build, deployment, provider
+request or customer command was started. The repository instructions now retain
+the suspension rule for subsequent work.
+
 ## November 8 — ordinary review copy rendered and authentically downloaded
 
 PR58 merged as `1c19f3c0`; Pages42536883995 passed in26seconds. From source

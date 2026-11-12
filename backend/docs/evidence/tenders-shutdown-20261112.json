@@ -1,0 +1,90 @@
+{
+  "observed_at": "2026-11-12T13:47:34.851713+00:00",
+  "repository": "salahassi/tenders",
+  "source_revision": "12f95e71e8708e3cecee3bd560db4e261abfa0dd",
+  "github": {
+    "workflow_states": {
+      "disabled_manually": 60,
+      "active_managed_pages": 1
+    },
+    "canceled_run": {
+      "id": 40877808998,
+      "status": "completed",
+      "conclusion": "cancelled"
+    },
+    "active_run_check": {
+      "observed_at": "2026-11-12T13:47:05.167012+00:00",
+      "counts": {
+        "queued": 0,
+        "in_progress": 0,
+        "waiting": 0,
+        "pending": 0,
+        "requested": 0
+      },
+      "runs": [],
+      "errors": []
+    },
+    "limitations": {
+      "managed_pages_workflow_disable_http": 422,
+      "pages_unpublish_http": 403,
+      "repository_secrets_list_http": 403,
+      "repository_hooks_list_http": 403,
+      "self_hosted_runners_list_http": 403
+    },
+    "pages_url": "https://salahassi.github.io/tenders/"
+  },
+  "digitalocean": {
+    "counts": {
+      "kubernetes_clusters": 0,
+      "droplets": 0,
+      "apps": 0,
+      "load_balancers": 0,
+      "endpoints": 0,
+      "namespaces": 0
+    },
+    "target_cluster_id": "a6093a76-a2d6-47fd-8697-579d41ed316f",
+    "target_cluster_get_http": 404,
+    "database": {
+      "id": "d08678a8-7201-4906-98bd-204978a7eec9",
+      "name": "tenderdesk-dev",
+      "firewall_rules": [
+        {
+          "type": "ip_addr",
+          "value": "192.0.2.1"
+        }
+      ],
+      "retained": true,
+      "sql_cron_not_inspected": true
+    },
+    "volumes": [
+      {
+        "id": "633136fe-d0c2-11f1-9d3c-7ead5ec5ab7a",
+        "name": "pvc-4f33e7af-dcf3-472b-8880-9858b6ec3205",
+        "size_gigabytes": 20,
+        "droplet_ids": [],
+        "retained": true
+      },
+      {
+        "id": "62fc3929-d0c2-11f1-9d3c-7ead5ec5ab7a",
+        "name": "pvc-77968165-e8e7-4b65-86bb-33b53f74d006",
+        "size_gigabytes": 1,
+        "droplet_ids": [],
+        "retained": true
+      }
+    ],
+    "registry": {
+      "name": "tenderdesk-a6093a76",
+      "subscription_tier": "basic",
+      "retained": true
+    },
+    "spaces": {
+      "bucket": "tenderdesk-migration-a6093a76-sfo3",
+      "existing_access_key_count": 0,
+      "anonymous_head_http": 403,
+      "retained": true
+    }
+  },
+  "permanent_deletion_authorized": false,
+  "billing_stopped": false,
+  "new_github_runs_started": false
+}
